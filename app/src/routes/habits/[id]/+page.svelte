@@ -53,7 +53,7 @@
 	let streakUnit = $derived(habit?.scheduleKind === 'weekly' ? 'weeks' : 'days');
 </script>
 
-<header class="hairline raised sticky top-0 z-20 border-b pt-safe">
+<header class="hairline raised z-20 shrink-0 border-b pt-safe">
 	<div class="flex items-center gap-3 px-4 pt-2 pb-3">
 		<a href="/habits" aria-label="Back" class="tap dim -ml-1 p-1">
 			<svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

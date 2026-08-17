@@ -39,7 +39,7 @@
 	);
 </script>
 
-<header class="hairline raised sticky top-0 z-20 border-b pt-safe">
+<header class="hairline raised z-20 shrink-0 border-b pt-safe">
 	<div class="flex items-center justify-between px-4 pt-2 pb-2">
 		<h1 class="text-2xl font-bold tracking-tight">Habits</h1>
 		<div class="flex items-center gap-2">
