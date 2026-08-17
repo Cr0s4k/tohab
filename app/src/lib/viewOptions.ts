@@ -34,8 +34,7 @@ export const STORAGE_PREFIX = 'tohab.viewOpts.';
 const BASE: ViewOptions = { group: 'none', sort: 'date', order: 'asc', showDone: false };
 
 const SCOPE_DEFAULTS: Record<string, Partial<ViewOptions>> = {
-	upcoming: { group: 'date' },
-	done: { sort: 'added', order: 'desc', showDone: true }
+	upcoming: { group: 'date' }
 };
 
 export function projectScope(projectId: string): string {

@@ -18,8 +18,7 @@
 	const VIEWS: { id: View; label: string }[] = [
 		{ id: 'today', label: 'Today' },
 		{ id: 'upcoming', label: 'Upcoming' },
-		{ id: 'inbox', label: 'All' },
-		{ id: 'done', label: 'Done' }
+		{ id: 'inbox', label: 'All' }
 	];
 
 	let view = $state<View>('today');
@@ -48,8 +47,7 @@
 	const emptyCopy: Record<View, string> = {
 		today: 'Nothing due today. Enjoy it.',
 		upcoming: 'No scheduled tasks ahead.',
-		inbox: 'No open tasks. Tap + to add one.',
-		done: 'Nothing completed yet.'
+		inbox: 'No open tasks. Tap + to add one.'
 	};
 </script>
 
@@ -158,6 +156,5 @@
 <ViewOptionsSheet
 	open={tuning}
 	scope={view}
-	allowShowDone={view !== 'done'}
 	onClose={() => (tuning = false)}
 />

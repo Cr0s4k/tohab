@@ -155,7 +155,6 @@ try {
 	await waitFor(`${bodyText}.includes('1 added')`, 5000, 'compose confirms the add');
 	check('compose stays open for the next task', await evaluate<boolean>(`${bodyText}.includes('1 added')`), true);
 
-	// Escape rather than the sheet's Done button: the Tasks header has a Done tab too.
 	await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
 	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'sheet closed');
 
@@ -176,13 +175,10 @@ try {
 	await waitFor(`!${bodyText}.includes('buy oat milk')`, 8000, 'completed task leaves Upcoming');
 	check('completing removes it from Upcoming', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), false);
 
-	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'Done').click()`);
-	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'task shows in Done');
-	check('completed task appears under Done', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), true);
-
-	// --- 4b. per-view sort and group options persist ---
+	// --- 4b. show completed is how finished work is reached, per view ---
 	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'All').click()`);
 	await waitFor(`!${bodyText}.includes('buy oat milk')`, 8000, 'All hides completed by default');
+	check('All hides completed tasks by default', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), false);
 
 	await evaluate(`document.querySelector('header button[aria-label="Sort and group"]').click()`);
 	await waitFor(`${bodyText}.includes('Sort & group')`, 5000, 'options sheet opened');

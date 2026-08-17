@@ -16,13 +16,11 @@
 		open = false,
 		scope,
 		title = 'Sort & group',
-		allowShowDone = true,
 		onClose
 	}: {
 		open?: boolean;
 		scope: string;
 		title?: string;
-		allowShowDone?: boolean;
 		onClose: () => void;
 	} = $props();
 
@@ -84,26 +82,24 @@
 		{/each}
 	</div>
 
-	{#if allowShowDone}
-		<button
-			type="button"
-			onclick={() => set({ showDone: !opts.showDone })}
-			class="tap sunken mb-5 flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-left"
+	<button
+		type="button"
+		onclick={() => set({ showDone: !opts.showDone })}
+		class="tap sunken mb-5 flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-left"
+	>
+		<span class="text-[0.85rem] font-medium">Show completed tasks</span>
+		<span
+			class="hairline flex h-6 w-10 shrink-0 items-center rounded-full border px-0.5"
+			class:accent-bg={opts.showDone}
 		>
-			<span class="text-[0.85rem] font-medium">Show completed tasks</span>
 			<span
-				class="hairline flex h-6 w-10 shrink-0 items-center rounded-full border px-0.5"
-				class:accent-bg={opts.showDone}
-			>
-				<span
-					class="size-5 rounded-full"
-					style="background: var(--surface-raised); transform: translateX({opts.showDone
-						? 14
-						: 0}px); transition: transform 160ms ease"
-				></span>
-			</span>
-		</button>
-	{/if}
+				class="size-5 rounded-full"
+				style="background: var(--surface-raised); transform: translateX({opts.showDone
+					? 14
+					: 0}px); transition: transform 160ms ease"
+			></span>
+		</span>
+	</button>
 
 	{#if isCustomised(scope)}
 		<button
