@@ -6,7 +6,8 @@ import {
 	COLLECTIONS,
 	clockSkew,
 	docsSince,
-	getDoc,
+	ensureSchema,
+	getDocForUpdate,
 	rowToDoc,
 	stats,
 	transaction,
@@ -40,7 +41,7 @@ function notify(userId: string, except?: string) {
 
 const sync = new Hono();
 
-sync.get('/pull', (c) => {
+sync.get('/pull', async (c) => {
 	const collection = c.req.query('collection') ?? '';
 	if (!COLLECTIONS.has(collection)) return c.json({ error: 'unknown collection' }, 400);
 
@@ -49,7 +50,7 @@ sync.get('/pull', (c) => {
 	const id = c.req.query('id') ?? '';
 	const limit = Math.min(500, Math.max(1, Number(c.req.query('limit') ?? 100)));
 
-	const rows = docsSince(userId, collection, cursor, id, limit);
+	const rows = await docsSince(userId, collection, cursor, id, limit);
 	const last = rows.at(-1);
 
 	return c.json({
@@ -66,13 +67,13 @@ sync.post('/push', async (c) => {
 	const userId = userOf(c.req.header('x-user-id'));
 	const rows = body.rows ?? [];
 
-	const conflicts = transaction(() => {
+	const conflicts = await transaction(async (tx) => {
 		const out: Record<string, unknown>[] = [];
 		for (const row of rows) {
 			const incoming = row.newDocumentState;
 			if (!incoming?.id) continue;
 
-			const existing = getDoc(userId, collection, String(incoming.id));
+			const existing = await getDocForUpdate(tx, userId, collection, String(incoming.id));
 
 			// Last-write-wins per document, gated on the client having seen the current master.
 			if (existing) {
@@ -84,7 +85,7 @@ sync.post('/push', async (c) => {
 				}
 			}
 
-			writeDoc(userId, collection, incoming);
+			await writeDoc(tx, userId, collection, incoming);
 		}
 		return out;
 	});
@@ -134,19 +135,21 @@ sync.get('/events', (c) => {
 	});
 });
 
-sync.get('/status', (c) => {
+sync.get('/status', async (c) => {
 	const userId = userOf(c.req.header('x-user-id'), c.req.query('userId'));
 	return c.json({
 		ok: true,
 		userId,
 		serverTime: Date.now(),
-		collections: stats(userId),
-		clockSkew: clockSkew(userId)
+		collections: await stats(userId),
+		clockSkew: await clockSkew(userId)
 	});
 });
 
 app.route('/sync', sync);
 app.get('/', (c) => c.text('tohab sync server'));
+
+await ensureSchema();
 
 serve({ fetch: app.fetch, port: PORT }, (info) => {
 	console.log(`tohab sync server listening on http://localhost:${info.port}/sync`);

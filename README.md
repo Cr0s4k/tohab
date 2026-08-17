@@ -5,15 +5,18 @@ self-hosted server.
 
 ```
 app/      SvelteKit 2 + Svelte 5 PWA, RxDB over IndexedDB
-server/   Hono + Drizzle over SQLite sync backend
+server/   Hono + Drizzle over Postgres sync backend
 ```
 
 ## Running it
 
 ```bash
 pnpm install
-pnpm dev          # app on :5173, sync server on :5178
+pnpm dev          # starts Postgres, app on :5173, sync server on :5178
 ```
+
+`dev` brings up Postgres in Docker and pushes the schema before starting the server. If you
+already run Postgres elsewhere, set `DATABASE_URL` and skip the container.
 
 The app proxies `/sync` to the server in both dev and preview, so no config is needed
 locally. Open the app on your phone via `pnpm --filter app dev --host`.
@@ -25,13 +28,14 @@ pnpm --filter server start
 
 ### Database
 
-Tables are defined in `server/src/schema.ts` and applied with `drizzle-kit push`, which
-`dev` and `start` run for you. There are no migration files yet — while the schema is still
-moving, changing it and re-pushing is the workflow:
+Postgres 18, defined in `docker-compose.yml` for local work. Tables live in
+`server/src/schema.ts` and are applied with `drizzle-kit push`. There are no migration files
+yet — while the schema is still moving, the workflow is to edit `schema.ts` and re-push:
 
 ```bash
-pnpm --filter server db:push     # apply schema.ts to the database
-pnpm db:reset                    # delete the database and rebuild it from schema.ts
+pnpm db:up                       # start Postgres
+pnpm --filter server db:push     # apply schema.ts
+pnpm db:reset                    # destroy the volume and rebuild from schema.ts
 pnpm --filter server db:studio   # browse the data
 ```
 
@@ -43,19 +47,21 @@ failing per-request.
 Server URL** at wherever the sync server lives (e.g. `https://api.example.com/sync`); the
 server sets permissive CORS, so a cross-origin deployment works.
 
-The database file defaults to `server/data/tohab.sqlite`, overridable with `TOHAB_DB`.
-`PORT` overrides the server port.
+`DATABASE_URL` defaults to `postgresql://tohab:tohab@localhost:5432/tohab`. `PORT`
+overrides the server port. The `pg` driver is pure JavaScript, so there is nothing to
+compile and any managed Postgres works.
 
 ## Tests
 
 ```bash
 pnpm test               # pure logic: streak math, quick-add parser (45 assertions)
-pnpm test:integration   # sync protocol, RxDB replication, headless-browser smoke test
+pnpm test:integration   # sync protocol, concurrency, RxDB replication, browser smoke test
 pnpm check              # typecheck app and server
 ```
 
-The integration suite needs the sync server running, and the browser smoke test needs the
-app running plus Chrome at the standard macOS path (override with `CHROME` / `APP`).
+The integration suite needs Postgres and the sync server running, and the browser smoke test
+needs the app running plus Chrome at the standard macOS path (override with `CHROME` /
+`APP`).
 
 ## What's in it
 
@@ -124,6 +130,12 @@ document exists on the server and the client's assumed `updatedAt` doesn't match
 current one; the server returns the master document and RxDB resolves locally. A blind
 insert over an existing document is treated as a conflict rather than an overwrite.
 
+The conflict check reads the master row `FOR UPDATE` inside the push transaction. This is
+load-bearing on a connection pool: without the lock two concurrent pushes can both pass the
+gate on the same base state and the second silently overwrites the first, and the losing
+client is never told. `server/test/concurrency.test.ts` covers it — it fails without the
+lock.
+
 Deletes are soft — `_deleted: true` tombstones replicate like any other change, so a delete
 on one device removes the document on the others.
 
@@ -144,3 +156,5 @@ a tunnel; add real auth before exposing it publicly.
   day, not the habit's creation date, so filling in the heatmap retroactively works.
 - **Mobile only by design** — the layout caps at `max-w-lg` and centres on wider screens
   rather than adapting to desktop.
+- **The server needs Postgres**, so it is no longer a zero-dependency binary you can drop
+  anywhere; local work goes through Docker.

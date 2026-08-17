@@ -1,48 +1,36 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { and, asc, count, eq, gt, max, or, sql, sum } from 'drizzle-orm';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
-import { docs, revs, type DocRow } from './schema.ts';
+import { Pool } from 'pg';
+import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { and, asc, count, eq, gt, max, or, sql } from 'drizzle-orm';
+import { docs, type DocRow } from './schema.ts';
 
-const FILE = process.env.TOHAB_DB ?? './data/tohab.sqlite';
+const CONNECTION = process.env.DATABASE_URL ?? 'postgresql://tohab:tohab@localhost:5432/tohab';
 
-if (FILE !== ':memory:') mkdirSync(dirname(FILE), { recursive: true });
+const pool = new Pool({ connectionString: CONNECTION, max: 10 });
 
-const sqlite = new Database(FILE);
-sqlite.pragma('journal_mode = WAL');
-
-// Schema lives in schema.ts and is applied by `drizzle-kit push`, so fail loudly here
-// rather than letting every request 500 on a database that was never set up.
-const tables = sqlite.pragma('table_list') as { name: string }[];
-if (!tables.some((t) => t.name === 'docs')) {
-	console.error(
-		`No schema in ${FILE}. Run \`pnpm db:push\` (or \`pnpm db:reset\` to start clean) first.`
-	);
-	process.exit(1);
-}
-
-export const db = drizzle(sqlite, { schema: { docs, revs } });
+const schema = { docs };
+export const db = drizzle(pool, { schema });
 export type { DocRow };
+
+/**
+ * Every query runs either on the pool or inside a transaction. With a pool those are
+ * different connections, so a transaction's work has to be threaded through explicitly
+ * rather than reaching for the module-level `db`.
+ */
+export type Executor =
+	| NodePgDatabase<typeof schema>
+	| Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitLogs']);
 
-/**
- * A server-owned monotonic revision per user. Pull checkpoints ride on this rather than
- * on client clocks, so a device with a skewed clock can never make the cursor skip
- * documents that have not been replicated yet.
- */
-export function nextRev(userId: string): number {
-	const [row] = db
-		.insert(revs)
-		.values({ userId, value: 1 })
-		.onConflictDoUpdate({
-			target: revs.userId,
-			set: { value: sql`${revs.value} + 1` }
-		})
-		.returning({ value: revs.value })
-		.all();
-	return row.value;
+/** Schema lives in schema.ts and is applied by `drizzle-kit push`. Fail loudly if absent. */
+export async function ensureSchema() {
+	const { rows } = await pool.query(`SELECT to_regclass('public.docs') IS NOT NULL AS ok`);
+	if (!rows[0]?.ok) {
+		console.error(
+			`No schema in ${CONNECTION.replace(/:[^:@]*@/, ':***@')}. Run \`pnpm db:push\` first.`
+		);
+		process.exit(1);
+	}
 }
 
 export function docsSince(
@@ -51,7 +39,7 @@ export function docsSince(
 	cursor: number,
 	id: string,
 	limit: number
-): DocRow[] {
+): Promise<DocRow[]> {
 	return db
 		.select()
 		.from(docs)
@@ -63,16 +51,29 @@ export function docsSince(
 			)
 		)
 		.orderBy(asc(docs.rev), asc(docs.id))
-		.limit(limit)
-		.all();
+		.limit(limit);
 }
 
-export function getDoc(userId: string, collection: string, id: string): DocRow | undefined {
-	return db
+/**
+ * Reads the master row for a conflict check, locking it for the rest of the transaction.
+ * Without the lock two pooled connections can both pass the `assumedMasterState` gate on
+ * the same base state and the second write silently overwrites the first — a lost update
+ * the losing client never hears about. Under READ COMMITTED the blocked reader re-reads the
+ * committed row once the lock is released, so it correctly sees the conflict.
+ */
+export async function getDocForUpdate(
+	tx: Executor,
+	userId: string,
+	collection: string,
+	id: string
+): Promise<DocRow | undefined> {
+	const [row] = await tx
 		.select()
 		.from(docs)
 		.where(and(eq(docs.userId, userId), eq(docs.collection, collection), eq(docs.id, id)))
-		.get();
+		.limit(1)
+		.for('update');
+	return row;
 }
 
 /**
@@ -80,54 +81,66 @@ export function getDoc(userId: string, collection: string, id: string): DocRow |
  * `receivedAt` is stamped here from the server clock, giving one trustworthy timeline
  * for auditing and debugging regardless of how wrong any device's clock is.
  */
-export function writeDoc(userId: string, collection: string, doc: Record<string, unknown>) {
-	const row = {
-		userId,
-		collection,
-		id: String(doc.id),
-		rev: nextRev(userId),
-		deleted: Boolean(doc._deleted),
-		updatedAt: Number(doc.updatedAt ?? 0),
-		receivedAt: Date.now(),
-		data: { ...doc, _deleted: Boolean(doc._deleted) }
-	};
+export async function writeDoc(
+	tx: Executor,
+	userId: string,
+	collection: string,
+	doc: Record<string, unknown>
+) {
+	const deleted = Boolean(doc._deleted);
 
-	db.insert(docs)
-		.values(row)
+	await tx
+		.insert(docs)
+		.values({
+			userId,
+			collection,
+			id: String(doc.id),
+			rev: sql<number>`nextval('docs_rev')`,
+			deleted,
+			updatedAt: Number(doc.updatedAt ?? 0),
+			receivedAt: Date.now(),
+			data: { ...doc, _deleted: deleted }
+		})
 		.onConflictDoUpdate({
 			target: [docs.userId, docs.collection, docs.id],
 			set: {
-				rev: row.rev,
-				deleted: row.deleted,
-				updatedAt: row.updatedAt,
-				receivedAt: row.receivedAt,
-				data: row.data
+				rev: sql`excluded.rev`,
+				deleted,
+				updatedAt: Number(doc.updatedAt ?? 0),
+				receivedAt: Date.now(),
+				data: { ...doc, _deleted: deleted }
 			}
-		})
-		.run();
+		});
 }
 
 export function rowToDoc(row: DocRow): Record<string, unknown> {
 	return { ...row.data, _deleted: row.deleted };
 }
 
-export function transaction<T>(fn: () => T): T {
+export function transaction<T>(fn: (tx: Executor) => Promise<T>): Promise<T> {
 	return db.transaction(fn);
 }
 
-export function stats(userId: string) {
-	return db
+export async function stats(userId: string) {
+	const rows = await db
 		.select({
 			collection: docs.collection,
 			total: count(),
-			deleted: sum(docs.deleted).mapWith(Number),
+			// sum() over a boolean is invalid in Postgres, unlike SQLite's integer booleans.
+			deleted: sql<number>`count(*) filter (where ${docs.deleted})`.mapWith(Number),
 			lastReceivedAt: max(docs.receivedAt),
 			lastClientUpdatedAt: max(docs.updatedAt)
 		})
 		.from(docs)
 		.where(eq(docs.userId, userId))
-		.groupBy(docs.collection)
-		.all();
+		.groupBy(docs.collection);
+
+	// pg returns bigint as a string; coerce so callers can do arithmetic on these.
+	return rows.map((row) => ({
+		...row,
+		lastReceivedAt: Number(row.lastReceivedAt ?? 0),
+		lastClientUpdatedAt: Number(row.lastClientUpdatedAt ?? 0)
+	}));
 }
 
 /**
@@ -135,10 +148,15 @@ export function stats(userId: string) {
  * A large positive skew means some device's clock runs ahead; useful when diagnosing
  * "why did my edit look older than it should".
  */
-export function clockSkew(userId: string) {
+export async function clockSkew(userId: string) {
 	const now = Date.now();
-	return stats(userId).map((row) => ({
+	const rows = await stats(userId);
+	return rows.map((row) => ({
 		collection: row.collection,
 		skewMs: row.lastClientUpdatedAt ? row.lastClientUpdatedAt - now : 0
 	}));
+}
+
+export function closeDb() {
+	return pool.end();
 }

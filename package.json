@@ -10,6 +10,7 @@
 		"check": "pnpm --filter app check && pnpm --filter server check",
 		"test": "pnpm --filter app test",
 		"test:integration": "pnpm --filter server test && pnpm --filter app test:sync && pnpm --filter app test:browser",
-		"db:reset": "pnpm --filter server db:reset"
+		"db:reset": "pnpm --filter server db:reset",
+		"db:up": "pnpm --filter server db:up"
 	}
 }

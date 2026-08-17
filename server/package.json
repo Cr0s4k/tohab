@@ -4,24 +4,25 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
+		"db:up": "docker compose -f ../docker-compose.yml up -d --wait db",
 		"db:push": "drizzle-kit push --force",
-		"db:reset": "rm -f data/tohab.sqlite data/tohab.sqlite-shm data/tohab.sqlite-wal && drizzle-kit push --force",
+		"db:reset": "docker compose -f ../docker-compose.yml down -v db && pnpm db:up && drizzle-kit push --force",
 		"db:studio": "drizzle-kit studio",
-		"dev": "pnpm db:push && node --watch src/index.ts",
-		"start": "pnpm db:push && node src/index.ts",
+		"dev": "pnpm db:up && pnpm db:push && node --watch src/index.ts",
+		"start": "node src/index.ts",
 		"check": "tsc --noEmit",
-		"test": "node test/sync.test.ts"
+		"test": "node test/sync.test.ts && node test/concurrency.test.ts"
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.15.0",
-		"better-sqlite3": "^13.0.3",
-		"drizzle-orm": "^0.45.2",
-		"hono": "^4.7.0"
+		"drizzle-orm": "0.45.2",
+		"hono": "^4.7.0",
+		"pg": "^8.23.0"
 	},
 	"devDependencies": {
-		"@types/better-sqlite3": "^9.6.0",
 		"@types/node": "^26.2.0",
-		"drizzle-kit": "^0.31.10",
+		"@types/pg": "^8.21.0",
+		"drizzle-kit": "0.31.10",
 		"typescript": "^6.0.3"
 	}
 }
