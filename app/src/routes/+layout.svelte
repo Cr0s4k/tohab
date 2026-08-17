@@ -37,7 +37,7 @@
 	<meta name="description" content="Offline-first tasks and habits" />
 </svelte:head>
 
-<div class="mx-auto flex min-h-dvh w-full max-w-lg flex-col">
+<div class="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden">
 	{@render children()}
 	<TabBar />
 </div>

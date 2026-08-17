@@ -49,6 +49,13 @@
 		-webkit-tap-highlight-color: transparent;
 	}
 
+	main {
+		min-height: 0;
+		overflow-y: auto;
+		overscroll-behavior-y: contain;
+		-webkit-overflow-scrolling: touch;
+	}
+
 	button,
 	input,
 	textarea,

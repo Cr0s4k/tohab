@@ -20,7 +20,7 @@
 </script>
 
 <nav
-	class="hairline sticky bottom-0 z-30 grid grid-cols-3 border-t pb-safe backdrop-blur-xl"
+	class="hairline z-30 grid shrink-0 grid-cols-3 border-t pb-safe backdrop-blur-xl"
 	style="background: color-mix(in oklch, var(--surface-raised) 88%, transparent); view-transition-name: tabbar"
 >
 	{#each tabs as tab (tab.href)}
