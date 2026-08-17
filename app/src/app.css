@@ -1,0 +1,121 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme {
+	--font-sans:
+		-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+	--color-p1: oklch(0.62 0.21 25);
+	--color-p2: oklch(0.72 0.17 60);
+	--color-p3: oklch(0.62 0.15 250);
+	--color-p4: oklch(0.65 0.01 250);
+}
+
+@layer base {
+	:root {
+		--surface: oklch(0.985 0.002 250);
+		--surface-raised: oklch(1 0 0);
+		--surface-sunken: oklch(0.945 0.004 250);
+		--line: oklch(0.9 0.005 250);
+		--text: oklch(0.24 0.01 250);
+		--text-dim: oklch(0.55 0.012 250);
+		--accent: oklch(0.58 0.19 25);
+		--accent-text: oklch(0.99 0 0);
+		color-scheme: light;
+	}
+
+	[data-theme='dark'] {
+		--surface: oklch(0.17 0.008 250);
+		--surface-raised: oklch(0.225 0.01 250);
+		--surface-sunken: oklch(0.13 0.008 250);
+		--line: oklch(0.31 0.012 250);
+		--text: oklch(0.95 0.004 250);
+		--text-dim: oklch(0.66 0.014 250);
+		--accent: oklch(0.66 0.18 25);
+		--accent-text: oklch(0.15 0.01 250);
+		color-scheme: dark;
+	}
+
+	html {
+		background: var(--surface);
+		-webkit-text-size-adjust: 100%;
+	}
+
+	body {
+		background: var(--surface);
+		color: var(--text);
+		font-family: var(--font-sans);
+		overscroll-behavior-y: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	button,
+	input,
+	textarea,
+	select {
+		font: inherit;
+		color: inherit;
+	}
+
+	::selection {
+		background: var(--accent);
+		color: var(--accent-text);
+	}
+}
+
+@utility surface {
+	background: var(--surface);
+}
+@utility raised {
+	background: var(--surface-raised);
+}
+@utility sunken {
+	background: var(--surface-sunken);
+}
+@utility hairline {
+	border-color: var(--line);
+}
+@utility dim {
+	color: var(--text-dim);
+}
+@utility accent-bg {
+	background: var(--accent);
+	color: var(--accent-text);
+}
+@utility accent-fg {
+	color: var(--accent);
+}
+
+@utility tap {
+	transition:
+		transform 90ms ease,
+		opacity 90ms ease;
+	&:active {
+		transform: scale(0.96);
+		opacity: 0.75;
+	}
+}
+
+@utility pb-safe {
+	padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+@utility pt-safe {
+	padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+@keyframes sheet-in {
+	from {
+		transform: translateY(100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}

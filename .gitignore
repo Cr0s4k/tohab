@@ -1,0 +1,17 @@
+node_modules/
+.DS_Store
+
+# app
+app/.svelte-kit/
+app/build/
+app/.vite/
+
+# server
+server/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+.env
+.env.*
+!.env.example

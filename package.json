@@ -1,0 +1,14 @@
+{
+	"name": "tohab",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "pnpm --parallel --filter \"./*\" dev",
+		"dev:app": "pnpm --filter app dev",
+		"dev:server": "pnpm --filter server dev",
+		"build": "pnpm --filter app build",
+		"check": "pnpm --filter app check",
+		"test": "pnpm --filter app test",
+		"test:integration": "pnpm --filter server test && pnpm --filter app test:sync && pnpm --filter app test:browser"
+	}
+}
