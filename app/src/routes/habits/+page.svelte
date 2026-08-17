@@ -145,7 +145,7 @@
 		{#if rest.length}
 			<h2
 				transition:collapse
-				class="sunken dim px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
+				class="sunken dim sticky top-0 z-10 px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
 			>
 				Not scheduled today
 			</h2>

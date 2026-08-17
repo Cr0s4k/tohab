@@ -65,7 +65,7 @@
 
 <main class="flex-1">
 	<section>
-		<div class="flex items-center justify-between px-4 pt-3 pb-1.5">
+		<div class="sunken sticky top-0 z-10 flex items-center justify-between px-4 pt-3 pb-1.5">
 			<h2 class="dim text-[0.7rem] font-semibold tracking-wide uppercase">Projects</h2>
 			<button
 				type="button"

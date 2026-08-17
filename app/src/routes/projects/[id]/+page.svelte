@@ -69,7 +69,7 @@
 		{#each groups as group (group.key)}
 			{#if group.label}
 				<h2
-					class="sunken dim flex items-center justify-between px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
+					class="sunken dim sticky top-0 z-10 flex items-center justify-between px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
 				>
 					<span>{group.label}</span>
 					<span>{group.tasks.length}</span>
