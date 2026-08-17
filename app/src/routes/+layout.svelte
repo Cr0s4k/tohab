@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
+	import { page } from '$app/state';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import UndoToast from '$lib/components/UndoToast.svelte';
 	import SettingsSheet from '$lib/components/SettingsSheet.svelte';
@@ -44,5 +45,7 @@
 	{@render children()}
 	<SettingsSheet open={settingsSheet.open} onClose={() => (settingsSheet.open = false)} />
 	<UndoToast />
-	<TabBar />
+	{#if !page.url.pathname.startsWith('/habits')}
+		<TabBar />
+	{/if}
 </div>

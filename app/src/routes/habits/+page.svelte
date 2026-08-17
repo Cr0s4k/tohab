@@ -17,6 +17,7 @@
 	import { settings } from '$lib/settings.svelte';
 	import HabitRow from '$lib/components/HabitRow.svelte';
 	import HabitEditor from '$lib/components/HabitEditor.svelte';
+	import Fab from '$lib/components/Fab.svelte';
 	import SyncBadge from '$lib/components/SyncBadge.svelte';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
@@ -64,16 +65,6 @@
 		<div class="flex items-center gap-2">
 			<SyncBadge />
 			<SettingsButton />
-			<button
-				type="button"
-				aria-label="New habit"
-				onclick={() => (creating = true)}
-				class="tap accent-bg grid size-8 place-items-center rounded-full"
-			>
-				<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
-					<path d="M12 5v14M5 12h14" />
-				</svg>
-			</button>
 		</div>
 	</div>
 
@@ -117,17 +108,10 @@
 	</div>
 </header>
 
-<main class="flex-1">
+<main class="flex-1 pb-28">
 	{#if !habits.value.length}
 		<div class="px-8 py-14 text-center">
 			<p class="dim text-sm">No habits yet.</p>
-			<button
-				type="button"
-				onclick={() => (creating = true)}
-				class="tap accent-bg mt-4 rounded-2xl px-5 py-2.5 text-sm font-semibold"
-			>
-				Create your first habit
-			</button>
 		</div>
 	{:else}
 		{#each due as habit (habit.id)}
@@ -164,5 +148,7 @@
 		{/if}
 	{/if}
 </main>
+
+<Fab label="New habit" withTabBar={false} onPress={() => (creating = true)} />
 
 <HabitEditor open={creating} nextColor={habits.value.length} onClose={() => (creating = false)} />

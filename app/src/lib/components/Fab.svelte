@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { haptic } from '$lib/haptics';
 
-	let { label, onPress }: { label: string; onPress: () => void } = $props();
+	let {
+		label,
+		onPress,
+		withTabBar = true
+	}: { label: string; onPress: () => void; withTabBar?: boolean } = $props();
 </script>
 
 <!-- Fixed to the viewport but constrained to the app column, so it stays beside the list on
@@ -9,7 +13,9 @@
 <div class="pointer-events-none fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-lg">
 	<div
 		class="flex justify-end px-4"
-		style="padding-bottom: calc(env(safe-area-inset-bottom) + 4.75rem)"
+		style:padding-bottom={withTabBar
+			? 'calc(env(safe-area-inset-bottom) + 4.75rem)'
+			: 'calc(env(safe-area-inset-bottom) + 1.25rem)'}
 	>
 		<button
 			type="button"
