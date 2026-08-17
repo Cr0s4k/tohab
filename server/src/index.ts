@@ -4,6 +4,7 @@ import { cors } from 'hono/cors';
 import { streamSSE } from 'hono/streaming';
 import {
 	COLLECTIONS,
+	clockSkew,
 	docsSince,
 	getDoc,
 	rowToDoc,
@@ -135,7 +136,13 @@ sync.get('/events', (c) => {
 
 sync.get('/status', (c) => {
 	const userId = userOf(c.req.header('x-user-id'), c.req.query('userId'));
-	return c.json({ ok: true, userId, collections: stats(userId) });
+	return c.json({
+		ok: true,
+		userId,
+		serverTime: Date.now(),
+		collections: stats(userId),
+		clockSkew: clockSkew(userId)
+	});
 });
 
 app.route('/sync', sync);

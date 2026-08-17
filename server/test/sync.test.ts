@@ -127,5 +127,29 @@ const other = await fetch(`${BASE}/pull?collection=tasks&cursor=0&id=&limit=100`
 });
 check('user isolation', (await other.json()).documents, []);
 
+// 12. The server stamps its own received_at, independent of client clocks.
+const beforeWrite = Date.now();
+await push([{ newDocumentState: task('stamp1', 1) }]); // client claims updatedAt = 1
+const status = await (await fetch(`${BASE}/status`, { headers })).json();
+const tasksRow = status.collections.find((r: any) => r.collection === 'tasks');
+check('status reports a server received_at', tasksRow.lastReceivedAt >= beforeWrite, true);
+check(
+	'received_at ignores the absurd client timestamp',
+	tasksRow.lastReceivedAt > 1_600_000_000_000,
+	true
+);
+check('status reports server time', typeof status.serverTime, 'number');
+
+// 13. A client clock stuck in 1970 is reported as skew rather than silently trusted.
+const skew = status.clockSkew.find((r: any) => r.collection === 'tasks');
+check('clock skew is surfaced', skew.skewMs < 0, true);
+
+// 14. The client's own updatedAt still round-trips untouched as document data.
+check(
+	'client updatedAt is preserved as data',
+	(await pull()).documents.find((d) => d.id === 'stamp1').updatedAt,
+	1
+);
+
 console.log(failures ? `\n${failures} failing` : '\nall passing');
 process.exit(failures ? 1 : 0);

@@ -80,7 +80,27 @@ Two decisions worth knowing:
 **Checkpoints ride on a server-owned revision counter, not timestamps.** Every write gets
 `rev = max(rev) + 1` for that user, and pull cursors page through `(rev, id)`. A device
 with a skewed clock therefore can never make the cursor jump past documents it hasn't
-received. Document `updatedAt` values still travel, but only as data.
+received.
+
+**Timestamps are kept in two places, deliberately.** Each document carries `updatedAt` from
+the writing device's clock; it replicates as data and is what conflict detection compares.
+The server additionally stamps `received_at` from its own clock on every write, which gives
+one trustworthy timeline no matter how wrong a device's clock is. `GET /sync/status` returns
+both per collection, plus the drift between them:
+
+```json
+{
+  "serverTime": 1700000000000,
+  "collections": [
+    { "collection": "tasks", "total": 2, "deleted": 0,
+      "lastReceivedAt": 1699999999991, "lastClientUpdatedAt": 555 }
+  ],
+  "clockSkew": [{ "collection": "tasks", "skewMs": -1699999999445 }]
+}
+```
+
+`received_at` is server-side metadata and is not replicated to clients, so it never has to
+satisfy an RxDB schema.
 
 **Conflicts are last-write-wins, gated on `assumedMasterState`.** A push is rejected if the
 document exists on the server and the client's assumed `updatedAt` doesn't match the

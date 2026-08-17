@@ -19,6 +19,7 @@ db.exec(`
 		rev         INTEGER NOT NULL,
 		deleted     INTEGER NOT NULL DEFAULT 0,
 		updated_at  INTEGER NOT NULL,
+		received_at INTEGER NOT NULL DEFAULT 0,
 		data        TEXT    NOT NULL,
 		PRIMARY KEY (user_id, collection, id)
 	);
@@ -30,6 +31,17 @@ db.exec(`
 		value   INTEGER NOT NULL
 	);
 `);
+
+// CREATE TABLE above is a no-op on an existing database, so columns added later must be
+// migrated in explicitly — and any index over them created only once they exist.
+const columns = (db.prepare(`PRAGMA table_info(docs)`).all() as { name: string }[]).map(
+	(c) => c.name
+);
+if (!columns.includes('received_at')) {
+	db.exec(`ALTER TABLE docs ADD COLUMN received_at INTEGER NOT NULL DEFAULT 0`);
+}
+
+db.exec(`CREATE INDEX IF NOT EXISTS docs_received ON docs (user_id, received_at)`);
 
 export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitLogs']);
 
@@ -54,11 +66,12 @@ export type DocRow = {
 	rev: number;
 	deleted: number;
 	updated_at: number;
+	received_at: number;
 	data: string;
 };
 
 const selectSince = db.prepare(`
-	SELECT id, rev, deleted, updated_at, data FROM docs
+	SELECT id, rev, deleted, updated_at, received_at, data FROM docs
 	WHERE user_id = ? AND collection = ? AND (rev > ? OR (rev = ? AND id > ?))
 	ORDER BY rev ASC, id ASC
 	LIMIT ?
@@ -75,7 +88,7 @@ export function docsSince(
 }
 
 const selectOne = db.prepare(
-	`SELECT id, rev, deleted, updated_at, data FROM docs WHERE user_id = ? AND collection = ? AND id = ?`
+	`SELECT id, rev, deleted, updated_at, received_at, data FROM docs WHERE user_id = ? AND collection = ? AND id = ?`
 );
 
 export function getDoc(userId: string, collection: string, id: string): DocRow | undefined {
@@ -83,15 +96,21 @@ export function getDoc(userId: string, collection: string, id: string): DocRow |
 }
 
 const upsert = db.prepare(`
-	INSERT INTO docs (user_id, collection, id, rev, deleted, updated_at, data)
-	VALUES (?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO docs (user_id, collection, id, rev, deleted, updated_at, received_at, data)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT (user_id, collection, id) DO UPDATE SET
 		rev = excluded.rev,
 		deleted = excluded.deleted,
 		updated_at = excluded.updated_at,
+		received_at = excluded.received_at,
 		data = excluded.data
 `);
 
+/**
+ * `updated_at` is the client's own clock and travels with the document as data.
+ * `received_at` is stamped here from the server clock, giving one trustworthy timeline
+ * for auditing and debugging regardless of how wrong any device's clock is.
+ */
 export function writeDoc(userId: string, collection: string, doc: Record<string, unknown>) {
 	const id = String(doc.id);
 	const deleted = doc._deleted ? 1 : 0;
@@ -103,6 +122,7 @@ export function writeDoc(userId: string, collection: string, doc: Record<string,
 		nextRev(userId),
 		deleted,
 		updatedAt,
+		Date.now(),
 		JSON.stringify({ ...doc, _deleted: Boolean(doc._deleted) })
 	);
 }
@@ -124,11 +144,33 @@ export function transaction<T>(fn: () => T): T {
 }
 
 export function stats(userId: string) {
-	const rows = db
+	return db
 		.prepare(
-			`SELECT collection, COUNT(*) AS total, SUM(deleted) AS deleted
+			`SELECT collection,
+			        COUNT(*)            AS total,
+			        SUM(deleted)        AS deleted,
+			        MAX(received_at)    AS lastReceivedAt,
+			        MAX(updated_at)     AS lastClientUpdatedAt
 			 FROM docs WHERE user_id = ? GROUP BY collection`
 		)
-		.all(userId) as { collection: string; total: number; deleted: number }[];
-	return rows;
+		.all(userId) as {
+		collection: string;
+		total: number;
+		deleted: number;
+		lastReceivedAt: number;
+		lastClientUpdatedAt: number;
+	}[];
+}
+
+/**
+ * How far each collection's newest client timestamp drifts from the server's own clock.
+ * A large positive skew means some device's clock runs ahead; useful when diagnosing
+ * "why did my edit look older than it should".
+ */
+export function clockSkew(userId: string) {
+	const now = Date.now();
+	return stats(userId).map((row) => ({
+		collection: row.collection,
+		skewMs: row.lastClientUpdatedAt ? row.lastClientUpdatedAt - now : 0
+	}));
 }
