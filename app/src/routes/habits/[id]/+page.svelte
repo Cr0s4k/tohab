@@ -39,7 +39,10 @@
 			current: currentStreak(habit, logs, settings.startOfWeek, todayKey),
 			best: bestStreak(habit, logs, settings.startOfWeek, todayKey),
 			month: Math.round(completionRate(habit, logs, 30, todayKey) * 100),
-			total: logBox.value.filter((l) => l.value >= habit.target).length
+			total:
+				habit.goal === 'break'
+					? logBox.value.reduce((n, l) => n + l.value, 0)
+					: logBox.value.filter((l) => l.value >= habit.target).length
 		};
 	});
 
@@ -83,9 +86,9 @@
 		<section class="raised hairline mb-4 flex items-center gap-4 rounded-2xl border p-4">
 			<button
 				type="button"
-				aria-label="Log today"
+				aria-label={habit.goal === 'break' ? 'Log slip today' : 'Log today'}
 				onclick={() => {
-					haptic('success');
+					haptic(habit.goal === 'break' ? 'warn' : 'success');
 					tapLog(habit, todayKey, valueOn(logs, todayKey));
 				}}
 				class="tap"
@@ -95,12 +98,17 @@
 					target={habit.target}
 					color={habit.color}
 					size={64}
-					label={habit.kind === 'quantity' ? `${valueOn(logs, todayKey)}/${habit.target}` : ''}
+					label={habit.goal === 'break' || habit.kind === 'quantity'
+						? `${valueOn(logs, todayKey)}/${habit.target}`
+						: ''}
+					invert={habit.goal === 'break'}
 				/>
 			</button>
 			<div class="min-w-0 flex-1">
 				<p class="text-sm font-semibold">Today</p>
-				<p class="dim text-xs">{scheduleLabel}</p>
+				<p class="dim text-xs">
+					{habit.goal === 'break' ? 'Break a bad habit' : 'Build a good habit'} · {scheduleLabel}
+				</p>
 				{#if habit.kind === 'quantity'}
 					<div class="mt-2 flex items-center gap-2">
 						<button
@@ -112,7 +120,11 @@
 							−
 						</button>
 						<span class="text-sm tabular-nums">
-							{valueOn(logs, todayKey)}{habit.unit ? ` ${habit.unit}` : ''}
+							{valueOn(logs, todayKey)}{habit.goal === 'break'
+								? `/${habit.target}`
+								: habit.unit
+									? ` ${habit.unit}`
+									: ''}
 						</span>
 						<button
 							type="button"
@@ -129,7 +141,16 @@
 
 		{#if stats}
 			<section class="mb-5 grid grid-cols-4 gap-2">
-				{#each [{ label: 'Streak', value: stats.current, sub: streakUnit }, { label: 'Best', value: stats.best, sub: streakUnit }, { label: '30 days', value: `${stats.month}%`, sub: 'done' }, { label: 'Total', value: stats.total, sub: 'days' }] as stat (stat.label)}
+				{#each [
+					{ label: 'Streak', value: stats.current, sub: streakUnit },
+					{ label: 'Best', value: stats.best, sub: streakUnit },
+					{ label: '30 days', value: `${stats.month}%`, sub: 'done' },
+					{
+						label: habit.goal === 'break' ? 'Slips' : 'Total',
+						value: stats.total,
+						sub: habit.goal === 'break' ? 'logged' : 'days'
+					}
+				] as stat (stat.label)}
 					<div class="raised hairline rounded-2xl border px-2 py-3 text-center">
 						<p class="text-lg font-bold tabular-nums" style="color: {habit.color}">{stat.value}</p>
 						<p class="dim text-[0.62rem] leading-tight">{stat.label}</p>
@@ -159,8 +180,16 @@
 					<div class="hairline flex items-center justify-between border-b px-4 py-2.5 last:border-b-0">
 						<span class="text-sm">{humanDay(log.date)}</span>
 						<span class="dim text-sm tabular-nums">
-							{log.value >= habit.target ? '✓' : ''}
-							{habit.kind === 'quantity' ? `${log.value}/${habit.target}` : ''}
+							{habit.goal === 'break'
+								? log.value <= habit.target
+									? '✓'
+									: ''
+								: log.value >= habit.target
+									? '✓'
+									: ''}
+							{habit.goal === 'break' || habit.kind === 'quantity'
+								? `${log.value}/${habit.target}`
+								: ''}
 						</span>
 					</div>
 				{:else}

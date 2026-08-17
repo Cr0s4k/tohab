@@ -1,5 +1,5 @@
 import { getDb, type Db } from './db/index.ts';
-import type { Habit, HabitLog, HabitKind, ScheduleKind } from './db/schemas.ts';
+import type { Habit, HabitGoal, HabitLog, HabitKind, ScheduleKind } from './db/schemas.ts';
 import { markLocalWrite } from './db/replication.svelte.ts';
 import { HABIT_COLORS, logId, type LogMap } from './streaks.ts';
 import type { DayKey } from './dates.ts';
@@ -38,6 +38,7 @@ export type HabitInput = {
 	name: string;
 	emoji: string;
 	color: string;
+	goal: HabitGoal;
 	kind: HabitKind;
 	target: number;
 	unit: string;
@@ -58,7 +59,16 @@ export async function createHabit(input: HabitInput) {
 		...input,
 		name: input.name.trim(),
 		color: input.color || HABIT_COLORS[count % HABIT_COLORS.length],
-		target: input.kind === 'binary' ? 1 : Math.max(1, input.target)
+		goal: input.goal ?? 'build',
+		kind: input.goal === 'break' ? 'quantity' : input.kind,
+		target:
+			input.goal === 'break'
+				? Math.max(0, Math.min(10000, Math.round(input.target)))
+				: input.kind === 'binary'
+					? 1
+					: Math.max(1, Math.min(10000, Math.round(input.target))),
+		unit: input.goal === 'break' ? '' : input.unit,
+		scheduleKind: input.goal === 'break' ? 'daily' : input.scheduleKind
 	};
 	await db.habits.insert(doc);
 	markLocalWrite();
@@ -69,7 +79,13 @@ export async function updateHabit(id: string, patch: Partial<Habit>) {
 	const db = await getDb();
 	const doc = await db.habits.findOne(id).exec();
 	if (!doc) return;
-	await doc.patch({ ...patch, updatedAt: now() });
+	const next = { ...patch, updatedAt: now() };
+	if (next.goal === 'break') {
+		next.kind = 'quantity';
+		next.unit = '';
+		next.scheduleKind = 'daily';
+	}
+	await doc.patch(next);
 	markLocalWrite();
 }
 
@@ -98,8 +114,12 @@ export async function setLog(habit: Habit, date: DayKey, value: number) {
 	markLocalWrite();
 }
 
-/** One tap: binary habits toggle, quantity habits increment and wrap once past target. */
+/**
+ * One tap for build habits: binary habits toggle, quantity habits increment and wrap once
+ * past target. Break habits always increment: each tap records one slip.
+ */
 export async function tapLog(habit: Habit, date: DayKey, current: number) {
+	if (habit.goal === 'break') return setLog(habit, date, current + 1);
 	if (habit.kind === 'binary') return setLog(habit, date, current >= habit.target ? 0 : habit.target);
 	return setLog(habit, date, current >= habit.target ? 0 : current + 1);
 }

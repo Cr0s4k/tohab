@@ -57,7 +57,9 @@
 					<button
 						type="button"
 						disabled={future}
-						aria-label="{humanDay(day)}: {valueOn(logs, day)} of {habit.target}"
+						aria-label={habit.goal === 'break'
+							? `${humanDay(day)}: ${valueOn(logs, day)} slips, limit ${habit.target}`
+							: `${humanDay(day)}: ${valueOn(logs, day)} of ${habit.target}`}
 						onclick={() => {
 							haptic('tap');
 							onToggleDay(day);

@@ -43,7 +43,8 @@ export function valueOn(logs: LogMap, day: DayKey): number {
 }
 
 export function isComplete(habit: Habit, logs: LogMap, day: DayKey): boolean {
-	return valueOn(logs, day) >= habit.target;
+	const value = valueOn(logs, day);
+	return habit.goal === 'break' ? value <= habit.target : value >= habit.target;
 }
 
 /**
@@ -59,7 +60,7 @@ function floorDay(habit: Habit, logs: LogMap): DayKey {
 function weeklyCompletions(habit: Habit, logs: LogMap, weekStart: DayKey): number {
 	let count = 0;
 	for (let i = 0; i < 7; i++) {
-		if (valueOn(logs, shiftKey(weekStart, i)) >= habit.target) count++;
+		if (isComplete(habit, logs, shiftKey(weekStart, i))) count++;
 	}
 	return count;
 }

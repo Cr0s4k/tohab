@@ -2,6 +2,7 @@ import {
 	currentStreak,
 	bestStreak,
 	completionRate,
+	isComplete,
 	isDue,
 	type LogMap
 } from '../src/lib/streaks.ts';
@@ -15,6 +16,7 @@ function habit(over: Partial<Habit> = {}): Habit {
 		name: 'h',
 		emoji: '💪',
 		color: 'c',
+		goal: 'build',
 		kind: 'binary',
 		target: 1,
 		unit: '',
@@ -88,6 +90,22 @@ const qty = habit({ kind: 'quantity', target: 8, unit: 'glasses' });
 eq('quantity: partial is not complete', currentStreak(qty, logs([TODAY], 5), 1, TODAY), 0);
 eq('quantity: target met', currentStreak(qty, logs([TODAY], 8), 1, TODAY), 1);
 eq('quantity: over target counts', currentStreak(qty, logs([TODAY], 12), 1, TODAY), 1);
+
+// --- break habits: success is staying at or below the daily limit ---
+const breakHabit = habit({ goal: 'break', kind: 'quantity', target: 2 });
+eq('break: clean day is complete', isComplete(breakHabit, logs([]), TODAY), true);
+eq('break: at the limit is complete', isComplete(breakHabit, logs([TODAY], 2), TODAY), true);
+eq('break: over the limit breaks', isComplete(breakHabit, logs([TODAY], 3), TODAY), false);
+eq(
+	'break: yesterday slip leaves only today',
+	currentStreak(breakHabit, logs(['2026-08-18'], 3), 1, TODAY),
+	1
+);
+eq(
+	'break: clean yesterday and today continues',
+	currentStreak(breakHabit, logs([]), 1, TODAY),
+	80
+);
 
 // --- weekly (3x per week), week starts Monday ---
 const wk = habit({ scheduleKind: 'weekly', timesPerWeek: 3 });

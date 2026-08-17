@@ -17,8 +17,12 @@
 		onTap: () => void;
 	} = $props();
 
-	let complete = $derived(value >= habit.target);
-	let ringLabel = $derived(habit.kind === 'quantity' ? `${value}/${habit.target}` : '');
+	let complete = $derived(
+		habit.goal === 'break' ? value <= habit.target : value >= habit.target
+	);
+	let ringLabel = $derived(
+		habit.goal === 'break' || habit.kind === 'quantity' ? `${value}/${habit.target}` : ''
+	);
 </script>
 
 <div class="raised hairline flex items-center gap-3 border-b px-4 py-3" class:opacity-55={!due}>
@@ -36,6 +40,8 @@
 					Rest day
 				{:else if streak > 0}
 					🔥 {streak} {habit.scheduleKind === 'weekly' ? (streak === 1 ? 'week' : 'weeks') : (streak === 1 ? 'day' : 'days')}
+				{:else if habit.goal === 'break'}
+					{value === 0 ? 'Clean today' : `${value} ${value === 1 ? 'slip' : 'slips'} today`}
 				{:else if habit.kind === 'quantity'}
 					{value} of {habit.target}{habit.unit ? ` ${habit.unit}` : ''}
 				{:else}
@@ -47,13 +53,23 @@
 
 	<button
 		type="button"
-		aria-label={complete ? `Undo ${habit.name}` : `Log ${habit.name}`}
+		aria-label={habit.goal === 'break'
+			? `Log slip for ${habit.name}`
+			: complete
+				? `Undo ${habit.name}`
+				: `Log ${habit.name}`}
 		onclick={() => {
 			haptic(complete ? 'tap' : 'success');
 			onTap();
 		}}
 		class="tap"
 	>
-		<ProgressRing value={value} target={habit.target} color={habit.color} label={ringLabel} />
+		<ProgressRing
+			value={value}
+			target={habit.target}
+			color={habit.color}
+			label={ringLabel}
+			invert={habit.goal === 'break'}
+		/>
 	</button>
 </div>

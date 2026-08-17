@@ -122,6 +122,7 @@ await deviceA.habits.insert({
 	name: 'Drink water',
 	emoji: '💧',
 	color: 'oklch(0.65 0.16 250)',
+	goal: 'build',
 	kind: 'quantity',
 	target: 8,
 	unit: 'glasses',

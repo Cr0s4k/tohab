@@ -4,14 +4,26 @@
 		target = 1,
 		color = 'currentColor',
 		size = 44,
-		label = ''
-	}: { value?: number; target?: number; color?: string; size?: number; label?: string } = $props();
+		label = '',
+		invert = false
+	}: {
+		value?: number;
+		target?: number;
+		color?: string;
+		size?: number;
+		label?: string;
+		invert?: boolean;
+	} = $props();
 
 	const stroke = 3.5;
 	let radius = $derived((size - stroke) / 2);
 	let circumference = $derived(2 * Math.PI * radius);
-	let ratio = $derived(Math.min(1, target > 0 ? value / target : 0));
-	let complete = $derived(ratio >= 1);
+	let ratio = $derived(
+		invert
+			? Math.min(1, Math.max(0, target > 0 ? (target - value) / target : (value <= target ? 1 : 0)))
+			: Math.min(1, target > 0 ? value / target : 0)
+	);
+	let complete = $derived(invert ? value <= target : ratio >= 1);
 </script>
 
 <div class="relative grid shrink-0 place-items-center" style="width: {size}px; height: {size}px">

@@ -24,12 +24,14 @@ export type Project = {
 
 export type HabitKind = 'binary' | 'quantity';
 export type ScheduleKind = 'daily' | 'weekdays' | 'weekly';
+export type HabitGoal = 'build' | 'break';
 
 export type Habit = {
 	id: string;
 	name: string;
 	emoji: string;
 	color: string;
+	goal: HabitGoal;
 	kind: HabitKind;
 	target: number;
 	unit: string;
@@ -113,8 +115,9 @@ export const habitSchema: RxJsonSchema<Habit> = {
 		name: { type: 'string' },
 		emoji: { type: 'string', maxLength: 8 },
 		color: { type: 'string', maxLength: 24 },
+		goal: { type: 'string', enum: ['build', 'break'], maxLength: 5 },
 		kind: { type: 'string', enum: ['binary', 'quantity'], maxLength: 10 },
-		target: { type: 'number', minimum: 1, maximum: 10000, multipleOf: 1 },
+		target: { type: 'number', minimum: 0, maximum: 10000, multipleOf: 1 },
 		unit: { type: 'string', maxLength: 24 },
 		scheduleKind: { type: 'string', enum: ['daily', 'weekdays', 'weekly'], maxLength: 10 },
 		weekdays: { type: 'array', items: { type: 'number', minimum: 0, maximum: 6 } },
