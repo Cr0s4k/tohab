@@ -28,6 +28,7 @@
 	let axis: 'none' | 'x' | 'y' = 'none';
 
 	let overdue = $derived(!task.done && !!task.due && daysFromToday(task.due) < 0);
+	let hasMeta = $derived(Boolean(task.due || project || task.notes));
 
 	function down(e: PointerEvent) {
 		if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -88,8 +89,12 @@
 
 	<div
 		role="group"
-		class="raised hairline relative flex items-start gap-3 border-b px-4 py-3"
-		style="transform: translateX({dx}px); transition: {dragging ? 'none' : 'transform 200ms cubic-bezier(0.22,1,0.36,1)'}; touch-action: pan-y"
+		class="raised hairline relative flex gap-3 border-b px-4 py-3 hover:sunken active:sunken"
+		class:items-start={hasMeta}
+		class:items-center={!hasMeta}
+		style="transform: translateX({dx}px); transition: {dragging
+			? 'none'
+			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: pan-y"
 		onpointerdown={down}
 		onpointermove={move}
 		onpointerup={up}
@@ -102,9 +107,9 @@
 				haptic('success');
 				onToggle();
 			}}
-			class="tap mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border-2 {priorityClass(
-				task.priority
-			)}"
+			class="tap grid size-6 shrink-0 place-items-center rounded-full border-2 {hasMeta
+				? 'mt-0.5'
+				: ''} {priorityClass(task.priority)}"
 			style="border-color: currentColor; background: {task.done
 				? 'currentColor'
 				: 'transparent'}; transition: background 160ms ease"
