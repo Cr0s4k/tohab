@@ -26,6 +26,30 @@ pnpm build        # static bundle in app/build/
 pnpm --filter server start
 ```
 
+### Deploying with Docker Compose
+
+The whole stack — Postgres, the sync server, and nginx serving the built PWA — comes up from
+the root `docker-compose.yml`:
+
+```bash
+cp .env.example .env   # set at least POSTGRES_PASSWORD, optionally WEB_PORT
+docker compose up -d --build
+```
+
+The app is then on `http://<host>:8080` and needs no sync configuration: nginx serves the
+static bundle and proxies `/sync` to the server container, so the default relative
+`/sync` server URL works as-is. Buffering is off on that location so the SSE change stream
+passes through untouched.
+
+`Dockerfile` is multi-stage with two targets: `web` (nginx + `app/build/`) and `server`
+(Node, which runs `drizzle-kit push` against Postgres before starting so a fresh volume
+gets its schema). Compose builds both; the `server` container is never published directly,
+only reached through `web`.
+
+Postgres keeps its data in the `tohab-pgdata` volume. The `db` port is published for local
+`drizzle-kit studio` work — drop the `ports` block on a shared host, and remember the sync
+server still has no authentication, so keep the published port behind a VPN or tunnel.
+
 ### Database
 
 Postgres 18, defined in `docker-compose.yml` for local work. Tables live in
@@ -38,6 +62,10 @@ pnpm --filter server db:push     # apply schema.ts
 pnpm db:reset                    # destroy the volume and rebuild from schema.ts
 pnpm --filter server db:studio   # browse the data
 ```
+
+Compose reads the credentials from `.env` (defaulting to `tohab`/`tohab`); `pnpm dev` does
+not, so if you change `POSTGRES_PASSWORD` also export a matching `DATABASE_URL` for local
+work.
 
 If the schema ever needs to survive real data, swap `push` for `drizzle-kit generate` plus
 `migrate()`. The server refuses to start against a database with no schema rather than

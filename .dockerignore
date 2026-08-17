@@ -1,0 +1,14 @@
+.git
+.gitignore
+node_modules
+**/node_modules
+app/build
+app/.svelte-kit
+app/.vite
+server/drizzle
+.env
+.env.*
+!.env.example
+README.md
+Dockerfile
+.dockerignore
