@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
 	import TabBar from '$lib/components/TabBar.svelte';
+	import UndoToast from '$lib/components/UndoToast.svelte';
 	import { applyTheme, settings } from '$lib/settings.svelte';
 	import { startSync } from '$lib/db/replication.svelte';
 	import { motionOk } from '$lib/motion';
@@ -37,7 +38,8 @@
 	<meta name="description" content="Offline-first tasks and habits" />
 </svelte:head>
 
-<div class="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden">
+<div class="relative mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden">
 	{@render children()}
+	<UndoToast />
 	<TabBar />
 </div>

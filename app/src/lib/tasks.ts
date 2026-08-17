@@ -3,6 +3,7 @@ import type { Project, Task } from './db/schemas.ts';
 import { markLocalWrite } from './db/replication.svelte.ts';
 import { today } from './dates.ts';
 import { now, uid } from './ids.ts';
+import { queueUndo } from './undo.svelte.ts';
 
 export type View = 'inbox' | 'today' | 'upcoming' | 'all';
 
@@ -128,9 +129,26 @@ export async function toggleTask(id: string) {
 	const db = await getDb();
 	const doc = await db.tasks.findOne(id).exec();
 	if (!doc) return;
-	const done = !doc.done;
+
+	const before = doc.toMutableJSON();
+	const done = !before.done;
 	await doc.patch({ done, completedAt: done ? now() : 0, updatedAt: now() });
 	markLocalWrite();
+
+	queueUndo({
+		label: done ? 'Task completed' : 'Task reopened',
+		restore: async () => {
+			const current = await db.tasks.findOne(id).exec();
+			if (current) {
+				await current.patch({
+					done: before.done,
+					completedAt: before.completedAt,
+					updatedAt: now()
+				});
+				markLocalWrite();
+			}
+		}
+	});
 }
 
 export async function updateTask(id: string, patch: Partial<Task>) {
@@ -144,6 +162,17 @@ export async function updateTask(id: string, patch: Partial<Task>) {
 export async function deleteTask(id: string) {
 	const db = await getDb();
 	const doc = await db.tasks.findOne(id).exec();
-	await doc?.remove();
+	if (!doc) return;
+
+	const snapshot = doc.toMutableJSON();
+	await doc.remove();
 	markLocalWrite();
+
+	queueUndo({
+		label: 'Task deleted',
+		restore: async () => {
+			await db.tasks.upsert({ ...snapshot, updatedAt: now() });
+			markLocalWrite();
+		}
+	});
 }
