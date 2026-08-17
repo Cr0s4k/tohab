@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import type { Task } from '$lib/db/schemas';
@@ -15,14 +17,12 @@
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg, veil } from '$lib/motion';
 
-	const VIEWS: { id: View; label: string }[] = [
-		{ id: 'inbox', label: 'Inbox' },
-		{ id: 'today', label: 'Today' },
-		{ id: 'upcoming', label: 'Upcoming' },
-		{ id: 'all', label: 'All' }
-	];
+	function viewFromUrl(): View {
+		const value = page.url.searchParams.get('view');
+		return value === 'inbox' || value === 'today' || value === 'upcoming' ? value : 'today';
+	}
 
-	let view = $state<View>('today');
+	let view = $derived(viewFromUrl());
 	let editing = $state<Task | null>(null);
 	let composing = $state(false);
 	let tuning = $state(false);
@@ -55,8 +55,26 @@
 
 <header class="hairline raised z-20 shrink-0 border-b pt-safe">
 	<div class="flex items-center justify-between px-4 pt-2 pb-2">
-		<div>
-			<h1 class="text-2xl font-bold tracking-tight">Tasks</h1>
+		<div class="flex items-center gap-2">
+			<button
+				type="button"
+				onclick={() => goto(`/habits?from=${view}`)}
+				class="tap flex items-center gap-1.5 text-left"
+				aria-label="Switch to Habits"
+			>
+				<span class="text-2xl font-bold tracking-tight">Tasks</span>
+				<svg
+					viewBox="0 0 24 24"
+					class="dim size-4"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4-4m-4 4l4 4" />
+				</svg>
+			</button>
 			{#if overdueCount > 0}
 				<p class="text-xs font-medium" style="color: oklch(0.62 0.2 25)">
 					{overdueCount} overdue
@@ -81,30 +99,15 @@
 				</svg>
 			</button>
 			<a
-				href="/projects"
-				aria-label="Projects"
+				href="/settings"
+				aria-label="Settings"
 				class="tap sunken hairline grid size-8 place-items-center rounded-full border"
 			>
-				<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-					<path d="M3 6h18M3 12h18M3 18h18" />
+				<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 01-2.8 2.8l-.1-.1a1.7 1.7 0 00-2.9 1.2v.2a2 2 0 01-4 0v-.1a1.7 1.7 0 00-2.9-1.3l-.1.1a2 2 0 01-2.8-2.8l.1-.1A1.7 1.7 0 003.6 14H3.4a2 2 0 010-4h.2a1.7 1.7 0 001.2-2.9l-.1-.1a2 2 0 012.8-2.8l.1.1A1.7 1.7 0 0010 3.6V3.4a2 2 0 014 0v.2a1.7 1.7 0 002.9 1.2l.1-.1a2 2 0 012.8 2.8l-.1.1A1.7 1.7 0 0021 10h.2a2 2 0 010 4H21a1.7 1.7 0 00-1.6 1z" />
 				</svg>
 			</a>
 		</div>
-	</div>
-
-	<div class="flex gap-1.5 overflow-x-auto px-4 pb-2.5">
-		{#each VIEWS as v (v.id)}
-			<button
-				type="button"
-				onclick={() => (view = v.id)}
-				class="tap shrink-0 rounded-full px-3 py-1.5 text-[0.8rem] font-medium"
-				class:accent-bg={view === v.id}
-				class:sunken={view !== v.id}
-				class:dim={view !== v.id}
-			>
-				{v.label}
-			</button>
-		{/each}
 	</div>
 </header>
 

@@ -20,15 +20,11 @@
 		resync();
 	}}
 	title={sync.message || current.label}
-	class="tap sunken hairline flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.7rem] font-medium"
+	class="tap sunken hairline grid size-8 place-items-center rounded-full border"
 >
 	<span
 		class="size-2 rounded-full"
 		class:animate-pulse={sync.phase === 'syncing'}
 		style="background: {current.color}"
 	></span>
-	<span class="dim">{current.label}</span>
-	{#if sync.pending > 0 && sync.phase !== 'synced'}
-		<span class="dim tabular-nums">· {sync.pending}</span>
-	{/if}
 </button>
