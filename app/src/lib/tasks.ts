@@ -12,34 +12,23 @@ export function priorityClass(p: number): string {
 	return ['', 'text-p1', 'text-p2', 'text-p3', 'text-p4'][p] ?? 'text-p4';
 }
 
-/** Sorts by due date then priority then creation, which is the order every view wants. */
-export function sortTasks(tasks: Task[]): Task[] {
-	return [...tasks].sort((a, b) => {
-		if (!!a.due !== !!b.due) return a.due ? -1 : 1;
-		if (a.due !== b.due) return a.due < b.due ? -1 : 1;
-		if (!!a.dueTime !== !!b.dueTime) return a.dueTime ? -1 : 1;
-		if (a.dueTime !== b.dueTime) return a.dueTime < b.dueTime ? -1 : 1;
-		if (a.priority !== b.priority) return a.priority - b.priority;
-		return a.createdAt - b.createdAt;
-	});
-}
-
-export function tasksQuery(db: Db, view: View) {
+export function tasksQuery(db: Db, view: View, showDone = false) {
 	if (view === 'done') {
 		return db.tasks.find({ selector: { done: true }, sort: [{ updatedAt: 'desc' }], limit: 200 });
 	}
+	const open = showDone ? {} : { done: false };
 	if (view === 'today') {
 		// Overdue rolls into Today, matching how Todoist surfaces missed work.
-		return db.tasks.find({ selector: { done: false, due: { $gt: '', $lte: today() } } });
+		return db.tasks.find({ selector: { ...open, due: { $gt: '', $lte: today() } } });
 	}
 	if (view === 'upcoming') {
-		return db.tasks.find({ selector: { done: false, due: { $gt: today() } } });
+		return db.tasks.find({ selector: { ...open, due: { $gt: today() } } });
 	}
-	return db.tasks.find({ selector: { done: false } });
+	return db.tasks.find({ selector: open });
 }
 
-export function projectTasksQuery(db: Db, projectId: string, done = false) {
-	return db.tasks.find({ selector: { projectId, done } });
+export function projectTasksQuery(db: Db, projectId: string, showDone = false) {
+	return db.tasks.find({ selector: showDone ? { projectId } : { projectId, done: false } });
 }
 
 export function projectsQuery(db: Db) {

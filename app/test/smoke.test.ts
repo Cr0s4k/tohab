@@ -180,6 +180,35 @@ try {
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'task shows in Done');
 	check('completed task appears under Done', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), true);
 
+	// --- 4b. per-view sort and group options persist ---
+	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'All').click()`);
+	await waitFor(`!${bodyText}.includes('buy oat milk')`, 8000, 'All hides completed by default');
+
+	await evaluate(`document.querySelector('header button[aria-label="Sort and group"]').click()`);
+	await waitFor(`${bodyText}.includes('Sort & group')`, 5000, 'options sheet opened');
+	await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Show completed tasks').click()`);
+	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'completed task joins All');
+	check('show completed reveals the done task', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), true);
+
+	await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Priority').click()`);
+	await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
+	await waitFor(`document.querySelector('main h2')`, 5000, 'group headings rendered');
+	check(
+		'grouping by priority heads the list with P1',
+		await evaluate<boolean>(`document.querySelector('main h2').textContent.includes('Priority 1')`),
+		true
+	);
+
+	await goto('/tasks');
+	await waitFor(`${text('h1')} === 'Tasks'`, 20000);
+	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'All').click()`);
+	await waitFor(`document.querySelector('main h2')`, 8000, 'options survived reload');
+	check(
+		'view options persist across a reload',
+		await evaluate<boolean>(`document.querySelector('main h2').textContent.includes('Priority 1') && ${bodyText}.includes('buy oat milk')`),
+		true
+	);
+
 	// --- 5. habits: create, log, and confirm the streak ---
 	await goto('/habits');
 	await waitFor(`${text('h1')} === 'Habits'`, 20000, 'habits screen rendered');
@@ -220,8 +249,9 @@ try {
 	check('settings shows the device id', await evaluate<boolean>(`${bodyText}.includes('Device ID')`), true);
 
 	// --- 8. the client actually replicated to the server ---
-	await waitFor(`${bodyText}.includes('Synced')`, 20000, 'sync badge reached Synced');
-	check('sync badge reports Synced', await evaluate<boolean>(`${bodyText}.includes('Synced')`), true);
+	// Sampling twice would race: an incoming change event flips the badge back to Syncing.
+	const reachedSynced = await waitFor(`${bodyText}.includes('Synced')`, 20000, 'sync badge reached Synced');
+	check('sync badge reports Synced', reachedSynced, true);
 
 	const userId = await evaluate<string>(`localStorage.getItem('tohab.userId')`);
 	const pulled = await (

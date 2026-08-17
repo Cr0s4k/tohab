@@ -3,34 +3,34 @@
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import type { Task } from '$lib/db/schemas';
-	import {
-		deleteTask,
-		projectTasksQuery,
-		projectsQuery,
-		sortTasks,
-		toggleTask
-	} from '$lib/tasks';
+	import { deleteTask, projectTasksQuery, projectsQuery, toggleTask } from '$lib/tasks';
+	import { arrangeTasks } from '$lib/arrange';
+	import { isCustomised, projectScope, viewOptions } from '$lib/viewOptions.svelte';
 	import Fab from '$lib/components/Fab.svelte';
 	import TaskCompose from '$lib/components/TaskCompose.svelte';
 	import TaskRow from '$lib/components/TaskRow.svelte';
 	import TaskEditor from '$lib/components/TaskEditor.svelte';
+	import ViewOptionsSheet from '$lib/components/ViewOptionsSheet.svelte';
 
 	let editing = $state<Task | null>(null);
-	let showDone = $state(false);
 	let composing = $state(false);
+	let tuning = $state(false);
 
 	// The Inbox is the absence of a project, so it gets a reserved route id.
 	let projectId = $derived(page.params.id === 'inbox' ? '' : (page.params.id ?? ''));
+	let scope = $derived(projectScope(projectId));
+	let opts = $derived(viewOptions(scope));
 
 	let projects = rx(() => (live.db ? projectsQuery(live.db).$ : null), []);
 	let tasks = rx<Task[]>(
-		() => (live.db ? projectTasksQuery(live.db, projectId, showDone).$ : null),
+		() => (live.db ? projectTasksQuery(live.db, projectId, opts.showDone).$ : null),
 		[]
 	);
 
 	let project = $derived(projects.value.find((p) => p.id === projectId));
 	let title = $derived(projectId === '' ? 'Inbox' : (project?.name ?? 'Project'));
-	let sorted = $derived(sortTasks(tasks.value));
+	let groups = $derived(arrangeTasks(tasks.value, opts, projects.value));
+	let count = $derived(groups.reduce((n, g) => n + g.tasks.length, 0));
 </script>
 
 <header class="hairline raised sticky top-0 z-20 border-b pt-safe">
@@ -46,27 +46,43 @@
 		<h1 class="min-w-0 flex-1 truncate text-2xl font-bold tracking-tight">{title}</h1>
 		<button
 			type="button"
-			onclick={() => (showDone = !showDone)}
-			class="tap sunken hairline rounded-full border px-3 py-1 text-[0.7rem] font-medium"
+			onclick={() => (tuning = true)}
+			aria-label="Sort and group"
+			class="tap hairline grid size-8 shrink-0 place-items-center rounded-full border"
+			class:accent-bg={isCustomised(scope)}
+			class:sunken={!isCustomised(scope)}
 		>
-			{showDone ? 'Open' : 'Done'}
+			<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+				<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />
+				<circle cx="16" cy="6" r="2" />
+				<circle cx="10" cy="12" r="2" />
+				<circle cx="18" cy="18" r="2" />
+			</svg>
 		</button>
 	</div>
 </header>
 
 <main class="flex-1 pb-20">
-	{#if !sorted.length}
-		<p class="dim px-8 py-14 text-center text-sm">
-			{showDone ? 'Nothing completed here yet.' : 'No tasks in this project.'}
-		</p>
+	{#if !count}
+		<p class="dim px-8 py-14 text-center text-sm">No tasks in this project.</p>
 	{:else}
-		{#each sorted as task (task.id)}
-			<TaskRow
-				{task}
-				onToggle={() => toggleTask(task.id)}
-				onDelete={() => deleteTask(task.id)}
-				onOpen={() => (editing = task)}
-			/>
+		{#each groups as group (group.key)}
+			{#if group.label}
+				<h2
+					class="sunken dim flex items-center justify-between px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
+				>
+					<span>{group.label}</span>
+					<span>{group.tasks.length}</span>
+				</h2>
+			{/if}
+			{#each group.tasks as task (task.id)}
+				<TaskRow
+					{task}
+					onToggle={() => toggleTask(task.id)}
+					onDelete={() => deleteTask(task.id)}
+					onOpen={() => (editing = task)}
+				/>
+			{/each}
 		{/each}
 	{/if}
 </main>
@@ -81,3 +97,10 @@
 />
 
 <TaskEditor task={editing} projects={projects.value} onClose={() => (editing = null)} />
+
+<ViewOptionsSheet
+	open={tuning}
+	scope={scope}
+	title="Sort & group {title}"
+	onClose={() => (tuning = false)}
+/>
