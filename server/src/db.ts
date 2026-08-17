@@ -1,13 +1,14 @@
 import { Pool } from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { and, asc, count, eq, gt, max, or, sql } from 'drizzle-orm';
-import { docs, type DocRow } from './schema.ts';
+import { docs, secrets, type DocRow } from './schema.ts';
+import { randomBytes } from 'node:crypto';
 
 const CONNECTION = process.env.DATABASE_URL ?? 'postgresql://tohab:tohab@localhost:5432/tohab';
 
 const pool = new Pool({ connectionString: CONNECTION, max: 10 });
 
-const schema = { docs };
+const schema = { docs, secrets };
 export const db = drizzle(pool, { schema });
 export type { DocRow };
 
@@ -24,13 +25,45 @@ export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitLogs'])
 
 /** Schema lives in schema.ts and is applied by `drizzle-kit push`. Fail loudly if absent. */
 export async function ensureSchema() {
-	const { rows } = await pool.query(`SELECT to_regclass('public.docs') IS NOT NULL AS ok`);
+	const { rows } = await pool.query(
+		`SELECT to_regclass('public.docs') IS NOT NULL AND to_regclass('public.secrets') IS NOT NULL AS ok`
+	);
 	if (!rows[0]?.ok) {
 		console.error(
 			`No schema in ${CONNECTION.replace(/:[^:@]*@/, ':***@')}. Run \`pnpm db:push\` first.`
 		);
 		process.exit(1);
 	}
+}
+
+/**
+ * Reads a persisted secret, minting one on first use. The insert races harmlessly between
+ * replicas: whoever loses the conflict re-reads the winner's value rather than its own.
+ */
+export async function persistedSecret(key: string): Promise<string> {
+	const [existing] = await db.select().from(secrets).where(eq(secrets.key, key)).limit(1);
+	if (existing) return existing.value;
+
+	const value = randomBytes(32).toString('hex');
+	await db.insert(secrets).values({ key, value }).onConflictDoNothing();
+
+	const [row] = await db.select().from(secrets).where(eq(secrets.key, key)).limit(1);
+	return row?.value ?? value;
+}
+
+/** Every user id that has ever written a document, for resolving opaque feed tokens. */
+export async function knownUsers(): Promise<string[]> {
+	const rows = await db.selectDistinct({ userId: docs.userId }).from(docs);
+	return rows.map((row) => row.userId);
+}
+
+export async function liveDocs(userId: string, collection: string): Promise<DocRow[]> {
+	return db
+		.select()
+		.from(docs)
+		.where(
+			and(eq(docs.userId, userId), eq(docs.collection, collection), eq(docs.deleted, false))
+		);
 }
 
 export function docsSince(

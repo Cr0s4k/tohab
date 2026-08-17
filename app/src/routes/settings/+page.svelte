@@ -6,6 +6,7 @@
 	import { downloadBackup, importBackup } from '$lib/backup';
 	import { resync, restartSync, sync } from '$lib/db/replication.svelte';
 	import {
+		setReminderMinutes,
 		setServerUrl,
 		setStartOfWeek,
 		setSyncEnabled,
@@ -13,12 +14,45 @@
 		settings,
 		type Theme
 	} from '$lib/settings.svelte';
+	import { feedUrl } from '$lib/calendar';
 	import { haptic } from '$lib/haptics';
 	import SyncBadge from '$lib/components/SyncBadge.svelte';
 
 	let serverDraft = $state(settings.serverUrl);
 	let notice = $state('');
 	let fileInput: HTMLInputElement | null = $state(null);
+	let feed = $state('');
+	let feedError = $state('');
+	let feedBusy = $state(false);
+
+	async function revealFeed() {
+		feedBusy = true;
+		feedError = '';
+		try {
+			feed = await feedUrl(settings.reminderMinutes);
+		} catch (err) {
+			feed = '';
+			feedError = err instanceof Error ? err.message : 'Could not reach the server.';
+		}
+		feedBusy = false;
+	}
+
+	async function copyFeed() {
+		try {
+			await navigator.clipboard.writeText(feed);
+			haptic('success');
+			notice = 'Feed URL copied. Add it in Google Calendar under “From URL”.';
+		} catch {
+			notice = 'Copy failed — select the URL and copy it manually.';
+		}
+	}
+
+	const reminderChoices = [
+		{ minutes: 0, label: 'Off' },
+		{ minutes: 10, label: '10 min' },
+		{ minutes: 30, label: '30 min' },
+		{ minutes: 60, label: '1 hour' }
+	];
 
 	let habits = rx(() => (live.db ? habitsQuery(live.db, true).$ : null), []);
 	let openTasks = rx(() => (live.db ? openTasksQuery(live.db).$ : null), []);
@@ -150,6 +184,72 @@
 	</section>
 
 	<section class="mb-6">
+		<h2 class="dim mb-2 text-[0.7rem] font-semibold tracking-wide uppercase">Calendar feed</h2>
+		<div class="raised hairline rounded-2xl border">
+			<div class="hairline border-b px-4 py-3">
+				<p class="dim mb-1.5 text-[0.7rem]">Remind me before a timed task</p>
+				<div class="flex gap-1.5">
+					{#each reminderChoices as choice (choice.minutes)}
+						<button
+							type="button"
+							onclick={() => {
+								haptic('tap');
+								setReminderMinutes(choice.minutes);
+								if (feed) revealFeed();
+							}}
+							class="tap flex-1 rounded-xl py-2 text-[0.75rem] font-medium"
+							class:accent-bg={settings.reminderMinutes === choice.minutes}
+							class:sunken={settings.reminderMinutes !== choice.minutes}
+						>
+							{choice.label}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			{#if feed}
+				<div class="hairline border-b px-4 py-3">
+					<p class="sunken rounded-xl px-3 py-2 font-mono text-[0.68rem] break-all select-all">
+						{feed}
+					</p>
+					<button
+						type="button"
+						onclick={copyFeed}
+						class="tap accent-bg mt-2 w-full rounded-xl py-2 text-[0.8rem] font-semibold"
+					>
+						Copy URL
+					</button>
+				</div>
+			{:else}
+				<button
+					type="button"
+					onclick={revealFeed}
+					disabled={feedBusy}
+					class="tap hairline w-full border-b px-4 py-3 text-left text-sm disabled:opacity-50"
+				>
+					{feedBusy ? 'Asking the server…' : 'Show subscription URL'}
+				</button>
+			{/if}
+
+			<div class="px-4 py-3 text-[0.68rem]">
+				{#if feedError}
+					<p style="color: oklch(0.62 0.2 25)">{feedError}</p>
+				{:else}
+					<p class="dim">
+						Subscribe to this URL in Google Calendar (Other calendars → From URL) or iOS
+						Calendar. Open tasks with a due date appear as events; timed ones carry the reminder
+						above. The lead time is baked into the URL, so changing it means re-subscribing.
+					</p>
+				{/if}
+			</div>
+		</div>
+		<p class="dim mt-2 text-[0.68rem]">
+			Anyone with this URL can read your tasks, so treat it as a password. It works only while
+			the sync server is reachable from the internet.
+		</p>
+	</section>
+
+	<section class="mb-6">
 		<h2 class="dim mb-2 text-[0.7rem] font-semibold tracking-wide uppercase">Data</h2>
 		<div class="raised hairline rounded-2xl border">
 			<div class="hairline flex items-center justify-between border-b px-4 py-3 text-sm">
@@ -197,7 +297,7 @@
 			<p><code class="accent-fg">in 3 days</code>, <code class="accent-fg">in 2 weeks</code></p>
 			<p><code class="accent-fg">5 jan</code>, <code class="accent-fg">jan 5</code>, <code class="accent-fg">25/12</code></p>
 			<p><code class="accent-fg">5pm</code>, <code class="accent-fg">at 9</code>, <code class="accent-fg">14:30</code></p>
-			<p><code class="accent-fg">p1</code>–<code class="accent-fg">p4</code> priority, <code class="accent-fg">#project</code></p>
+			<p><code class="accent-fg">p1</code>–<code class="accent-fg">p4</code> or <code class="accent-fg">!!1</code>–<code class="accent-fg">!!4</code> priority, <code class="accent-fg">#project</code></p>
 		</div>
 	</section>
 </main>

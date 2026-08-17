@@ -23,7 +23,9 @@ export const settings = $state({
 	serverUrl: read('tohab.serverUrl', '/sync'),
 	syncEnabled: read('tohab.syncEnabled', 'true') === 'true',
 	userId: persistedUserId(),
-	startOfWeek: Number(read('tohab.startOfWeek', '1')) as 0 | 1
+	startOfWeek: Number(read('tohab.startOfWeek', '1')) as 0 | 1,
+	/** Minutes before a timed task that the calendar feed's alarm fires. 0 is off. */
+	reminderMinutes: Number(read('tohab.reminderMinutes', '10'))
 });
 
 export function applyTheme() {
@@ -48,6 +50,11 @@ export function setServerUrl(url: string) {
 export function setSyncEnabled(on: boolean) {
 	settings.syncEnabled = on;
 	localStorage.setItem('tohab.syncEnabled', String(on));
+}
+
+export function setReminderMinutes(minutes: number) {
+	settings.reminderMinutes = minutes;
+	localStorage.setItem('tohab.reminderMinutes', String(minutes));
 }
 
 export function setStartOfWeek(day: 0 | 1) {
