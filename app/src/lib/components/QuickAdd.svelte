@@ -70,7 +70,7 @@
 			{#if parsed.matched.length}
 				Understood: {parsed.matched.join(' · ')}
 			{:else}
-				Try “tomorrow 5pm p1 #work” or “in 3 days”
+				Try “tomorrow 5pm !!1 #work” or “in 3 days”
 			{/if}
 		</p>
 	{/if}

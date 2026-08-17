@@ -105,7 +105,7 @@ export function parseQuickAdd(raw: string, base = new Date()): Parsed {
 		matched.push(`#${project}`);
 	});
 
-	eat(/\s(?:p([1-4])|!([1-4]))\b/i, (m) => {
+	eat(/\s(?:p([1-4])|!{1,2}([1-4]))\b/i, (m) => {
 		priority = Number(m[1] ?? m[2]);
 		matched.push(`P${priority}`);
 	});
