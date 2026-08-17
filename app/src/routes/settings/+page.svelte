@@ -4,6 +4,7 @@
 	import { habitsQuery } from '$lib/habits';
 	import { openTasksQuery } from '$lib/tasks';
 	import { downloadBackup, importBackup } from '$lib/backup';
+	import { importTodoistCsv } from '$lib/todoist';
 	import { resync, restartSync, sync } from '$lib/db/replication.svelte';
 	import {
 		setReminderMinutes,
@@ -21,6 +22,7 @@
 	let serverDraft = $state(settings.serverUrl);
 	let notice = $state('');
 	let fileInput: HTMLInputElement | null = $state(null);
+	let todoistInput: HTMLInputElement | null = $state(null);
 	let feed = $state('');
 	let feedError = $state('');
 	let feedBusy = $state(false);
@@ -69,6 +71,20 @@
 			haptic('warn');
 		}
 		if (fileInput) fileInput.value = '';
+	}
+
+	async function onTodoistFile(e: Event) {
+		const file = (e.target as HTMLInputElement).files?.[0];
+		if (!file) return;
+		try {
+			const result = await importTodoistCsv(await file.text());
+			notice = `Imported ${result.imported} Todoist tasks${result.skipped ? `, skipped ${result.skipped}` : ''}.`;
+			haptic('success');
+		} catch (err) {
+			notice = err instanceof Error ? err.message : 'Todoist import failed.';
+			haptic('warn');
+		}
+		if (todoistInput) todoistInput.value = '';
 	}
 
 	async function applyServer() {
@@ -277,6 +293,13 @@
 			>
 				Import backup
 			</button>
+			<button
+				type="button"
+				onclick={() => todoistInput?.click()}
+				class="tap hairline w-full border-t px-4 py-3 text-left text-sm"
+			>
+				Import Todoist CSV
+			</button>
 			<input
 				bind:this={fileInput}
 				type="file"
@@ -284,9 +307,17 @@
 				onchange={onFile}
 				class="hidden"
 			/>
+			<input
+				bind:this={todoistInput}
+				type="file"
+				accept=".csv,text/csv"
+				onchange={onTodoistFile}
+				class="hidden"
+			/>
 		</div>
 		<p class="dim mt-2 text-[0.68rem]">
-			Import merges by record id and never deletes anything already on this device.
+			JSON import merges by record id. Todoist import adds tasks to your inbox and skips
+			projects, sections, and recurring-date rules.
 		</p>
 	</section>
 
