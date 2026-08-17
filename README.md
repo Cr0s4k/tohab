@@ -5,7 +5,7 @@ self-hosted server.
 
 ```
 app/      SvelteKit 2 + Svelte 5 PWA, RxDB over IndexedDB
-server/   Hono + node:sqlite sync backend
+server/   Hono + Drizzle over SQLite sync backend
 ```
 
 ## Running it
@@ -23,6 +23,22 @@ pnpm build        # static bundle in app/build/
 pnpm --filter server start
 ```
 
+### Database
+
+Tables are defined in `server/src/schema.ts` and applied with `drizzle-kit push`, which
+`dev` and `start` run for you. There are no migration files yet — while the schema is still
+moving, changing it and re-pushing is the workflow:
+
+```bash
+pnpm --filter server db:push     # apply schema.ts to the database
+pnpm db:reset                    # delete the database and rebuild it from schema.ts
+pnpm --filter server db:studio   # browse the data
+```
+
+If the schema ever needs to survive real data, swap `push` for `drizzle-kit generate` plus
+`migrate()`. The server refuses to start against a database with no schema rather than
+failing per-request.
+
 `app/build/` is a plain static directory — host it anywhere. Point **Settings → Sync →
 Server URL** at wherever the sync server lives (e.g. `https://api.example.com/sync`); the
 server sets permissive CORS, so a cross-origin deployment works.
@@ -35,6 +51,7 @@ The database file defaults to `server/data/tohab.sqlite`, overridable with `TOHA
 ```bash
 pnpm test               # pure logic: streak math, quick-add parser (45 assertions)
 pnpm test:integration   # sync protocol, RxDB replication, headless-browser smoke test
+pnpm check              # typecheck app and server
 ```
 
 The integration suite needs the sync server running, and the browser smoke test needs the
@@ -84,7 +101,7 @@ received.
 
 **Timestamps are kept in two places, deliberately.** Each document carries `updatedAt` from
 the writing device's clock; it replicates as data and is what conflict detection compares.
-The server additionally stamps `received_at` from its own clock on every write, which gives
+The server additionally stamps `receivedAt` from its own clock on every write, which gives
 one trustworthy timeline no matter how wrong a device's clock is. `GET /sync/status` returns
 both per collection, plus the drift between them:
 
@@ -99,7 +116,7 @@ both per collection, plus the drift between them:
 }
 ```
 
-`received_at` is server-side metadata and is not replicated to clients, so it never has to
+`receivedAt` is server-side metadata and is not replicated to clients, so it never has to
 satisfy an RxDB schema.
 
 **Conflicts are last-write-wins, gated on `assumedMasterState`.** A push is rejected if the

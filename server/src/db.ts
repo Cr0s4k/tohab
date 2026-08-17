@@ -1,47 +1,29 @@
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { and, asc, count, eq, gt, max, or, sql, sum } from 'drizzle-orm';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { docs, revs, type DocRow } from './schema.ts';
 
 const FILE = process.env.TOHAB_DB ?? './data/tohab.sqlite';
 
 if (FILE !== ':memory:') mkdirSync(dirname(FILE), { recursive: true });
 
-export const db = new DatabaseSync(FILE);
+const sqlite = new Database(FILE);
+sqlite.pragma('journal_mode = WAL');
 
-db.exec(`
-	PRAGMA journal_mode = WAL;
-	PRAGMA foreign_keys = ON;
-
-	CREATE TABLE IF NOT EXISTS docs (
-		user_id     TEXT    NOT NULL,
-		collection  TEXT    NOT NULL,
-		id          TEXT    NOT NULL,
-		rev         INTEGER NOT NULL,
-		deleted     INTEGER NOT NULL DEFAULT 0,
-		updated_at  INTEGER NOT NULL,
-		received_at INTEGER NOT NULL DEFAULT 0,
-		data        TEXT    NOT NULL,
-		PRIMARY KEY (user_id, collection, id)
+// Schema lives in schema.ts and is applied by `drizzle-kit push`, so fail loudly here
+// rather than letting every request 500 on a database that was never set up.
+const tables = sqlite.pragma('table_list') as { name: string }[];
+if (!tables.some((t) => t.name === 'docs')) {
+	console.error(
+		`No schema in ${FILE}. Run \`pnpm db:push\` (or \`pnpm db:reset\` to start clean) first.`
 	);
-
-	CREATE INDEX IF NOT EXISTS docs_cursor ON docs (user_id, collection, rev, id);
-
-	CREATE TABLE IF NOT EXISTS revs (
-		user_id TEXT NOT NULL PRIMARY KEY,
-		value   INTEGER NOT NULL
-	);
-`);
-
-// CREATE TABLE above is a no-op on an existing database, so columns added later must be
-// migrated in explicitly — and any index over them created only once they exist.
-const columns = (db.prepare(`PRAGMA table_info(docs)`).all() as { name: string }[]).map(
-	(c) => c.name
-);
-if (!columns.includes('received_at')) {
-	db.exec(`ALTER TABLE docs ADD COLUMN received_at INTEGER NOT NULL DEFAULT 0`);
+	process.exit(1);
 }
 
-db.exec(`CREATE INDEX IF NOT EXISTS docs_received ON docs (user_id, received_at)`);
+export const db = drizzle(sqlite, { schema: { docs, revs } });
+export type { DocRow };
 
 export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitLogs']);
 
@@ -50,32 +32,18 @@ export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitLogs'])
  * on client clocks, so a device with a skewed clock can never make the cursor skip
  * documents that have not been replicated yet.
  */
-const bumpRev = db.prepare(`
-	INSERT INTO revs (user_id, value) VALUES (?, 1)
-	ON CONFLICT (user_id) DO UPDATE SET value = value + 1
-	RETURNING value
-`);
-
 export function nextRev(userId: string): number {
-	const row = bumpRev.get(userId) as { value: number };
+	const [row] = db
+		.insert(revs)
+		.values({ userId, value: 1 })
+		.onConflictDoUpdate({
+			target: revs.userId,
+			set: { value: sql`${revs.value} + 1` }
+		})
+		.returning({ value: revs.value })
+		.all();
 	return row.value;
 }
-
-export type DocRow = {
-	id: string;
-	rev: number;
-	deleted: number;
-	updated_at: number;
-	received_at: number;
-	data: string;
-};
-
-const selectSince = db.prepare(`
-	SELECT id, rev, deleted, updated_at, received_at, data FROM docs
-	WHERE user_id = ? AND collection = ? AND (rev > ? OR (rev = ? AND id > ?))
-	ORDER BY rev ASC, id ASC
-	LIMIT ?
-`);
 
 export function docsSince(
 	userId: string,
@@ -84,82 +52,82 @@ export function docsSince(
 	id: string,
 	limit: number
 ): DocRow[] {
-	return selectSince.all(userId, collection, cursor, cursor, id, limit) as DocRow[];
+	return db
+		.select()
+		.from(docs)
+		.where(
+			and(
+				eq(docs.userId, userId),
+				eq(docs.collection, collection),
+				or(gt(docs.rev, cursor), and(eq(docs.rev, cursor), gt(docs.id, id)))
+			)
+		)
+		.orderBy(asc(docs.rev), asc(docs.id))
+		.limit(limit)
+		.all();
 }
-
-const selectOne = db.prepare(
-	`SELECT id, rev, deleted, updated_at, received_at, data FROM docs WHERE user_id = ? AND collection = ? AND id = ?`
-);
 
 export function getDoc(userId: string, collection: string, id: string): DocRow | undefined {
-	return selectOne.get(userId, collection, id) as DocRow | undefined;
+	return db
+		.select()
+		.from(docs)
+		.where(and(eq(docs.userId, userId), eq(docs.collection, collection), eq(docs.id, id)))
+		.get();
 }
 
-const upsert = db.prepare(`
-	INSERT INTO docs (user_id, collection, id, rev, deleted, updated_at, received_at, data)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	ON CONFLICT (user_id, collection, id) DO UPDATE SET
-		rev = excluded.rev,
-		deleted = excluded.deleted,
-		updated_at = excluded.updated_at,
-		received_at = excluded.received_at,
-		data = excluded.data
-`);
-
 /**
- * `updated_at` is the client's own clock and travels with the document as data.
- * `received_at` is stamped here from the server clock, giving one trustworthy timeline
+ * `updatedAt` is the client's own clock and travels with the document as data.
+ * `receivedAt` is stamped here from the server clock, giving one trustworthy timeline
  * for auditing and debugging regardless of how wrong any device's clock is.
  */
 export function writeDoc(userId: string, collection: string, doc: Record<string, unknown>) {
-	const id = String(doc.id);
-	const deleted = doc._deleted ? 1 : 0;
-	const updatedAt = Number(doc.updatedAt ?? 0);
-	upsert.run(
+	const row = {
 		userId,
 		collection,
-		id,
-		nextRev(userId),
-		deleted,
-		updatedAt,
-		Date.now(),
-		JSON.stringify({ ...doc, _deleted: Boolean(doc._deleted) })
-	);
+		id: String(doc.id),
+		rev: nextRev(userId),
+		deleted: Boolean(doc._deleted),
+		updatedAt: Number(doc.updatedAt ?? 0),
+		receivedAt: Date.now(),
+		data: { ...doc, _deleted: Boolean(doc._deleted) }
+	};
+
+	db.insert(docs)
+		.values(row)
+		.onConflictDoUpdate({
+			target: [docs.userId, docs.collection, docs.id],
+			set: {
+				rev: row.rev,
+				deleted: row.deleted,
+				updatedAt: row.updatedAt,
+				receivedAt: row.receivedAt,
+				data: row.data
+			}
+		})
+		.run();
 }
 
 export function rowToDoc(row: DocRow): Record<string, unknown> {
-	return { ...JSON.parse(row.data), _deleted: row.deleted === 1 };
+	return { ...row.data, _deleted: row.deleted };
 }
 
 export function transaction<T>(fn: () => T): T {
-	db.exec('BEGIN IMMEDIATE');
-	try {
-		const result = fn();
-		db.exec('COMMIT');
-		return result;
-	} catch (err) {
-		db.exec('ROLLBACK');
-		throw err;
-	}
+	return db.transaction(fn);
 }
 
 export function stats(userId: string) {
 	return db
-		.prepare(
-			`SELECT collection,
-			        COUNT(*)            AS total,
-			        SUM(deleted)        AS deleted,
-			        MAX(received_at)    AS lastReceivedAt,
-			        MAX(updated_at)     AS lastClientUpdatedAt
-			 FROM docs WHERE user_id = ? GROUP BY collection`
-		)
-		.all(userId) as {
-		collection: string;
-		total: number;
-		deleted: number;
-		lastReceivedAt: number;
-		lastClientUpdatedAt: number;
-	}[];
+		.select({
+			collection: docs.collection,
+			total: count(),
+			deleted: sum(docs.deleted).mapWith(Number),
+			lastReceivedAt: max(docs.receivedAt),
+			lastClientUpdatedAt: max(docs.updatedAt)
+		})
+		.from(docs)
+		.where(eq(docs.userId, userId))
+		.groupBy(docs.collection)
+		.all();
 }
 
 /**
