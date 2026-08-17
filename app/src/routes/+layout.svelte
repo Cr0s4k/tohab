@@ -4,7 +4,9 @@
 	import { onNavigate } from '$app/navigation';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import UndoToast from '$lib/components/UndoToast.svelte';
+	import SettingsSheet from '$lib/components/SettingsSheet.svelte';
 	import { applyTheme, settings } from '$lib/settings.svelte';
+	import { settingsSheet } from '$lib/settingsSheet.svelte';
 	import { startSync } from '$lib/db/replication.svelte';
 	import { motionOk } from '$lib/motion';
 
@@ -40,6 +42,7 @@
 
 <div class="relative mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden">
 	{@render children()}
+	<SettingsSheet open={settingsSheet.open} onClose={() => (settingsSheet.open = false)} />
 	<UndoToast />
 	<TabBar />
 </div>

@@ -20,10 +20,10 @@
 		resync();
 	}}
 	title={sync.message || current.label}
-	class="tap sunken hairline grid size-8 place-items-center rounded-full border"
+	class="tap grid size-6 place-items-center"
 >
 	<span
-		class="size-2 rounded-full"
+		class="size-2.5 rounded-full"
 		class:animate-pulse={sync.phase === 'syncing'}
 		style="background: {current.color}"
 	></span>
