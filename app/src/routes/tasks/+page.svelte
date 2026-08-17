@@ -16,6 +16,8 @@
 	import TaskRow from '$lib/components/TaskRow.svelte';
 	import TaskEditor from '$lib/components/TaskEditor.svelte';
 	import SyncBadge from '$lib/components/SyncBadge.svelte';
+	import { flip } from 'svelte/animate';
+	import { collapse, flipCfg, veil } from '$lib/motion';
 
 	const VIEWS: { id: View; label: string }[] = [
 		{ id: 'today', label: 'Today' },
@@ -101,22 +103,27 @@
 	{#if tasks.loading && !tasks.value.length}
 		<p class="dim px-4 py-10 text-center text-sm">Loading…</p>
 	{:else if !sorted.length}
-		<p class="dim px-8 py-14 text-center text-sm">{emptyCopy[view]}</p>
+		<p class="dim px-8 py-14 text-center text-sm" in:veil>{emptyCopy[view]}</p>
 	{:else}
 		{#each groups as group (group.key)}
 			{#if group.key}
-				<h2 class="sunken dim px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">
+				<h2
+					transition:collapse
+					class="sunken dim px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
+				>
 					{humanDay(group.key)}
 				</h2>
 			{/if}
 			{#each group.tasks as task (task.id)}
-				<TaskRow
-					{task}
-					project={projectById.get(task.projectId)}
-					onToggle={() => toggleTask(task.id)}
-					onDelete={() => deleteTask(task.id)}
-					onOpen={() => (editing = task)}
-				/>
+				<div transition:collapse animate:flip={flipCfg}>
+					<TaskRow
+						{task}
+						project={projectById.get(task.projectId)}
+						onToggle={() => toggleTask(task.id)}
+						onDelete={() => deleteTask(task.id)}
+						onOpen={() => (editing = task)}
+					/>
+				</div>
 			{/each}
 		{/each}
 		<p class="dim px-4 py-4 text-center text-[0.68rem]">Swipe a task right to complete, left to delete</p>

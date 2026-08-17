@@ -3,6 +3,7 @@
 	import { priorityClass } from '$lib/tasks';
 	import { humanDay, humanTime } from '$lib/dates';
 	import { haptic } from '$lib/haptics';
+	import { collapse, pop } from '$lib/motion';
 
 	let { onSubmit, placeholder = 'Add a task…' }: { onSubmit: (raw: string) => void; placeholder?: string } =
 		$props();
@@ -25,19 +26,19 @@
 
 <form onsubmit={submit} class="raised hairline border-t px-3 pt-2.5 pb-safe">
 	{#if parsed && (parsed.due || parsed.dueTime || parsed.priority !== 4 || parsed.project)}
-		<div class="mb-2 flex flex-wrap gap-1.5 px-1">
+		<div transition:collapse={{ duration: 180 }} class="mb-2 flex flex-wrap gap-1.5 px-1">
 			{#if parsed.due}
-				<span class="sunken rounded-full px-2 py-0.5 text-[0.7rem] accent-fg font-medium">
+				<span transition:pop class="sunken rounded-full px-2 py-0.5 text-[0.7rem] accent-fg font-medium">
 					{humanDay(parsed.due)}{parsed.dueTime ? ` ${humanTime(parsed.dueTime)}` : ''}
 				</span>
 			{/if}
 			{#if parsed.priority !== 4}
-				<span class="sunken rounded-full px-2 py-0.5 text-[0.7rem] font-medium {priorityClass(parsed.priority)}">
+				<span transition:pop class="sunken rounded-full px-2 py-0.5 text-[0.7rem] font-medium {priorityClass(parsed.priority)}">
 					P{parsed.priority}
 				</span>
 			{/if}
 			{#if parsed.project}
-				<span class="sunken dim rounded-full px-2 py-0.5 text-[0.7rem] font-medium">#{parsed.project}</span>
+				<span transition:pop class="sunken dim rounded-full px-2 py-0.5 text-[0.7rem] font-medium">#{parsed.project}</span>
 			{/if}
 		</div>
 	{/if}
