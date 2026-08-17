@@ -3,7 +3,6 @@ import type { Project, Task } from './db/schemas.ts';
 import { markLocalWrite } from './db/replication.svelte.ts';
 import { today } from './dates.ts';
 import { now, uid } from './ids.ts';
-import { parseQuickAdd } from './parse.ts';
 
 export type View = 'today' | 'upcoming' | 'inbox' | 'done';
 
@@ -51,7 +50,7 @@ export function openTasksQuery(db: Db) {
 	return db.tasks.find({ selector: { done: false } });
 }
 
-async function resolveProject(name: string): Promise<string> {
+export async function resolveProject(name: string): Promise<string> {
 	if (!name) return '';
 	const db = await getDb();
 	const existing = await db.projects.findOne({ selector: { name } }).exec();
@@ -103,24 +102,30 @@ export async function deleteProject(id: string) {
 	markLocalWrite();
 }
 
-export async function addTask(raw: string, defaults: { projectId?: string; due?: string } = {}) {
-	const parsed = parseQuickAdd(raw);
-	if (!parsed.title) return null;
+export type NewTask = {
+	title: string;
+	notes?: string;
+	due?: string;
+	dueTime?: string;
+	priority?: number;
+	projectId?: string;
+};
+
+export async function createTask(input: NewTask): Promise<Task | null> {
+	const title = input.title.trim();
+	if (!title) return null;
 	const db = await getDb();
-	const projectId = parsed.project
-		? await resolveProject(parsed.project)
-		: (defaults.projectId ?? '');
 	const ts = now();
 	const doc: Task = {
 		id: uid(),
-		title: parsed.title,
-		notes: '',
+		title,
+		notes: input.notes?.trim() ?? '',
 		done: false,
 		completedAt: 0,
-		due: parsed.due || defaults.due || '',
-		dueTime: parsed.dueTime,
-		priority: parsed.priority,
-		projectId,
+		due: input.due ?? '',
+		dueTime: input.dueTime ?? '',
+		priority: input.priority ?? 4,
+		projectId: input.projectId ?? '',
 		createdAt: ts,
 		updatedAt: ts
 	};

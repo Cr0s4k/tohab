@@ -93,8 +93,9 @@ needs the app running plus Chrome at the standard macOS path (override with `CHR
 
 ## What's in it
 
-**Tasks** — quick add with natural-language parsing, due dates, Today / Upcoming / All /
-Done views, four priorities, projects, notes, swipe to complete or delete.
+**Tasks** — a compose sheet behind the + button, natural-language parsing, due dates,
+Today / Upcoming / All / Done views, four priorities, projects, notes, swipe to complete or
+delete.
 
 **Habits** — binary and quantity habits, three schedule kinds (daily, chosen weekdays,
 N× per week), schedule-aware streaks, a 12-week heatmap you can tap to backfill, per-habit
@@ -103,7 +104,14 @@ stats, archiving.
 **Platform** — installable PWA that works fully offline, sync status indicator, dark mode,
 JSON export/import, haptics.
 
-### Quick-add syntax
+### Adding a task
+
+The + button opens a bottom sheet: title, notes, and chips for date, priority and project,
+each expanding into a picker. It stays open after adding so several tasks can go in one
+after another, and Done or Escape dismisses it.
+
+The chips are two views of the same fields, so typing quick-add syntax in the title fills
+them in live, and tapping a chip overrides whatever the parser found for that one field.
 
 | Input | Result |
 | --- | --- |

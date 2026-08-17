@@ -3,7 +3,6 @@
 	import { rx } from '$lib/rx.svelte';
 	import type { Task } from '$lib/db/schemas';
 	import {
-		addTask,
 		deleteTask,
 		projectsQuery,
 		sortTasks,
@@ -12,7 +11,8 @@
 		type View
 	} from '$lib/tasks';
 	import { daysFromToday, humanDay, today } from '$lib/dates';
-	import QuickAdd from '$lib/components/QuickAdd.svelte';
+	import Fab from '$lib/components/Fab.svelte';
+	import TaskCompose from '$lib/components/TaskCompose.svelte';
 	import TaskRow from '$lib/components/TaskRow.svelte';
 	import TaskEditor from '$lib/components/TaskEditor.svelte';
 	import SyncBadge from '$lib/components/SyncBadge.svelte';
@@ -28,6 +28,7 @@
 
 	let view = $state<View>('today');
 	let editing = $state<Task | null>(null);
+	let composing = $state(false);
 
 	let tasks = rx<Task[]>(() => (live.db ? tasksQuery(live.db, view).$ : null), []);
 	let projects = rx(() => (live.db ? projectsQuery(live.db).$ : null), []);
@@ -54,7 +55,7 @@
 	const emptyCopy: Record<View, string> = {
 		today: 'Nothing due today. Enjoy it.',
 		upcoming: 'No scheduled tasks ahead.',
-		inbox: 'No open tasks. Add one below.',
+		inbox: 'No open tasks. Tap + to add one.',
 		done: 'Nothing completed yet.'
 	};
 </script>
@@ -99,7 +100,7 @@
 	</div>
 </header>
 
-<main class="flex-1">
+<main class="flex-1 pb-20">
 	{#if tasks.loading && !tasks.value.length}
 		<p class="dim px-4 py-10 text-center text-sm">Loading…</p>
 	{:else if !sorted.length}
@@ -130,9 +131,13 @@
 	{/if}
 </main>
 
-<QuickAdd
-	onSubmit={(raw) => addTask(raw, { due: view === 'today' ? today() : undefined })}
-	placeholder={view === 'today' ? 'Add to today…' : 'Add a task…'}
+<Fab label="New task" onPress={() => (composing = true)} />
+
+<TaskCompose
+	open={composing}
+	projects={projects.value}
+	defaults={{ due: view === 'today' ? today() : undefined }}
+	onClose={() => (composing = false)}
 />
 
 <TaskEditor

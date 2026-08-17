@@ -4,19 +4,20 @@
 	import { rx } from '$lib/rx.svelte';
 	import type { Task } from '$lib/db/schemas';
 	import {
-		addTask,
 		deleteTask,
 		projectTasksQuery,
 		projectsQuery,
 		sortTasks,
 		toggleTask
 	} from '$lib/tasks';
-	import QuickAdd from '$lib/components/QuickAdd.svelte';
+	import Fab from '$lib/components/Fab.svelte';
+	import TaskCompose from '$lib/components/TaskCompose.svelte';
 	import TaskRow from '$lib/components/TaskRow.svelte';
 	import TaskEditor from '$lib/components/TaskEditor.svelte';
 
 	let editing = $state<Task | null>(null);
 	let showDone = $state(false);
+	let composing = $state(false);
 
 	// The Inbox is the absence of a project, so it gets a reserved route id.
 	let projectId = $derived(page.params.id === 'inbox' ? '' : (page.params.id ?? ''));
@@ -53,7 +54,7 @@
 	</div>
 </header>
 
-<main class="flex-1">
+<main class="flex-1 pb-20">
 	{#if !sorted.length}
 		<p class="dim px-8 py-14 text-center text-sm">
 			{showDone ? 'Nothing completed here yet.' : 'No tasks in this project.'}
@@ -70,6 +71,13 @@
 	{/if}
 </main>
 
-<QuickAdd onSubmit={(raw) => addTask(raw, { projectId })} placeholder="Add to {title}…" />
+<Fab label="New task in {title}" onPress={() => (composing = true)} />
+
+<TaskCompose
+	open={composing}
+	projects={projects.value}
+	defaults={{ projectId }}
+	onClose={() => (composing = false)}
+/>
 
 <TaskEditor task={editing} projects={projects.value} onClose={() => (editing = null)} />
