@@ -16,9 +16,10 @@
 	import { collapse, flipCfg, veil } from '$lib/motion';
 
 	const VIEWS: { id: View; label: string }[] = [
+		{ id: 'inbox', label: 'Inbox' },
 		{ id: 'today', label: 'Today' },
 		{ id: 'upcoming', label: 'Upcoming' },
-		{ id: 'inbox', label: 'All' }
+		{ id: 'all', label: 'All' }
 	];
 
 	let view = $state<View>('today');
@@ -45,9 +46,10 @@
 	);
 
 	const emptyCopy: Record<View, string> = {
+		inbox: 'Inbox is clear. Unfiled tasks land here.',
 		today: 'Nothing due today. Enjoy it.',
 		upcoming: 'No scheduled tasks ahead.',
-		inbox: 'No open tasks. Tap + to add one.'
+		all: 'No open tasks. Tap + to add one.'
 	};
 </script>
 

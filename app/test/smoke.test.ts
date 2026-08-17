@@ -170,6 +170,40 @@ try {
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'task survived reload');
 	check('task persisted across a reload', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), true);
 
+	// --- 3b. Inbox is the no-project list, All is everything ---
+	await evaluate(`document.querySelector('button[aria-label="New task"]').click()`);
+	await waitFor(`document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'compose reopened');
+	await evaluate(`(() => {
+		const i = document.querySelector('input[placeholder="What needs doing?"]');
+		i.value = 'file taxes #finance';
+		i.dispatchEvent(new Event('input', { bubbles: true }));
+	})()`);
+	await waitFor(`${bodyText}.includes('#finance')`, 5000, 'compose picked up the project');
+	await evaluate(`document.querySelector('form button[type=submit]').click()`);
+	await waitFor(`${bodyText}.includes('1 added')`, 5000, 'projected task added');
+	await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
+	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'sheet closed');
+
+	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'Inbox').click()`);
+	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'Inbox lists the unfiled task');
+	check(
+		'Inbox holds unfiled tasks only',
+		await evaluate<boolean>(`${bodyText}.includes('buy oat milk') && !${bodyText}.includes('file taxes')`),
+		true
+	);
+
+	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'All').click()`);
+	await waitFor(`${bodyText}.includes('file taxes')`, 8000, 'All lists the projected task');
+	check(
+		'All spans every project',
+		await evaluate<boolean>(`${bodyText}.includes('buy oat milk') && ${bodyText}.includes('file taxes')`),
+		true
+	);
+
+	// Back to Upcoming, where only the dated task lives, for the completion step.
+	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'Upcoming').click()`);
+	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'back on Upcoming');
+
 	// --- 4. completing a task moves it out of the open views ---
 	await evaluate(`document.querySelector('main button[aria-label="Mark as done"]').click()`);
 	await waitFor(`!${bodyText}.includes('buy oat milk')`, 8000, 'completed task leaves Upcoming');
@@ -262,7 +296,10 @@ try {
 			headers: { 'x-user-id': userId }
 		})
 	).json();
-	check('task reached the sync server', pulledTasks.documents.map((d: any) => d.title), ['buy oat milk']);
+	check('task reached the sync server', pulledTasks.documents.map((d: any) => d.title).sort(), [
+		'buy oat milk',
+		'file taxes'
+	]);
 
 	// --- 9. no console errors along the way ---
 	check('no console errors', consoleErrors, []);

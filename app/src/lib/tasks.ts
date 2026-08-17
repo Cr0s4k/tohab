@@ -4,7 +4,7 @@ import { markLocalWrite } from './db/replication.svelte.ts';
 import { today } from './dates.ts';
 import { now, uid } from './ids.ts';
 
-export type View = 'today' | 'upcoming' | 'inbox';
+export type View = 'inbox' | 'today' | 'upcoming' | 'all';
 
 export const PRIORITY_LABELS = ['', 'Urgent', 'High', 'Medium', 'None'];
 
@@ -14,6 +14,10 @@ export function priorityClass(p: number): string {
 
 export function tasksQuery(db: Db, view: View, showDone = false) {
 	const open = showDone ? {} : { done: false };
+	// The Inbox is the absence of a project, the same set the Projects screen shows.
+	if (view === 'inbox') {
+		return db.tasks.find({ selector: { ...open, projectId: '' } });
+	}
 	if (view === 'today') {
 		// Overdue rolls into Today, matching how Todoist surfaces missed work.
 		return db.tasks.find({ selector: { ...open, due: { $gt: '', $lte: today() } } });
