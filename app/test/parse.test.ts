@@ -27,7 +27,13 @@ const cases: [string, Partial<ReturnType<typeof parseQuickAdd>>][] = [
 	['ship it at 9', { title: 'ship it', dueTime: '09:00', due: '2026-08-19' }],
 	['12am checkin', { title: 'checkin', dueTime: '00:00' }],
 	['12pm lunch', { title: 'lunch', dueTime: '12:00' }],
-	['feb 29 leap', { title: 'leap', due: '2027-02-28' }]
+	['feb 29 leap', { title: 'leap', due: '2027-02-28' }],
+	['call the bank !!1', { title: 'call the bank', priority: 1 }],
+	['call the bank !1', { title: 'call the bank', priority: 1 }],
+	['call the bank p1', { title: 'call the bank', priority: 1 }],
+	['ship !!2 tomorrow', { title: 'ship', priority: 2, due: '2026-08-20' }],
+	['no priority !!5', { title: 'no priority !!5', priority: 4 }],
+	['wow!! excited', { title: 'wow!! excited', priority: 4 }]
 ];
 
 let fail = 0;

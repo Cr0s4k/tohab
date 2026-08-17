@@ -41,3 +41,13 @@ export const docs = pgTable(
 );
 
 export type DocRow = typeof docs.$inferSelect;
+
+/**
+ * Server-side values that must survive a restart. Currently just the HMAC key that calendar
+ * feed URLs are derived from: regenerating it would silently break every subscription
+ * already added to someone's calendar client.
+ */
+export const secrets = pgTable('secrets', {
+	key: text('key').primaryKey(),
+	value: text('value').notNull()
+});

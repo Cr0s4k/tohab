@@ -3,6 +3,8 @@
 	import { rx } from '$lib/rx.svelte';
 	import { createProject, deleteProject, openTasksQuery, projectsQuery, renameProject } from '$lib/tasks';
 	import { haptic } from '$lib/haptics';
+	import { flip } from 'svelte/animate';
+	import { collapse, flipCfg } from '$lib/motion';
 
 	let name = $state('');
 	let renaming = $state<string | null>(null);
@@ -51,7 +53,11 @@
 	</a>
 
 	{#each projects.value as project (project.id)}
-		<div class="raised hairline flex items-center gap-3 border-b px-4 py-3.5">
+		<div
+			transition:collapse
+			animate:flip={flipCfg}
+			class="raised hairline flex items-center gap-3 border-b px-4 py-3.5"
+		>
 			<span class="size-3 shrink-0 rounded-full" style="background: {project.color}"></span>
 			{#if renaming === project.id}
 				<input

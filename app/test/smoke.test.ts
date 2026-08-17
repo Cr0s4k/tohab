@@ -135,17 +135,30 @@ try {
 	await waitFor(`${text('h1')} === 'Tasks'`, 20000, 'tasks screen rendered');
 	check('tasks screen renders', await evaluate(text('h1')), 'Tasks');
 
-	// --- 2. quick add parses natural language and persists ---
+	// --- 2. the compose sheet parses natural language and persists ---
+	await evaluate(`document.querySelector('button[aria-label="New task"]').click()`);
+	await waitFor(
+		`document.querySelector('input[placeholder="What needs doing?"]')`,
+		5000,
+		'compose sheet opened'
+	);
 	await evaluate(`(() => {
-		const input = document.querySelector('form input');
-		input.value = 'buy oat milk tomorrow 5pm p1';
+		const input = document.querySelector('input[placeholder="What needs doing?"]');
+		input.value = 'buy oat milk tomorrow 5pm !!1';
 		input.dispatchEvent(new Event('input', { bubbles: true }));
 	})()`);
-	await waitFor(`${bodyText}.includes('Tomorrow')`, 5000, 'quick add preview chip');
-	check('quick add previews the parsed date', await evaluate<boolean>(`${bodyText}.includes('Tomorrow')`), true);
-	check('quick add previews the priority', await evaluate<boolean>(`${bodyText}.includes('P1')`), true);
+	await waitFor(`${bodyText}.includes('Tomorrow')`, 5000, 'compose chip reflects the parse');
+	check('compose previews the parsed date', await evaluate<boolean>(`${bodyText}.includes('Tomorrow')`), true);
+	check('compose previews the priority', await evaluate<boolean>(`${bodyText}.includes('P1')`), true);
 
 	await evaluate(`document.querySelector('form button[type=submit]').click()`);
+	await waitFor(`${bodyText}.includes('1 added')`, 5000, 'compose confirms the add');
+	check('compose stays open for the next task', await evaluate<boolean>(`${bodyText}.includes('1 added')`), true);
+
+	// Escape rather than the sheet's Done button: the Tasks header has a Done tab too.
+	await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
+	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'sheet closed');
+
 	// The task is due tomorrow, so it belongs to Upcoming rather than Today.
 	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'Upcoming').click()`);
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'task appears in Upcoming');

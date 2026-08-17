@@ -8,13 +8,18 @@ import {
 	docsSince,
 	ensureSchema,
 	getDocForUpdate,
+	knownUsers,
+	liveDocs,
+	persistedSecret,
 	rowToDoc,
 	stats,
 	transaction,
 	writeDoc
 } from './db.ts';
+import { buildCalendar, feedToken, resolveFeedToken, type FeedTask } from './ics.ts';
 
 const PORT = Number(process.env.PORT ?? 5178);
+const DEFAULT_ALARM_MINUTES = 10;
 
 type PushRow = {
 	assumedMasterState?: Record<string, unknown>;
@@ -146,7 +151,46 @@ sync.get('/status', async (c) => {
 	});
 });
 
+const calendar = new Hono();
+
+/** Env wins so a deployment can pin the key; otherwise it is minted once and persisted. */
+async function calendarSecret(): Promise<string> {
+	return process.env.CALENDAR_SECRET || (await persistedSecret('calendar'));
+}
+
+calendar.get('/token', async (c) => {
+	const userId = userOf(c.req.header('x-user-id'), c.req.query('userId'));
+	return c.json({ token: feedToken(await calendarSecret(), userId) });
+});
+
+calendar.get('/:token/tohab.ics', async (c) => {
+	const userId = resolveFeedToken(await calendarSecret(), c.req.param('token'), await knownUsers());
+	if (!userId) return c.text('unknown calendar', 404);
+
+	const alarm = Number(c.req.query('alarm') ?? DEFAULT_ALARM_MINUTES);
+	const [taskRows, projectRows] = await Promise.all([
+		liveDocs(userId, 'tasks'),
+		liveDocs(userId, 'projects')
+	]);
+
+	const projects = new Map(
+		projectRows.map((row) => [String(row.data.id), String(row.data.name ?? '')])
+	);
+
+	const body = buildCalendar(taskRows.map((row) => row.data as unknown as FeedTask), {
+		alarmMinutes: Number.isFinite(alarm) ? Math.max(0, Math.min(1440, alarm)) : DEFAULT_ALARM_MINUTES,
+		name: 'Tohab',
+		projects
+	});
+
+	c.header('content-type', 'text/calendar; charset=utf-8');
+	// Feed readers poll on their own schedule; a short cache keeps repeat fetches cheap.
+	c.header('cache-control', 'private, max-age=300');
+	return c.body(body);
+});
+
 app.route('/sync', sync);
+app.route('/calendar', calendar);
 app.get('/', (c) => c.text('tohab sync server'));
 
 await ensureSchema();

@@ -21,7 +21,7 @@
 
 <nav
 	class="hairline sticky bottom-0 z-30 grid grid-cols-3 border-t pb-safe backdrop-blur-xl"
-	style="background: color-mix(in oklch, var(--surface-raised) 88%, transparent)"
+	style="background: color-mix(in oklch, var(--surface-raised) 88%, transparent); view-transition-name: tabbar"
 >
 	{#each tabs as tab (tab.href)}
 		{@const active = isActive(tab.href)}
@@ -32,10 +32,12 @@
 			class="tap flex flex-col items-center gap-1 pt-2.5 pb-1 text-[0.68rem] font-medium"
 			class:accent-fg={active}
 			class:dim={!active}
+			style="transition: color 180ms ease"
 		>
 			<svg
 				viewBox="0 0 24 24"
 				class="size-6"
+				style="transform: scale({active ? 1.06 : 1}); transition: transform 220ms cubic-bezier(0.22,1,0.36,1), stroke-width 180ms ease"
 				fill="none"
 				stroke="currentColor"
 				stroke-width={active ? 2.4 : 1.9}

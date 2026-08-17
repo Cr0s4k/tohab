@@ -18,6 +18,8 @@
 	import HabitEditor from '$lib/components/HabitEditor.svelte';
 	import SyncBadge from '$lib/components/SyncBadge.svelte';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
+	import { flip } from 'svelte/animate';
+	import { collapse, flipCfg } from '$lib/motion';
 
 	let offset = $state(0);
 	let creating = $state(false);
@@ -110,27 +112,34 @@
 	{:else}
 		{#each due as habit (habit.id)}
 			{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
-			<HabitRow
-				{habit}
-				value={valueOn(habitLogs, day)}
-				streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
-				onTap={() => tapLog(habit, day, valueOn(habitLogs, day))}
-			/>
-		{/each}
-
-		{#if rest.length}
-			<h2 class="sunken dim px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">
-				Not scheduled today
-			</h2>
-			{#each rest as habit (habit.id)}
-				{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
+			<div transition:collapse animate:flip={flipCfg}>
 				<HabitRow
 					{habit}
 					value={valueOn(habitLogs, day)}
 					streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
-					due={false}
 					onTap={() => tapLog(habit, day, valueOn(habitLogs, day))}
 				/>
+			</div>
+		{/each}
+
+		{#if rest.length}
+			<h2
+				transition:collapse
+				class="sunken dim px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
+			>
+				Not scheduled today
+			</h2>
+			{#each rest as habit (habit.id)}
+				{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
+				<div transition:collapse animate:flip={flipCfg}>
+					<HabitRow
+						{habit}
+						value={valueOn(habitLogs, day)}
+						streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
+						due={false}
+						onTap={() => tapLog(habit, day, valueOn(habitLogs, day))}
+					/>
+				</div>
 			{/each}
 		{/if}
 	{/if}

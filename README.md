@@ -82,7 +82,7 @@ compile and any managed Postgres works.
 ## Tests
 
 ```bash
-pnpm test               # pure logic: streak math, quick-add parser (45 assertions)
+pnpm test               # pure logic: streak math, quick-add parser, calendar feed (85 assertions)
 pnpm test:integration   # sync protocol, concurrency, RxDB replication, browser smoke test
 pnpm check              # typecheck app and server
 ```
@@ -93,8 +93,9 @@ needs the app running plus Chrome at the standard macOS path (override with `CHR
 
 ## What's in it
 
-**Tasks** — quick add with natural-language parsing, due dates, Today / Upcoming / All /
-Done views, four priorities, projects, notes, swipe to complete or delete.
+**Tasks** — a compose sheet behind the + button, natural-language parsing, due dates,
+Today / Upcoming / All / Done views, four priorities, projects, notes, swipe to complete or
+delete.
 
 **Habits** — binary and quantity habits, three schedule kinds (daily, chosen weekdays,
 N× per week), schedule-aware streaks, a 12-week heatmap you can tap to backfill, per-habit
@@ -103,7 +104,14 @@ stats, archiving.
 **Platform** — installable PWA that works fully offline, sync status indicator, dark mode,
 JSON export/import, haptics.
 
-### Quick-add syntax
+### Adding a task
+
+The + button opens a bottom sheet: title, notes, and chips for date, priority and project,
+each expanding into a picker. It stays open after adding so several tasks can go in one
+after another, and Done or Escape dismisses it.
+
+The chips are two views of the same fields, so typing quick-add syntax in the title fills
+them in live, and tapping a chip overrides whatever the parser found for that one field.
 
 | Input | Result |
 | --- | --- |
@@ -111,11 +119,35 @@ JSON export/import, haptics.
 | `in 3 days`, `in 2 weeks`, `in 1 month` | offsets |
 | `5 jan`, `jan 5`, `25/12`, `25/12/2027` | explicit dates (day-first) |
 | `5pm`, `at 9`, `14:30`, `9:30am` | times; a bare time implies today |
-| `p1`–`p4` or `!1`–`!4` | priority |
+| `p1`–`p4`, `!1`–`!4` or `!!1`–`!!4` | priority |
 | `#work` | project, created on demand if new |
 
 `buy oat milk tomorrow 5pm p1 #groceries` → title "buy oat milk", due tomorrow 17:00,
 priority 1, in the Groceries project.
+
+### Calendar feed
+
+Settings → Calendar feed reveals a subscription URL you can add to Google Calendar (Other
+calendars → From URL) or iOS Calendar. Open tasks with a due date become events: timed tasks
+get a 30-minute block with a `VALARM` reminder, date-only tasks become all-day events.
+Completed tasks are excluded, and a task's project becomes the event's category.
+
+```
+GET /calendar/token                    → { token }   (identified by x-user-id)
+GET /calendar/<token>/tohab.ics?alarm=10
+```
+
+- The URL carries an HMAC of your sync id, never the id itself. Feed URLs get handed to
+  Google and live in its history indefinitely, and the sync id is the only credential the
+  sync API has — so a leaked feed URL must not become write access to your data. The HMAC
+  key comes from `CALENDAR_SECRET`, or is generated once and stored in the `secrets` table.
+- `alarm` is the reminder lead time in minutes, baked into the URL by the settings screen.
+  `alarm=0` omits alarms. Only timed tasks get one: relative alarms on all-day events fire
+  at midnight in most clients, which is noise rather than a reminder.
+- Times are emitted as floating local wall-clock — no `TZID`, no `Z`. Tohab stores what the
+  device's calendar showed with no zone attached, so 9am stays 9am wherever it is read.
+- Anyone holding the URL can read your tasks, and the server must be reachable from the
+  internet for a hosted calendar to fetch it.
 
 ## How sync works
 
@@ -174,8 +206,12 @@ a tunnel; add real auth before exposing it publicly.
 
 ## Notes and limits
 
-- **No reminders/notifications.** iOS only delivers Web Push to an installed home-screen
-  PWA and it needs a server with VAPID keys, so it was left out.
+- **Reminders ride on the calendar feed, not on push.** Alarms are `VALARM` entries the
+  subscribed calendar app fires, which needs no VAPID keys and works on every device — but
+  the lead time is per-feed rather than per-task, only timed tasks get one, and delivery is
+  as prompt as the calendar client's refresh (Google polls a feed roughly hourly).
+- **No in-app notifications.** iOS only delivers Web Push to an installed home-screen PWA
+  and it needs a server with VAPID keys, so it was left out.
 - **No recurring tasks.** Deliberately deferred — recurrence plus timezones is where task
   apps accumulate their worst bugs.
 - **`navigator.vibrate` is a no-op on iOS Safari,** so haptics land on Android only. The

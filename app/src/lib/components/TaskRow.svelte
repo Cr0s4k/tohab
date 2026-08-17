@@ -3,6 +3,7 @@
 	import { humanDay, humanTime, daysFromToday } from '$lib/dates';
 	import { haptic } from '$lib/haptics';
 	import { priorityClass } from '$lib/tasks';
+	import { pop } from '$lib/motion';
 
 	let {
 		task,
@@ -104,10 +105,12 @@
 			class="tap mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border-2 {priorityClass(
 				task.priority
 			)}"
-			style="border-color: currentColor; background: {task.done ? 'currentColor' : 'transparent'}"
+			style="border-color: currentColor; background: {task.done
+				? 'currentColor'
+				: 'transparent'}; transition: background 160ms ease"
 		>
 			{#if task.done}
-				<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="var(--surface-raised)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+				<svg transition:pop={{ duration: 200 }} viewBox="0 0 24 24" class="size-4" fill="none" stroke="var(--surface-raised)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M4 12.5l5 5L20 6.5" />
 				</svg>
 			{/if}

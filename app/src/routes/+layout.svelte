@@ -1,11 +1,23 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
+	import { onNavigate } from '$app/navigation';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import { applyTheme, settings } from '$lib/settings.svelte';
 	import { startSync } from '$lib/db/replication.svelte';
+	import { motionOk } from '$lib/motion';
 
 	let { children } = $props();
+
+	onNavigate((navigation) => {
+		if (!document.startViewTransition || !motionOk()) return;
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 
 	onMount(() => {
 		applyTheme();
