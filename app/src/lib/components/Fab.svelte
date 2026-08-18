@@ -4,13 +4,21 @@
 	let {
 		label,
 		onPress,
-		withTabBar = true
-	}: { label: string; onPress: () => void; withTabBar?: boolean } = $props();
+		withTabBar = true,
+		mobileOnly = false
+	}: {
+		label: string;
+		onPress: () => void;
+		withTabBar?: boolean;
+		mobileOnly?: boolean;
+	} = $props();
 </script>
 
 <!-- Anchored to the app column, so it stays beside the list on wide screens instead of
      drifting to the window edge. -->
-<div class="pointer-events-none absolute inset-x-0 bottom-0 z-40">
+<div
+	class="pointer-events-none absolute inset-x-0 bottom-0 z-40 {mobileOnly ? 'md:hidden' : ''}"
+>
 	<div class="fab-pad flex justify-end px-4" style:--fab-gap={withTabBar ? '4.75rem' : '1.25rem'}>
 		<button
 			type="button"

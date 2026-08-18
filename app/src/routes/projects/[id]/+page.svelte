@@ -7,13 +7,13 @@
 	import { arrangeTasks } from '$lib/arrange';
 	import { isCustomised, projectScope, viewOptions } from '$lib/viewOptions.svelte';
 	import Fab from '$lib/components/Fab.svelte';
+	import { taskCompose } from '$lib/compose.svelte';
 	import TaskCompose from '$lib/components/TaskCompose.svelte';
 	import TaskRow from '$lib/components/TaskRow.svelte';
 	import TaskEditor from '$lib/components/TaskEditor.svelte';
 	import ViewOptionsSheet from '$lib/components/ViewOptionsSheet.svelte';
 
 	let editing = $state<Task | null>(null);
-	let composing = $state(false);
 	let tuning = $state(false);
 
 	// The Inbox is the absence of a project, so it gets a reserved route id.
@@ -89,13 +89,13 @@
 	{/if}
 </main>
 
-<Fab label="New task in {title}" onPress={() => (composing = true)} />
+<Fab label="New task in {title}" mobileOnly onPress={() => (taskCompose.open = true)} />
 
 <TaskCompose
-	open={composing}
+	open={taskCompose.open}
 	projects={projects.value}
 	defaults={{ projectId }}
-	onClose={() => (composing = false)}
+	onClose={() => (taskCompose.open = false)}
 />
 
 <TaskEditor task={editing} projects={projects.value} onClose={() => (editing = null)} />

@@ -12,6 +12,7 @@
 	import { auth } from '$lib/auth.svelte';
 	import { applyTheme, settings } from '$lib/settings.svelte';
 	import { settingsSheet } from '$lib/settingsSheet.svelte';
+	import { taskCompose } from '$lib/compose.svelte';
 	import { startSync } from '$lib/db/replication.svelte';
 	import { removeDb } from '$lib/db';
 	import { motionOk } from '$lib/motion';
@@ -35,6 +36,7 @@
 	}
 
 	onNavigate((navigation) => {
+		taskCompose.open = false;
 		if (!document.startViewTransition || !motionOk()) return;
 		return new Promise((resolve) => {
 			document.startViewTransition(async () => {

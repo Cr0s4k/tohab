@@ -10,7 +10,7 @@
 		haptic('tap');
 		settingsSheet.open = true;
 	}}
-	class="tap sunken hairline grid size-8 place-items-center rounded-full border"
+	class="tap sunken hairline grid size-8 place-items-center rounded-full border md:hidden"
 >
 	<svg
 		viewBox="0 0 24 24"

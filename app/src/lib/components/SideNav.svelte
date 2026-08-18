@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { settings, setSidebarCollapsed } from '$lib/settings.svelte';
 	import { settingsSheet } from '$lib/settingsSheet.svelte';
+	import { taskCompose } from '$lib/compose.svelte';
 
 	const groups = [
 		{
@@ -31,10 +33,17 @@
 		progress: 'M4 19V5M4 19h16M7 15l3-3 3 3 5-6',
 		settings:
 			'M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 01-2.8 2.8l-.1-.1a1.7 1.7 0 00-2.9 1.2v.2a2 2 0 01-4 0v-.1a1.7 1.7 0 00-2.9-1.3l-.1.1a2 2 0 01-2.8-2.8l.1-.1A1.7 1.7 0 003.6 14H3.4a2 2 0 010-4h.2a1.7 1.7 0 001.2-2.9l-.1-.1a2 2 0 012.8-2.8l.1.1A1.7 1.7 0 0010 3.6V3.4a2 2 0 014 0v.2a1.7 1.7 0 002.9 1.2l.1-.1a2 2 0 012.8 2.8l-.1.1A1.7 1.7 0 0021 10h.2a2 2 0 010 4H21a1.7 1.7 0 00-1.6 1z',
-		collapse: 'M11 17l-5-5 5-5M18 17l-5-5 5-5'
+		collapse: 'M11 17l-5-5 5-5M18 17l-5-5 5-5',
+		add: 'M12 5v14M5 12h14'
 	};
 
 	let collapsed = $derived(settings.sidebarCollapsed);
+
+	async function addTask() {
+		const path = page.url.pathname;
+		if (path !== '/tasks' && !path.startsWith('/projects/')) await goto('/tasks?view=today');
+		taskCompose.open = true;
+	}
 
 	function isActive(href: string) {
 		const [path, query = ''] = href.split('?');
@@ -89,6 +98,28 @@
 	</div>
 
 	<nav class="min-h-0 flex-1 overflow-y-auto px-2.5 pb-4">
+		<button
+			type="button"
+			title={collapsed ? 'Add task' : undefined}
+			onclick={addTask}
+			class="nav-item nav-add w-full"
+		>
+			<svg
+				viewBox="0 0 24 24"
+				class="size-[1.15rem] shrink-0"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.3"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path d={paths.add} />
+			</svg>
+			{#if !collapsed}
+				Add task
+			{/if}
+		</button>
+
 		{#each groups as group (group.label)}
 			{#if collapsed}
 				<hr class="hairline mx-1.5 my-2.5 border-t" />
@@ -185,6 +216,11 @@
 	.nav-item:hover {
 		background: var(--surface-sunken);
 		color: var(--text);
+	}
+
+	.nav-add {
+		color: var(--accent-muted, var(--accent));
+		font-weight: 600;
 	}
 
 	.nav-active {
