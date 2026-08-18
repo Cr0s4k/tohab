@@ -14,24 +14,48 @@ function audio(): AudioContext | null {
 	return ctx;
 }
 
-function blip(context: AudioContext, freq: number, at: number, duration: number) {
+function partial(
+	context: AudioContext,
+	out: AudioNode,
+	type: OscillatorType,
+	freq: number,
+	at: number,
+	duration: number,
+	level: number
+) {
 	const osc = context.createOscillator();
 	const gain = context.createGain();
-	osc.type = 'sine';
+	osc.type = type;
 	osc.frequency.value = freq;
 	gain.gain.setValueAtTime(0, at);
-	gain.gain.linearRampToValueAtTime(0.12, at + 0.008);
+	gain.gain.linearRampToValueAtTime(level, at + 0.006);
 	gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
-	osc.connect(gain).connect(context.destination);
+	osc.connect(gain).connect(out);
 	osc.start(at);
 	osc.stop(at + duration);
+}
+
+function bell(context: AudioContext, out: AudioNode, freq: number, at: number, duration: number) {
+	partial(context, out, 'sine', freq, at, duration, 0.3);
+	partial(context, out, 'triangle', freq * 2, at, duration * 0.5, 0.075);
+	partial(context, out, 'sine', freq * 3.01, at, duration * 0.28, 0.03);
 }
 
 export function playComplete() {
 	if (!settings.sound) return;
 	const context = audio();
 	if (!context) return;
-	const now = context.currentTime;
-	blip(context, 784, now, 0.09);
-	blip(context, 1175, now + 0.07, 0.14);
+	const now = context.currentTime + 0.01;
+
+	const master = context.createGain();
+	master.gain.value = 0.9;
+	const tone = context.createBiquadFilter();
+	tone.type = 'lowpass';
+	tone.frequency.value = 6000;
+	tone.Q.value = 0.4;
+	tone.connect(master).connect(context.destination);
+
+	bell(context, tone, 587.33, now, 0.5);
+	bell(context, tone, 880, now + 0.055, 0.6);
+	bell(context, tone, 1174.66, now + 0.11, 1.1);
 }
