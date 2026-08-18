@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { sync, resync } from '$lib/db/replication.svelte';
+	import { sync } from '$lib/db/syncState.svelte';
 	import { haptic, hapticTap } from '$lib/haptics';
 
 	const meta = {
@@ -19,7 +19,7 @@
 	use:hapticTap
 	onclick={() => {
 		haptic('tap');
-		resync();
+		import('$lib/db/replication.svelte').then((m) => m.resync());
 	}}
 	title={sync.message || current.label}
 	class="tap grid size-9 place-items-center md:size-6"

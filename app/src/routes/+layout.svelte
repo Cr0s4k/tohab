@@ -13,8 +13,7 @@
 	import { applyTheme, settings } from '$lib/settings.svelte';
 	import { settingsSheet } from '$lib/settingsSheet.svelte';
 	import { taskCompose } from '$lib/compose.svelte';
-	import { startSync } from '$lib/db/replication.svelte';
-	import { removeDb } from '$lib/db';
+	import { removeDb } from '$lib/db/lazy';
 	import { motionOk } from '$lib/motion';
 	import { hideSplash } from '$lib/splash';
 
@@ -57,21 +56,27 @@
 			ready = false;
 			return;
 		}
-		adoptLocalDb(userId).then(() => {
+		adoptLocalDb(userId).then(async () => {
 			ready = true;
+			const { startSync } = await import('$lib/db/replication.svelte');
 			startSync();
 		});
 	});
 
 	onMount(() => {
 		applyTheme();
+		// Nothing below should be able to strand the boot splash over the app.
+		const failsafe = setTimeout(hideSplash, 10_000);
 
 		const media = matchMedia('(prefers-color-scheme: dark)');
 		const onSystemChange = () => {
 			if (settings.theme === 'system') applyTheme();
 		};
 		media.addEventListener('change', onSystemChange);
-		return () => media.removeEventListener('change', onSystemChange);
+		return () => {
+			clearTimeout(failsafe);
+			media.removeEventListener('change', onSystemChange);
+		};
 	});
 </script>
 

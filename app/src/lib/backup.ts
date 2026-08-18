@@ -1,6 +1,6 @@
-import { getDb } from './db/index.ts';
+import { getDb } from './db/lazy.ts';
 import { COLLECTION_NAMES, type CollectionName } from './db/schemas.ts';
-import { markLocalWrite } from './db/replication.svelte.ts';
+import { markLocalWrite } from './db/syncState.svelte.ts';
 
 export type Backup = {
 	format: 'tohab-backup';

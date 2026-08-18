@@ -1,6 +1,7 @@
-import { getDb, type Db } from './db/index.ts';
+import { getDb } from './db/lazy.ts';
+import type { Db } from './db/index.ts';
 import type { Habit, HabitGoal, HabitLog, HabitKind, ScheduleKind } from './db/schemas.ts';
-import { markLocalWrite } from './db/replication.svelte.ts';
+import { markLocalWrite } from './db/syncState.svelte.ts';
 import { HABIT_COLORS, logId, type LogMap } from './streaks.ts';
 import type { DayKey } from './dates.ts';
 import { now, uid } from './ids.ts';

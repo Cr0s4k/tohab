@@ -6,28 +6,13 @@ import { settings } from '$lib/settings.svelte';
 import { auth, forget } from '$lib/auth.svelte';
 import { getDb } from './index.ts';
 import { COLLECTION_NAMES, type CollectionName } from './schemas.ts';
+import { sync } from './syncState.svelte.ts';
 
 /** The cursor is a server-owned monotonic revision, not a timestamp, so client clock
  *  skew can never make the pull cursor skip documents. */
 export type Checkpoint = { cursor: number; id: string };
 
-export type SyncPhase = 'off' | 'offline' | 'syncing' | 'synced' | 'error' | 'unauthorized';
-
-export const sync = $state({
-	phase: 'off' as SyncPhase,
-	pending: 0,
-	conflicts: 0,
-	lastSyncedAt: 0,
-	message: ''
-});
-
-/**
- * Local writes are counted optimistically and cleared once every collection reports
- * an idle replication cycle, which is the only signal RxDB exposes for "fully pushed".
- */
-export function markLocalWrite() {
-	sync.pending += 1;
-}
+export { sync, markLocalWrite, type SyncPhase } from './syncState.svelte.ts';
 
 let states: RxReplicationState<unknown, Checkpoint>[] = [];
 let streams: Subject<RxReplicationPullStreamItem<unknown, Checkpoint>>[] = [];
