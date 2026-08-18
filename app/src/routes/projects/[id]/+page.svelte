@@ -69,9 +69,9 @@
 		{#each groups as group (group.key)}
 			{#if group.label}
 				<h2
-					class="raised hairline sticky top-0 z-10 border-b px-4 py-1.5 text-caption font-semibold tracking-wide uppercase dim"
+					class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-caption font-semibold tracking-wide uppercase"
 				>
-					<span class="measure flex items-center justify-between">
+					<span class="hairline measure flex items-center justify-between border-b pb-1.5">
 						<span>{group.label}</span>
 						<span>{group.tasks.length}</span>
 					</span>

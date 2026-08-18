@@ -133,9 +133,9 @@
 		{#if rest.length}
 			<h2
 				transition:collapse
-				class="raised hairline sticky top-0 z-10 border-b px-4 py-1.5 text-caption font-semibold tracking-wide uppercase dim"
+				class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-caption font-semibold tracking-wide uppercase"
 			>
-				Not scheduled today
+				<span class="hairline measure block border-b pb-1.5">Not scheduled today</span>
 			</h2>
 			{#each rest as habit (habit.id)}
 				{@const habitLogs = byHabit.get(habit.id) ?? new Map()}

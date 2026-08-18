@@ -65,9 +65,9 @@
 
 <main class="flex-1">
 	<section>
-		<div class="sunken sticky top-0 z-10 px-4 pt-3 pb-1.5">
-			<div class="measure flex items-center justify-between">
-				<h2 class="dim text-caption font-semibold tracking-wide uppercase">Projects</h2>
+		<div class="surface sticky top-0 z-10 px-4 pt-3 pb-0">
+			<div class="hairline measure flex items-center justify-between border-b pb-1.5">
+				<h2 class="text-caption font-semibold tracking-wide uppercase">Projects</h2>
 				<button
 					type="button"
 					use:hapticTap

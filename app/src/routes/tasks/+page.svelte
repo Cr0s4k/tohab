@@ -27,6 +27,15 @@
 	let view = $derived(viewFromUrl());
 	let editing = $state<Task | null>(null);
 	let tuning = $state(false);
+	let mainEl = $state<HTMLElement | null>(null);
+	let scrolled = $state(false);
+
+	const viewTitles: Record<View, string> = {
+		inbox: 'Inbox',
+		today: 'Today',
+		upcoming: 'Upcoming',
+		all: 'Tasks'
+	};
 
 	let opts = $derived(viewOptions(view));
 
@@ -54,7 +63,11 @@
 	};
 </script>
 
-<header class="hairline z-20 shrink-0 border-b pt-safe">
+<header
+	class="z-20 shrink-0 pt-safe"
+	style:border-color="var(--product-library-divider-secondary)"
+	class:border-b={scrolled}
+>
 	<div class="measure flex items-center justify-between px-4 pt-2 pb-2">
 		<div class="flex items-center gap-2">
 			<button
@@ -63,7 +76,7 @@
 				class="tap flex items-center gap-1.5 text-left"
 				aria-label="Switch to Habits"
 			>
-				<span class="text-header md:text-header-large font-bold tracking-tight">Tasks</span>
+				<span class="text-header md:text-header-large font-bold tracking-tight">{viewTitles[view]}</span>
 				<svg
 					viewBox="0 0 24 24"
 					class="dim size-4 md:hidden"
@@ -104,7 +117,7 @@
 	</div>
 </header>
 
-<main class="flex-1 pb-20">
+<main class="flex-1 pb-20" bind:this={mainEl} onscroll={() => (scrolled = (mainEl?.scrollTop ?? 0) > 0)}>
 	{#if tasks.loading && !tasks.value.length}
 		<p class="dim measure px-4 py-10 text-center text-sm">Loading…</p>
 	{:else if !count}
@@ -114,9 +127,9 @@
 			{#if group.label}
 				<h2
 					transition:collapse
-					class="raised hairline sticky top-0 z-10 border-b px-4 py-1.5 text-caption font-semibold tracking-wide uppercase dim"
+					class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-caption font-semibold tracking-wide uppercase"
 				>
-					<span class="measure flex items-center justify-between">
+					<span class="hairline measure flex items-center justify-between border-b pb-1.5">
 						<span>{group.label}</span>
 						<span>{group.tasks.length}</span>
 					</span>
