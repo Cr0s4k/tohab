@@ -5,22 +5,31 @@
 @theme {
 	--font-sans:
 		-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-	--color-p1: oklch(0.62 0.21 25);
-	--color-p2: oklch(0.72 0.17 60);
-	--color-p3: oklch(0.62 0.15 250);
-	--color-p4: oklch(0.65 0.01 250);
+	--color-p1: #d1453b;
+	--color-p2: #eb8909;
+	--color-p3: #246fe0;
+	--color-p4: #666;
 }
 
 @layer base {
 	:root {
-		--surface: oklch(0.985 0.002 250);
-		--surface-raised: oklch(1 0 0);
-		--surface-sunken: oklch(0.945 0.004 250);
-		--line: oklch(0.9 0.005 250);
-		--text: oklch(0.24 0.01 250);
-		--text-dim: oklch(0.55 0.012 250);
-		--accent: oklch(0.58 0.19 25);
-		--accent-text: oklch(0.99 0 0);
+		--surface: #fcfaf8;
+		--surface-raised: #ffffff;
+		--surface-sunken: #f2efed;
+		--surface-hover: #f2efed;
+		--line: #eeeeee;
+		--line-strong: #d3d3d3;
+		--text: #202020;
+		--text-dim: #666666;
+		--text-faint: #999999;
+		--accent: #dc4c3e;
+		--accent-muted: #c3392c;
+		--accent-soft: #fbe9e7;
+		--accent-text: #ffffff;
+		--danger: #dc4c3e;
+		--positive: #058527;
+		--selected-bg: #ffefe5;
+		--selected-text: #a81f00;
 		--measure: 56rem;
 		color-scheme: light;
 	}
@@ -28,18 +37,25 @@
 	[data-theme='dark'] {
 		--surface: #1f1f1f;
 		--surface-raised: #262626;
-		--surface-sunken: #2e2e2e;
-		--line: #393939;
+		--surface-sunken: #363636;
+		--surface-hover: #363636;
+		--line: #3d3d3d;
+		--line-strong: #666666;
 		--text: #ffffff;
-		--text-dim: #b8b8b8;
-		--accent: #ee796c;
-		--accent-muted: #d37165;
-		--accent-soft: #422726;
-		--accent-text: #1f1f1f;
-		--color-p1: #ee796c;
-		--color-p2: #f19f3d;
-		--color-p3: #7859bc;
-		--color-p4: #b8b8b8;
+		--text-dim: #cccccc;
+		--text-faint: #a8a8a8;
+		--accent: #de4c4a;
+		--accent-muted: #e36564;
+		--accent-soft: #472525;
+		--accent-text: #ffffff;
+		--danger: #e06155;
+		--positive: #08a531;
+		--selected-bg: #472525;
+		--selected-text: #f07f75;
+		--color-p1: #ff7066;
+		--color-p2: #ff9a13;
+		--color-p3: #5297ff;
+		--color-p4: #a9a9a9;
 		color-scheme: dark;
 	}
 
@@ -114,11 +130,20 @@
 @utility sunken {
 	background: var(--surface-sunken);
 }
+@utility surface-hover {
+	background: var(--surface-hover);
+}
 @utility hairline {
 	border-color: var(--line);
 }
+@utility line-strong {
+	border-color: var(--line-strong);
+}
 @utility dim {
 	color: var(--text-dim);
+}
+@utility faint {
+	color: var(--text-faint);
 }
 @utility accent-bg {
 	background: var(--accent);
@@ -126,6 +151,13 @@
 }
 @utility accent-fg {
 	color: var(--accent-muted, var(--accent));
+}
+@utility danger {
+	color: var(--danger);
+}
+@utility danger-bg {
+	background: var(--danger);
+	color: #ffffff;
 }
 
 /** Caps a band's content while the band itself — background, hairline — stays full bleed. */

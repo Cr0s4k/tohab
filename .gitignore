@@ -9,6 +9,9 @@ app/.vite/
 # server (postgres data lives in a docker volume)
 server/drizzle/
 
+# Local design references.
+/design/
+
 .env
 .env.*
 !.env.example

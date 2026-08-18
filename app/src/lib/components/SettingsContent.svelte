@@ -280,7 +280,7 @@
 
 		<div class="px-4 py-3 text-[0.68rem]">
 			{#if feedError}
-				<p style="color: oklch(0.62 0.2 25)">{feedError}</p>
+				<p class="danger">{feedError}</p>
 			{:else}
 				<p class="dim">
 					Subscribe to this URL in Google Calendar (Other calendars → From URL) or iOS

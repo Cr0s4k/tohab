@@ -234,8 +234,8 @@
 	}
 
 	.nav-active {
-		background: var(--surface-sunken);
-		color: var(--accent-muted, var(--accent));
+		background: var(--selected-bg);
+		color: var(--selected-text);
 		font-weight: 400;
 	}
 </style>

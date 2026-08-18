@@ -160,8 +160,7 @@
 								haptic('warn');
 								deleteProject(project.id);
 							}}
-							class="tap p-1 text-xs"
-							style="color: oklch(0.62 0.2 25)"
+							class="tap danger p-1 text-xs"
 						>
 							Delete
 						</button>

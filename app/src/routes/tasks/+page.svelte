@@ -77,7 +77,7 @@
 				</svg>
 			</button>
 			{#if overdueCount > 0}
-				<p class="text-xs font-medium" style="color: oklch(0.62 0.2 25)">
+				<p class="danger text-xs font-medium">
 					{overdueCount} overdue
 				</p>
 			{/if}
@@ -114,7 +114,7 @@
 			{#if group.label}
 				<h2
 					transition:collapse
-					class="sunken dim sticky top-0 z-10 px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
+					class="raised hairline sticky top-0 z-10 border-b px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase dim"
 				>
 					<span class="measure flex items-center justify-between">
 						<span>{group.label}</span>

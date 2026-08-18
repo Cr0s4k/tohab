@@ -84,13 +84,13 @@
 		<div class="measure flex h-full items-center justify-between">
 			<span
 				class="flex items-center gap-2"
-				style="color: oklch(0.62 0.15 150); opacity: {Math.min(1, Math.max(0, dx / THRESHOLD))}"
+				style="color: var(--positive); opacity: {Math.min(1, Math.max(0, dx / THRESHOLD))}"
 			>
 				✓ {task.done ? 'Reopen' : 'Complete'}
 			</span>
 			<span
 				class="flex items-center gap-2"
-				style="color: oklch(0.62 0.2 25); opacity: {Math.min(1, Math.max(0, -dx / THRESHOLD))}"
+				style="color: var(--danger); opacity: {Math.min(1, Math.max(0, -dx / THRESHOLD))}"
 			>
 				Delete
 			</span>
@@ -99,7 +99,7 @@
 
 	<div
 		role="group"
-		class="surface hairline relative border-b px-4 py-3 hover:sunken active:sunken"
+		class="surface hairline relative border-b px-4 py-2.5 hover:surface-hover active:surface-hover"
 		style="transform: translateX({dx}px); transition: {dragging
 			? 'none'
 			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: pan-y"
@@ -117,7 +117,7 @@
 					haptic('success');
 					complete();
 				}}
-				class="tap relative grid size-6 shrink-0 place-items-center rounded-full border-2 before:absolute before:-inset-2.5 before:content-[''] {hasMeta
+				class="tap relative grid size-5 shrink-0 place-items-center rounded-full border-2 before:absolute before:-inset-2.5 before:content-[''] {hasMeta
 					? 'mt-0.5'
 					: ''} {priorityClass(task.priority)}"
 				style="border-color: currentColor; background: {task.done
@@ -132,13 +132,13 @@
 			</button>
 
 			<button type="button" onclick={onOpen} class="min-w-0 flex-1 text-left">
-				<div class="truncate text-[0.95rem] leading-snug" class:line-through={task.done} class:dim={task.done}>
+				<div class="truncate text-sm leading-snug" class:line-through={task.done} class:dim={task.done}>
 					{task.title}
 				</div>
 				{#if task.due || project || task.notes}
 					<div class="mt-1 flex items-center gap-2 text-xs">
 						{#if task.due}
-							<span class:dim={!overdue} style={overdue ? 'color: oklch(0.62 0.2 25)' : ''}>
+							<span class:dim={!overdue} style={overdue ? 'color: var(--danger)' : ''}>
 								{humanDay(task.due)}{task.dueTime ? ` · ${humanTime(task.dueTime)}` : ''}
 							</span>
 						{/if}

@@ -52,14 +52,14 @@
 			<input
 				bind:value={draft.title}
 				placeholder="Title"
-				class="sunken w-full rounded-2xl px-4 py-3 text-[0.95rem] outline-none"
+				class="sunken w-full rounded-lg px-3 py-2.5 text-sm outline-none"
 			/>
 
 			<textarea
 				bind:value={draft.notes}
 				placeholder="Notes"
 				rows="3"
-				class="sunken w-full resize-none rounded-2xl px-4 py-3 text-[0.9rem] outline-none placeholder:opacity-50"
+				class="sunken w-full resize-none rounded-lg px-3 py-2.5 text-[0.9rem] outline-none placeholder:opacity-50"
 			></textarea>
 
 			<div>
@@ -137,7 +137,7 @@
 				<button
 					type="button"
 					onclick={close}
-					class="tap accent-bg flex-1 rounded-2xl py-3 text-sm font-semibold"
+					class="tap accent-bg flex-1 rounded-lg py-2.5 text-sm font-semibold"
 				>
 					Save
 				</button>
@@ -148,8 +148,7 @@
 						haptic('warn');
 						deleteTask(id).then(onClose);
 					}}
-					class="tap sunken rounded-2xl px-5 py-3 text-sm font-semibold"
-					style="color: oklch(0.62 0.2 25)"
+					class="tap sunken danger rounded-lg px-5 py-2.5 text-sm font-semibold"
 				>
 					Delete
 				</button>

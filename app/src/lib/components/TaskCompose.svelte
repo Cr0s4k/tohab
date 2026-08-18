@@ -108,7 +108,7 @@
 				enterkeyhint="done"
 				autocapitalize="sentences"
 				autocomplete="off"
-				class="sunken w-full rounded-2xl px-4 py-3 text-[0.95rem] outline-none placeholder:opacity-50"
+				class="sunken w-full rounded-lg px-3 py-2.5 text-sm outline-none placeholder:opacity-50"
 			/>
 
 			<div class="flex flex-wrap gap-1.5">
@@ -242,7 +242,7 @@
 				type="submit"
 				use:hapticTap
 				disabled={!title}
-				class="tap accent-bg rounded-2xl py-3 text-sm font-semibold disabled:opacity-30"
+				class="tap accent-bg rounded-lg py-2.5 text-sm font-semibold disabled:opacity-30"
 			>
 				Add task
 			</button>

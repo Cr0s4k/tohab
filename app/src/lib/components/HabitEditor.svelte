@@ -343,8 +343,7 @@
 							haptic('warn');
 							deleteHabit(habit.id).then(() => (onDeleted ?? onClose)());
 						}}
-						class="tap sunken rounded-2xl px-5 py-3 text-sm font-semibold"
-						style="color: oklch(0.62 0.2 25)"
+						class="tap sunken danger rounded-2xl px-5 py-3 text-sm font-semibold"
 					>
 						Delete
 					</button>
