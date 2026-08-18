@@ -17,9 +17,11 @@
 		children: Snippet;
 	} = $props();
 
+	let pane = $state<HTMLElement | null>(null);
+
 	$effect(() => {
 		if (!open) return;
-		lockScroll();
+		lockScroll(() => pane);
 		return unlockScroll;
 	});
 </script>
@@ -31,11 +33,12 @@
 			aria-label="Close"
 			onclick={onClose}
 			transition:veil
-			class="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
+			class="absolute inset-0 touch-none bg-black/45 backdrop-blur-[2px]"
 		></button>
 
 		<div
-			class="raised hairline relative max-h-[88vh] w-full overflow-y-auto rounded-t-3xl pb-safe md:max-h-[80vh] md:max-w-lg md:rounded-3xl md:border md:shadow-2xl"
+			bind:this={pane}
+			class="raised hairline relative max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl pb-safe md:max-h-[80dvh] md:max-w-lg md:rounded-3xl md:border md:shadow-2xl"
 			transition:sheet
 		>
 			<div
