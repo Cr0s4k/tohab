@@ -26,7 +26,7 @@
 </script>
 
 <div
-	class="raised hairline border-b px-4 py-3 transition-colors hover:sunken"
+	class="hairline border-b px-4 py-3 transition-colors hover:sunken"
 	class:opacity-55={!due}
 >
 	<div class="measure flex items-center gap-3">

@@ -15,6 +15,7 @@
 	} from '$lib/habits';
 	import { humanDay, shiftKey, today } from '$lib/dates';
 	import { settings } from '$lib/settings.svelte';
+	import { habitCompose } from '$lib/compose.svelte';
 	import HabitRow from '$lib/components/HabitRow.svelte';
 	import HabitEditor from '$lib/components/HabitEditor.svelte';
 	import Fab from '$lib/components/Fab.svelte';
@@ -25,7 +26,6 @@
 	import { collapse, flipCfg } from '$lib/motion';
 
 	let offset = $state(0);
-	let creating = $state(false);
 
 	let day = $derived(shiftKey(today(), offset));
 
@@ -153,6 +153,10 @@
 	{/if}
 </main>
 
-<Fab label="New habit" onPress={() => (creating = true)} />
+<Fab label="New habit" mobileOnly onPress={() => (habitCompose.open = true)} />
 
-<HabitEditor open={creating} nextColor={habits.value.length} onClose={() => (creating = false)} />
+<HabitEditor
+	open={habitCompose.open}
+	nextColor={habits.value.length}
+	onClose={() => (habitCompose.open = false)}
+/>

@@ -99,7 +99,7 @@
 
 	<div
 		role="group"
-		class="raised hairline relative border-b px-4 py-3 hover:sunken active:sunken"
+		class="surface hairline relative border-b px-4 py-3 hover:sunken active:sunken"
 		style="transform: translateX({dx}px); transition: {dragging
 			? 'none'
 			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: pan-y"

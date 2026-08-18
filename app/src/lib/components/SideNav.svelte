@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { settings, setSidebarCollapsed } from '$lib/settings.svelte';
 	import { settingsSheet } from '$lib/settingsSheet.svelte';
-	import { taskCompose } from '$lib/compose.svelte';
+	import { habitCompose, taskCompose } from '$lib/compose.svelte';
 	import UndoToast from '$lib/components/UndoToast.svelte';
 
 	const groups = [
@@ -40,8 +40,18 @@
 
 	let collapsed = $derived(settings.sidebarCollapsed);
 
-	async function addTask() {
+	let inHabits = $derived(
+		page.url.pathname.startsWith('/habits') || page.url.pathname === '/progress'
+	);
+	let addLabel = $derived(inHabits ? 'Add habit' : 'Add task');
+
+	async function add() {
 		const path = page.url.pathname;
+		if (inHabits) {
+			if (path !== '/habits') await goto('/habits');
+			habitCompose.open = true;
+			return;
+		}
 		if (path !== '/tasks' && !path.startsWith('/projects/')) await goto('/tasks?view=today');
 		taskCompose.open = true;
 	}
@@ -66,7 +76,7 @@
 </script>
 
 <aside
-	class="surface hairline hidden shrink-0 flex-col border-r md:flex"
+	class="raised hairline hidden shrink-0 flex-col border-r md:flex"
 	class:rail={collapsed}
 	class:panel={!collapsed}
 	style="view-transition-name: sidenav"
@@ -101,8 +111,8 @@
 	<nav class="min-h-0 flex-1 overflow-y-auto px-2.5 pb-4">
 		<button
 			type="button"
-			title={collapsed ? 'Add task' : undefined}
-			onclick={addTask}
+			title={collapsed ? addLabel : undefined}
+			onclick={add}
 			class="nav-item nav-add w-full"
 		>
 			<svg
@@ -117,7 +127,7 @@
 				<path d={paths.add} />
 			</svg>
 			{#if !collapsed}
-				Add task
+				{addLabel}
 			{/if}
 		</button>
 
