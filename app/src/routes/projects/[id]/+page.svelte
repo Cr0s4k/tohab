@@ -69,7 +69,7 @@
 		{#each groups as group (group.key)}
 			{#if group.label}
 				<h2
-					class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-caption font-semibold tracking-wide"
+					class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-copy font-semibold tracking-wide"
 				>
 					<span class="hairline measure flex items-center justify-between border-b pb-1.5">
 						<span>{group.label}</span>

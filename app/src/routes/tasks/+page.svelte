@@ -68,7 +68,7 @@
 	style:border-color="var(--product-library-divider-secondary)"
 	class:border-b={scrolled}
 >
-	<div class="measure flex items-center justify-between px-4 pt-2 pb-2">
+	<div class="measure relative flex items-center justify-between px-4 pt-2 pb-2">
 		<div class="flex items-center gap-2">
 			<button
 				type="button"
@@ -76,7 +76,12 @@
 				class="tap flex items-center gap-1.5 text-left"
 				aria-label="Switch to Habits"
 			>
-				<span class="text-header md:text-header-large font-bold tracking-tight">{viewTitles[view]}</span>
+				<span
+					class="text-header md:text-header-large font-bold tracking-tight transition-opacity duration-200"
+					class:opacity-0={scrolled}
+				>
+					{viewTitles[view]}
+				</span>
 				<svg
 					viewBox="0 0 24 24"
 					class="dim size-4 md:hidden"
@@ -94,6 +99,15 @@
 					{overdueCount} overdue
 				</p>
 			{/if}
+		</div>
+		<div
+			class="pointer-events-none absolute inset-x-0 top-0 bottom-0 flex items-center justify-center transition-opacity duration-200"
+			class:opacity-0={!scrolled}
+			aria-hidden={!scrolled}
+		>
+			<span class="text-header md:text-header-large font-bold tracking-tight">
+				{viewTitles[view]}
+			</span>
 		</div>
 		<div class="flex items-center gap-2">
 			<button
@@ -127,7 +141,7 @@
 			{#if group.label}
 				<h2
 					transition:collapse
-					class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-caption font-semibold tracking-wide"
+					class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-copy font-semibold tracking-wide"
 				>
 					<span class="hairline measure flex items-center justify-between border-b pb-1.5">
 						<span>{group.label}</span>
