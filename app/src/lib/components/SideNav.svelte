@@ -88,7 +88,7 @@
 				style="transform: rotate({collapsed ? 180 : 0}deg); transition: transform 200ms ease"
 				fill="none"
 				stroke="currentColor"
-				stroke-width="1.85"
+				stroke-width="1.5"
 				stroke-linecap="round"
 				stroke-linejoin="round"
 			>
@@ -109,7 +109,7 @@
 				class="size-[1.15rem] shrink-0"
 				fill="none"
 				stroke="currentColor"
-				stroke-width="2.3"
+				stroke-width="1.75"
 				stroke-linecap="round"
 				stroke-linejoin="round"
 			>
@@ -142,7 +142,7 @@
 						class="size-[1.15rem] shrink-0"
 						fill="none"
 						stroke="currentColor"
-						stroke-width={active ? 2.3 : 1.85}
+						stroke-width="1.5"
 						stroke-linecap="round"
 						stroke-linejoin="round"
 					>
@@ -168,7 +168,7 @@
 				class="size-[1.15rem] shrink-0"
 				fill="none"
 				stroke="currentColor"
-				stroke-width="1.85"
+				stroke-width="1.5"
 				stroke-linecap="round"
 				stroke-linejoin="round"
 			>
