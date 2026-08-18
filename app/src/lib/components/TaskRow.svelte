@@ -26,8 +26,9 @@
 	let dx = $state(0);
 	let dragging = $state(false);
 	let armed = $state(false);
+	let swipeEl = $state<HTMLElement | null>(null);
 	let start = { x: 0, y: 0 };
-	let axis: 'none' | 'x' | 'y' = 'none';
+	let axis = $state<'none' | 'x' | 'y'>('none');
 
 	let overdue = $derived(!task.done && !!task.due && daysFromToday(task.due) < 0);
 	let hasMeta = $derived(Boolean(task.due || project || task.notes));
@@ -43,6 +44,7 @@
 		start = { x: e.clientX, y: e.clientY };
 		axis = 'none';
 		dragging = true;
+		swipeEl?.addEventListener('touchmove', preventVerticalScroll, { passive: false });
 	}
 
 	function move(e: PointerEvent) {
@@ -62,8 +64,13 @@
 		}
 	}
 
+	function preventVerticalScroll(e: TouchEvent) {
+		if (axis === 'x') e.preventDefault();
+	}
+
 	function up() {
 		if (!dragging) return;
+		swipeEl?.removeEventListener('touchmove', preventVerticalScroll);
 		dragging = false;
 		const settled = dx;
 		dx = 0;
@@ -99,10 +106,13 @@
 
 	<div
 		role="group"
+		bind:this={swipeEl}
 		class="surface relative px-4 pt-2.5 pb-0"
 		style="transform: translateX({dx}px); transition: {dragging
 			? 'none'
-			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: pan-y"
+			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: {axis === 'x'
+			? 'none'
+			: 'pan-y'}"
 		onpointerdown={down}
 		onpointermove={move}
 		onpointerup={up}
