@@ -26,7 +26,7 @@
 </script>
 
 <div
-	class="px-4 pt-3 pb-0 transition-colors hover:sunken"
+	class="px-4 pt-3 pb-0"
 	class:opacity-55={!due}
 >
 	<div class="hairline measure flex items-center gap-3 border-b pb-3">

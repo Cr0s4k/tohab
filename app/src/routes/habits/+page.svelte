@@ -133,7 +133,7 @@
 		{#if rest.length}
 			<h2
 				transition:collapse
-				class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-caption font-semibold tracking-wide uppercase"
+				class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-caption font-semibold tracking-wide"
 			>
 				<span class="hairline measure block border-b pb-1.5">Not scheduled today</span>
 			</h2>
