@@ -12,6 +12,7 @@
 	import TaskRow from '$lib/components/TaskRow.svelte';
 	import TaskEditor from '$lib/components/TaskEditor.svelte';
 	import ViewOptionsSheet from '$lib/components/ViewOptionsSheet.svelte';
+	import { haptic, hapticTap } from '$lib/haptics';
 
 	let editing = $state<Task | null>(null);
 	let tuning = $state(false);
@@ -35,7 +36,13 @@
 
 <header class="hairline z-20 shrink-0 border-b pt-safe">
 	<div class="measure flex items-center gap-3 px-4 pt-2 pb-3">
-		<a href="/browse" aria-label="Back" class="tap dim -ml-1 p-1">
+		<a
+			href="/browse"
+			use:hapticTap
+			onclick={() => haptic('tap')}
+			aria-label="Back"
+			class="tap dim -ml-1 p-1"
+		>
 			<svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M15 19l-7-7 7-7" />
 			</svg>
@@ -46,7 +53,11 @@
 		<h1 class="min-w-0 flex-1 truncate text-header md:text-header-large font-bold tracking-tight">{title}</h1>
 		<button
 			type="button"
-			onclick={() => (tuning = true)}
+			use:hapticTap
+			onclick={() => {
+				haptic('tap');
+				tuning = true;
+			}}
 			aria-label="Sort and group"
 			class="tap hairline grid size-8 shrink-0 place-items-center rounded-full border"
 			class:accent-bg={isCustomised(scope)}

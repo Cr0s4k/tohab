@@ -15,6 +15,7 @@
 	import TaskEditor from '$lib/components/TaskEditor.svelte';
 	import ViewOptionsSheet from '$lib/components/ViewOptionsSheet.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg, veil } from '$lib/motion';
 
@@ -93,7 +94,11 @@
 		<div class="flex items-center gap-2">
 			<button
 				type="button"
-				onclick={() => (tuning = true)}
+				use:hapticTap
+				onclick={() => {
+					haptic('tap');
+					tuning = true;
+				}}
 				aria-label="Sort and group"
 				class="tap hairline relative grid size-9 place-items-center rounded-full border md:size-8"
 				class:accent-bg={isCustomised(view)}
@@ -108,7 +113,11 @@
 			</button>
 			<button
 				type="button"
-				onclick={() => goto(`/habits?from=${view}`)}
+				use:hapticTap
+				onclick={() => {
+					haptic('tap');
+					goto(`/habits?from=${view}`);
+				}}
 				aria-label="Switch to Habits"
 				class="tap sunken hairline grid size-9 place-items-center rounded-full border md:hidden"
 			>

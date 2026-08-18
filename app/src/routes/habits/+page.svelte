@@ -21,6 +21,7 @@
 	import Fab from '$lib/components/Fab.svelte';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg } from '$lib/motion';
 
@@ -49,7 +50,11 @@
 		<div class="flex items-center gap-2">
 			<button
 				type="button"
-				onclick={() => goto('/tasks?view=today')}
+				use:hapticTap
+				onclick={() => {
+					haptic('tap');
+					goto('/tasks?view=today');
+				}}
 				aria-label="Switch to Tasks"
 				class="tap sunken hairline grid size-9 shrink-0 place-items-center rounded-full border md:hidden"
 			>
@@ -72,8 +77,12 @@
 	<div class="measure flex items-center justify-between px-4 pb-3 md:justify-center md:gap-12">
 		<button
 			type="button"
+			use:hapticTap
 			aria-label="Previous day"
-			onclick={() => (offset -= 1)}
+			onclick={() => {
+				haptic('tap');
+				offset -= 1;
+			}}
 			class="tap dim p-1"
 		>
 			<svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -97,9 +106,13 @@
 
 		<button
 			type="button"
+			use:hapticTap
 			aria-label="Next day"
 			disabled={offset >= 0}
-			onclick={() => (offset += 1)}
+			onclick={() => {
+				haptic('tap');
+				offset += 1;
+			}}
 			class="tap dim p-1 disabled:opacity-25"
 		>
 			<svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
