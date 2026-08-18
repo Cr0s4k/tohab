@@ -113,7 +113,7 @@
 
 		<a
 			href="/projects/inbox"
-			class="raised block px-4 pt-3.5 pb-0"
+			class="pressable raised block px-4 pt-3.5 pb-0"
 		>
 			<span class="hairline measure flex items-center gap-3 border-b pb-3.5">
 				<span class="size-3 rounded-full" style="background: var(--text-dim)"></span>
@@ -126,7 +126,7 @@
 			<div
 				transition:collapse
 				animate:flip={flipCfg}
-				class="raised px-4 pt-3.5 pb-0"
+				class="pressable raised px-4 pt-3.5 pb-0"
 			>
 				<div class="hairline measure flex items-center gap-3 border-b pb-3.5">
 					<span class="size-3 shrink-0 rounded-full" style="background: {project.color}"></span>

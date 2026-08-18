@@ -107,7 +107,7 @@
 	<div
 		role="group"
 		bind:this={swipeEl}
-		class="surface relative px-4 pt-2.5 pb-0"
+		class="surface pressable relative px-4 pt-2.5 pb-0"
 		style="transform: translateX({dx}px); transition: {dragging
 			? 'none'
 			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: {axis === 'x'

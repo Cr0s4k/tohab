@@ -7,12 +7,14 @@
 		open = false,
 		title = '',
 		confirmLabel = 'Done',
+		showHeader = true,
 		onClose,
 		children
 	}: {
 		open?: boolean;
 		title?: string;
 		confirmLabel?: string;
+		showHeader?: boolean;
 		onClose: () => void;
 		children: Snippet;
 	} = $props();
@@ -41,15 +43,17 @@
 			class="raised hairline relative max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl pb-safe md:max-h-[80dvh] md:max-w-lg md:rounded-3xl md:border md:shadow-2xl"
 			transition:sheet
 		>
-			<div
-				class="hairline raised sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3"
-			>
-				<h2 class="text-subtitle font-semibold">{title}</h2>
-				<button type="button" onclick={onClose} class="tap accent-fg text-copy font-medium">
-					{confirmLabel}
-				</button>
-			</div>
-			<div class="px-4 py-4">
+			{#if showHeader}
+				<div
+					class="hairline raised sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3"
+				>
+					<h2 class="text-subtitle font-semibold">{title}</h2>
+					<button type="button" onclick={onClose} class="tap accent-fg text-copy font-medium">
+						{confirmLabel}
+					</button>
+				</div>
+			{/if}
+			<div class={showHeader ? 'px-4 py-4' : 'px-4 pt-4 pb-0'}>
 				{@render children()}
 			</div>
 		</div>

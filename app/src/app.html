@@ -196,6 +196,10 @@
 			} catch (e) {
 				document.documentElement.dataset.theme = 'light';
 			}
+
+			// Enable :active press feedback on iOS Safari, which only honours it
+			// after the document has a touchstart listener.
+			document.addEventListener('touchstart', () => {}, { passive: true });
 		</script>
 		<style>
 			#splash {

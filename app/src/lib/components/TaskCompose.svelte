@@ -98,18 +98,38 @@
 	];
 </script>
 
-<Sheet {open} title="New task" confirmLabel="Done" onClose={onClose}>
+<Sheet {open} title="New task" confirmLabel="Done" showHeader={false} onClose={onClose}>
 	{#snippet children()}
 		<form onsubmit={submit} class="flex flex-col gap-3">
-			<input
-				bind:this={input}
-				bind:value={raw}
-				placeholder="What needs doing?"
-				enterkeyhint="done"
-				autocapitalize="sentences"
-				autocomplete="off"
-				class="sunken w-full rounded-lg px-3 py-2.5 text-body outline-none placeholder:opacity-50"
-			/>
+			<div class="flex items-center gap-2">
+				<input
+					bind:this={input}
+					bind:value={raw}
+					placeholder="What needs doing?"
+					enterkeyhint="done"
+					autocapitalize="sentences"
+					autocomplete="off"
+					class="sunken min-w-0 flex-1 rounded-lg px-3 py-2.5 text-body outline-none placeholder:opacity-50"
+				/>
+				<button
+					type="submit"
+					disabled={!title}
+					aria-label="Add task"
+					class="tap accent-bg grid size-9 shrink-0 place-items-center rounded-full disabled:opacity-30"
+				>
+					<svg
+						viewBox="0 0 24 24"
+						class="size-5"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.4"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path d="M12 19V5M5 12l7-7 7 7" />
+					</svg>
+				</button>
+			</div>
 
 			<div class="flex flex-wrap gap-1.5">
 				<button
@@ -237,15 +257,6 @@
 					{/each}
 				</div>
 			{/if}
-
-			<button
-				type="submit"
-				use:hapticTap
-				disabled={!title}
-				class="tap accent-bg rounded-lg py-2.5 text-body font-semibold disabled:opacity-30"
-			>
-				Add task
-			</button>
 
 			<p class="dim text-center text-caption">
 				{#if parsed?.matched.length}

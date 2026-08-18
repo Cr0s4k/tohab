@@ -238,6 +238,14 @@
 	}
 }
 
+@utility pressable {
+	transition: background-color 120ms ease;
+	&:active,
+	&:has(:active) {
+		background: var(--surface-hover);
+	}
+}
+
 @utility pb-safe {
 	padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
