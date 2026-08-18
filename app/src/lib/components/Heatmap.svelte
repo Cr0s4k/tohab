@@ -2,7 +2,7 @@
 	import type { Habit } from '$lib/db/schemas';
 	import { humanDay, shiftKey, startOfWeekKey, today, WEEKDAY_LABELS } from '$lib/dates';
 	import { isDue, valueOn, type LogMap } from '$lib/streaks';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 
 	let {
 		habit,
@@ -56,6 +56,7 @@
 					{@const scheduled = isDue(habit, day)}
 					<button
 						type="button"
+						use:hapticTap
 						disabled={future}
 						aria-label={habit.goal === 'break'
 							? `${humanDay(day)}: ${valueOn(logs, day)} slips, limit ${habit.target}`

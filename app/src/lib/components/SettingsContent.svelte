@@ -18,7 +18,7 @@
 	} from '$lib/settings.svelte';
 	import { feedUrl } from '$lib/calendar';
 	import { auth, logout } from '$lib/auth.svelte';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 
 	let serverDraft = $state(settings.serverUrl);
 	let notice = $state('');
@@ -111,6 +111,7 @@
 		{#each themes as t (t.id)}
 			<button
 				type="button"
+				use:hapticTap
 				onclick={() => {
 					haptic('tap');
 					setTheme(t.id);
@@ -186,6 +187,7 @@
 		</div>
 		<button
 			type="button"
+			use:hapticTap
 			onclick={() => {
 				haptic('tap');
 				resync();
@@ -209,6 +211,7 @@
 	<div class="raised hairline rounded-2xl border">
 		<button
 			type="button"
+			use:hapticTap
 			onclick={async () => {
 				haptic('tap');
 				await stopSync();
@@ -234,6 +237,7 @@
 				{#each reminderChoices as choice (choice.minutes)}
 					<button
 						type="button"
+						use:hapticTap
 						onclick={() => {
 							haptic('tap');
 							setReminderMinutes(choice.minutes);
@@ -256,6 +260,7 @@
 				</p>
 				<button
 					type="button"
+					use:hapticTap
 					onclick={copyFeed}
 					class="tap accent-bg mt-2 w-full rounded-xl py-2 text-[0.8rem] font-semibold"
 				>
@@ -304,6 +309,7 @@
 		</div>
 		<button
 			type="button"
+			use:hapticTap
 			onclick={() => {
 				haptic('tap');
 				downloadBackup();

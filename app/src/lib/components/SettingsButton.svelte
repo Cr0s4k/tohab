@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import { settingsSheet } from '$lib/settingsSheet.svelte';
 </script>
 
 <button
 	type="button"
+	use:hapticTap
 	aria-label="Settings"
 	onclick={() => {
 		haptic('tap');

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import {
 		GROUP_CHOICES,
 		ORDER_CHOICES,
@@ -42,6 +42,7 @@
 		{#each GROUP_CHOICES as choice (choice.id)}
 			<button
 				type="button"
+				use:hapticTap
 				onclick={() => set({ group: choice.id })}
 				class="tap rounded-xl py-2.5 text-[0.8rem] font-medium"
 				class:accent-bg={opts.group === choice.id}
@@ -57,6 +58,7 @@
 		{#each SORT_CHOICES as choice (choice.id)}
 			<button
 				type="button"
+				use:hapticTap
 				onclick={() => set({ sort: choice.id })}
 				class="tap rounded-xl py-2.5 text-[0.8rem] font-medium"
 				class:accent-bg={opts.sort === choice.id}
@@ -72,6 +74,7 @@
 		{#each ORDER_CHOICES as choice (choice.id)}
 			<button
 				type="button"
+				use:hapticTap
 				onclick={() => set({ order: choice.id })}
 				class="tap flex-1 rounded-xl py-2.5 text-[0.8rem] font-medium"
 				class:accent-bg={opts.order === choice.id}
@@ -84,6 +87,7 @@
 
 	<button
 		type="button"
+		use:hapticTap
 		onclick={() => set({ showDone: !opts.showDone })}
 		class="tap sunken mb-5 flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-left"
 	>
@@ -104,6 +108,7 @@
 	{#if isCustomised(scope)}
 		<button
 			type="button"
+			use:hapticTap
 			onclick={() => {
 				haptic('warn');
 				resetViewOptions(scope);

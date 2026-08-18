@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Task, Project } from '$lib/db/schemas';
 	import { humanDay, humanTime, daysFromToday } from '$lib/dates';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import { playComplete } from '$lib/sound';
 	import { priorityClass } from '$lib/tasks';
 	import { pop } from '$lib/motion';
@@ -111,6 +111,7 @@
 		<div class="measure flex gap-3" class:items-start={hasMeta} class:items-center={!hasMeta}>
 			<button
 				type="button"
+				use:hapticTap
 				aria-label={task.done ? 'Mark as not done' : 'Mark as done'}
 				onclick={() => {
 					haptic('success');

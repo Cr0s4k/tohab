@@ -2,7 +2,7 @@
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import { createProject, deleteProject, openTasksQuery, projectsQuery, renameProject } from '$lib/tasks';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg } from '$lib/motion';
 	import SyncBadge from '$lib/components/SyncBadge.svelte';
@@ -70,6 +70,7 @@
 				<h2 class="dim text-[0.7rem] font-semibold tracking-wide uppercase">Projects</h2>
 				<button
 					type="button"
+					use:hapticTap
 					aria-label="Add project"
 					onclick={() => {
 						haptic('tap');
@@ -95,6 +96,7 @@
 					/>
 					<button
 						type="submit"
+						use:hapticTap
 						disabled={!name.trim()}
 						class="tap accent-bg rounded-xl px-4 text-sm font-semibold disabled:opacity-30"
 					>
@@ -152,6 +154,7 @@
 						</button>
 						<button
 							type="button"
+							use:hapticTap
 							aria-label="Delete {project.name}"
 							onclick={() => {
 								haptic('warn');

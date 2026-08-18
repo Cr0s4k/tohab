@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 
 	let {
 		label,
@@ -22,6 +22,7 @@
 	<div class="fab-pad flex justify-end px-4" style:--fab-gap={withTabBar ? '4.75rem' : '1.25rem'}>
 		<button
 			type="button"
+			use:hapticTap
 			aria-label={label}
 			onclick={() => {
 				haptic('tap');

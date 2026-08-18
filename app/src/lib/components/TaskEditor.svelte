@@ -2,7 +2,7 @@
 	import type { Project, Task } from '$lib/db/schemas';
 	import { deleteTask, PRIORITY_LABELS, priorityClass, updateTask } from '$lib/tasks';
 	import { humanDay, shiftKey, today } from '$lib/dates';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import Sheet from './Sheet.svelte';
 
 	let {
@@ -68,6 +68,7 @@
 					{#each shortcuts() as s (s.label)}
 						<button
 							type="button"
+							use:hapticTap
 							onclick={() => {
 								haptic('tap');
 								draft.due = s.value;
@@ -103,6 +104,7 @@
 					{#each [1, 2, 3, 4] as p (p)}
 						<button
 							type="button"
+							use:hapticTap
 							onclick={() => {
 								haptic('tap');
 								draft.priority = p;
@@ -141,6 +143,7 @@
 				</button>
 				<button
 					type="button"
+					use:hapticTap
 					onclick={() => {
 						haptic('warn');
 						deleteTask(id).then(onClose);

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Habit } from '$lib/db/schemas';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import ProgressRing from './ProgressRing.svelte';
 
 	let {
@@ -57,6 +57,7 @@
 
 		<button
 			type="button"
+			use:hapticTap
 			aria-label={habit.goal === 'break'
 				? `Log slip for ${habit.name}`
 				: complete

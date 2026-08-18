@@ -3,7 +3,7 @@
 	import { parseQuickAdd } from '$lib/parse';
 	import { createTask, PRIORITY_LABELS, priorityClass, resolveProject } from '$lib/tasks';
 	import { humanDay, humanTime, shiftKey, today } from '$lib/dates';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import { collapse } from '$lib/motion';
 	import Sheet from './Sheet.svelte';
 
@@ -114,6 +114,7 @@
 			<div class="flex flex-wrap gap-1.5">
 				<button
 					type="button"
+					use:hapticTap
 					onclick={() => toggle('date')}
 					class="tap hairline rounded-full border px-3 py-1.5 text-[0.78rem] font-medium"
 					class:accent-fg={Boolean(due)}
@@ -124,6 +125,7 @@
 				</button>
 				<button
 					type="button"
+					use:hapticTap
 					onclick={() => toggle('priority')}
 					class="tap hairline rounded-full border px-3 py-1.5 text-[0.78rem] font-medium {priority <
 					4
@@ -135,6 +137,7 @@
 				</button>
 				<button
 					type="button"
+					use:hapticTap
 					onclick={() => toggle('project')}
 					class="tap hairline dim rounded-full border px-3 py-1.5 text-[0.78rem] font-medium"
 					class:sunken={panel === 'project'}
@@ -149,6 +152,7 @@
 						{#each dateShortcuts() as s (s.label)}
 							<button
 								type="button"
+								use:hapticTap
 								onclick={() => {
 									haptic('tap');
 									picked.due = s.value;
@@ -184,6 +188,7 @@
 					{#each [1, 2, 3, 4] as p (p)}
 						<button
 							type="button"
+							use:hapticTap
 							onclick={() => {
 								haptic('tap');
 								picked.priority = p;
@@ -203,6 +208,7 @@
 				<div transition:collapse={{ duration: 200 }} class="flex flex-wrap gap-1.5">
 					<button
 						type="button"
+						use:hapticTap
 						onclick={() => {
 							haptic('tap');
 							picked.projectId = '';
@@ -216,6 +222,7 @@
 					{#each projects as p (p.id)}
 						<button
 							type="button"
+							use:hapticTap
 							onclick={() => {
 								haptic('tap');
 								picked.projectId = p.id;
@@ -233,6 +240,7 @@
 
 			<button
 				type="submit"
+				use:hapticTap
 				disabled={!title}
 				class="tap accent-bg rounded-2xl py-3 text-sm font-semibold disabled:opacity-30"
 			>

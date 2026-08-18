@@ -8,43 +8,45 @@ const patterns: Record<Pattern, number | number[]> = {
 	warn: [30, 60, 30]
 };
 
-const bumps: Record<Pattern, number> = { tap: 1, success: 2, warn: 3 };
-
-let label: HTMLLabelElement | null = null;
+export function haptic(pattern: Pattern = 'tap') {
+	if (!browser) return;
+	try {
+		navigator.vibrate?.(patterns[pattern]);
+	} catch {
+		/* unsupported */
+	}
+}
 
 /**
- * iOS has no navigator.vibrate, but clicking a label that wraps a `switch` checkbox plays the
- * system haptic. The input has to be a real descendant of the label — a `for` reference or a
- * container with `pointer-events: none` stops the haptic from firing.
+ * iOS has no navigator.vibrate. Toggling a `switch` checkbox plays a system haptic, but only
+ * from a genuine tap — a synthetic click is silent — so the control is laid over the host,
+ * transparent, to catch the tap itself.
  */
-function switchLabel(): HTMLLabelElement | null {
-	if (!browser) return null;
-	if (label) return label;
+export function hapticTap(node: HTMLElement) {
+	if (!browser || 'vibrate' in navigator) return;
 
 	const input = document.createElement('input');
 	input.type = 'checkbox';
 	input.setAttribute('switch', '');
 	input.tabIndex = -1;
+	input.style.cssText = 'width:100%;height:100%;margin:0;opacity:0';
 
-	label = document.createElement('label');
+	const label = document.createElement('label');
 	label.setAttribute('aria-hidden', 'true');
-	label.style.display = 'none';
+	label.style.cssText = 'position:absolute;inset:0;touch-action:manipulation';
 	label.append(input);
-	document.head.append(label);
-	return label;
-}
 
-export function haptic(pattern: Pattern = 'tap') {
-	try {
-		if (navigator.vibrate) {
-			navigator.vibrate(patterns[pattern]);
-			return;
-		}
-		const target = switchLabel();
-		if (!target) return;
-		target.click();
-		for (let i = 1; i < bumps[pattern]; i++) setTimeout(() => target.click(), i * 60);
-	} catch {
-		/* unsupported */
-	}
+	/**
+	 * A tap on the label activates the input, which dispatches a second click — so the host would
+	 * see two. The input covers the label, so the tap normally lands there and bubbles once; only
+	 * the label's own click has to be dropped.
+	 */
+	label.addEventListener('click', (e) => {
+		if (e.target === label) e.stopPropagation();
+	});
+
+	if (getComputedStyle(node).position === 'static') node.style.position = 'relative';
+	node.append(label);
+
+	return { destroy: () => label.remove() };
 }

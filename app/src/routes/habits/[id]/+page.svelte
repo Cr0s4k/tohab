@@ -17,7 +17,7 @@
 	} from '$lib/habits';
 	import { humanDay, today, WEEKDAY_NAMES } from '$lib/dates';
 	import { settings } from '$lib/settings.svelte';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import Heatmap from '$lib/components/Heatmap.svelte';
 	import HabitEditor from '$lib/components/HabitEditor.svelte';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
@@ -86,6 +86,7 @@
 		<section class="raised hairline mb-4 flex items-center gap-4 rounded-2xl border p-4">
 			<button
 				type="button"
+				use:hapticTap
 				aria-label={habit.goal === 'break' ? 'Log slip today' : 'Log today'}
 				onclick={() => {
 					haptic(habit.goal === 'break' ? 'warn' : 'success');

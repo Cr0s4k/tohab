@@ -9,7 +9,7 @@
 		type HabitInput
 	} from '$lib/habits';
 	import { WEEKDAY_LABELS, WEEKDAY_NAMES } from '$lib/dates';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import Sheet from './Sheet.svelte';
 
 	let {
@@ -119,6 +119,7 @@
 				<div class="flex gap-1.5">
 					<button
 						type="button"
+						use:hapticTap
 						onclick={() => chooseGoal('build')}
 						class="tap flex-1 rounded-xl py-2.5 text-[0.8rem] font-medium"
 						class:accent-bg={draft.goal === 'build'}
@@ -128,6 +129,7 @@
 					</button>
 					<button
 						type="button"
+						use:hapticTap
 						onclick={() => chooseGoal('break')}
 						class="tap flex-1 rounded-xl py-2.5 text-[0.8rem] font-medium"
 						class:accent-bg={draft.goal === 'break'}
@@ -287,6 +289,7 @@
 						{#each [1, 2, 3, 4, 5, 6, 0] as d (d)}
 							<button
 								type="button"
+								use:hapticTap
 								aria-label={WEEKDAY_NAMES[d]}
 								onclick={() => toggleWeekday(d)}
 								class="tap flex-1 rounded-xl py-2.5 text-[0.8rem] font-semibold"
@@ -325,6 +328,7 @@
 			<div class="flex gap-2 pt-1">
 				<button
 					type="button"
+					use:hapticTap
 					disabled={!valid}
 					onclick={save}
 					class="tap accent-bg flex-1 rounded-2xl py-3 text-sm font-semibold disabled:opacity-30"
@@ -334,6 +338,7 @@
 				{#if habit}
 					<button
 						type="button"
+						use:hapticTap
 						onclick={() => {
 							haptic('warn');
 							deleteHabit(habit.id).then(() => (onDeleted ?? onClose)());

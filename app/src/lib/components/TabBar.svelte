@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 
 	const tabs = [
 		{ href: '/tasks?view=inbox', label: 'Inbox', icon: 'inbox' },
@@ -39,6 +39,7 @@
 		{@const active = isActive(tab.href)}
 		<a
 			href={tab.href}
+			use:hapticTap
 			onclick={() => haptic('tap')}
 			aria-current={active ? 'page' : undefined}
 			class="tap flex flex-col items-center gap-1 pt-2.5 pb-1 text-[0.68rem] font-medium"

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { sync, resync } from '$lib/db/replication.svelte';
-	import { haptic } from '$lib/haptics';
+	import { haptic, hapticTap } from '$lib/haptics';
 
 	const meta = {
 		off: { label: 'Local only', color: 'var(--text-dim)' },
@@ -16,6 +16,7 @@
 
 <button
 	type="button"
+	use:hapticTap
 	onclick={() => {
 		haptic('tap');
 		resync();
