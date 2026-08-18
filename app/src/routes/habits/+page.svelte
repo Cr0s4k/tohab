@@ -42,7 +42,7 @@
 	);
 </script>
 
-<header class="hairline raised z-20 shrink-0 border-b pt-safe">
+<header class="hairline z-20 shrink-0 border-b pt-safe">
 	<div class="measure flex items-center justify-between px-4 pt-2 pb-2">
 		<div class="flex min-w-0 items-center gap-2">
 			<button
