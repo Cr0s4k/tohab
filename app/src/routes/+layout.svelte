@@ -4,6 +4,7 @@
 	import { onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import TabBar from '$lib/components/TabBar.svelte';
+	import HabitNav from '$lib/components/HabitNav.svelte';
 	import UndoToast from '$lib/components/UndoToast.svelte';
 	import SettingsSheet from '$lib/components/SettingsSheet.svelte';
 	import { applyTheme, settings } from '$lib/settings.svelte';
@@ -45,7 +46,9 @@
 	{@render children()}
 	<SettingsSheet open={settingsSheet.open} onClose={() => (settingsSheet.open = false)} />
 	<UndoToast />
-	{#if !page.url.pathname.startsWith('/habits')}
+	{#if page.url.pathname === '/habits' || page.url.pathname === '/progress'}
+		<HabitNav />
+	{:else if !page.url.pathname.startsWith('/habits')}
 		<TabBar />
 	{/if}
 </div>

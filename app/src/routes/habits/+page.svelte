@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import type { Habit, HabitLog } from '$lib/db/schemas';
@@ -44,24 +43,7 @@
 
 <header class="hairline raised z-20 shrink-0 border-b pt-safe">
 	<div class="flex items-center justify-between px-4 pt-2 pb-2">
-		<a
-			href="/tasks?view={page.url.searchParams.get('from') ?? 'today'}"
-			class="tap flex items-center gap-1.5"
-			aria-label="Switch to Tasks"
-		>
-			<span class="text-2xl font-bold tracking-tight">Habits</span>
-			<svg
-				viewBox="0 0 24 24"
-				class="dim size-4"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4-4m-4 4l4 4" />
-			</svg>
-		</a>
+		<h1 class="text-2xl font-bold tracking-tight">Journal</h1>
 		<div class="flex items-center gap-2">
 			<SyncBadge />
 			<SettingsButton />
@@ -108,7 +90,7 @@
 	</div>
 </header>
 
-<main class="flex-1 pb-28">
+<main class="flex-1 pb-20">
 	{#if !habits.value.length}
 		<div class="px-8 py-14 text-center">
 			<p class="dim text-sm">No habits yet.</p>
@@ -149,6 +131,6 @@
 	{/if}
 </main>
 
-<Fab label="New habit" withTabBar={false} onPress={() => (creating = true)} />
+<Fab label="New habit" onPress={() => (creating = true)} />
 
 <HabitEditor open={creating} nextColor={habits.value.length} onClose={() => (creating = false)} />

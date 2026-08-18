@@ -22,7 +22,6 @@
 	type Panel = 'none' | 'date' | 'priority' | 'project';
 
 	let raw = $state('');
-	let notes = $state('');
 	let panel = $state<Panel>('none');
 	let added = $state(0);
 	let input: HTMLInputElement | null = $state(null);
@@ -57,7 +56,6 @@
 
 	function reset() {
 		raw = '';
-		notes = '';
 		picked = {};
 		panel = 'none';
 	}
@@ -69,7 +67,6 @@
 
 		await createTask({
 			title,
-			notes,
 			due,
 			dueTime,
 			priority,
@@ -113,13 +110,6 @@
 				autocomplete="off"
 				class="sunken w-full rounded-2xl px-4 py-3 text-[0.95rem] outline-none placeholder:opacity-50"
 			/>
-
-			<textarea
-				bind:value={notes}
-				placeholder="Notes"
-				rows="2"
-				class="sunken w-full resize-none rounded-2xl px-4 py-3 text-[0.9rem] outline-none placeholder:opacity-50"
-			></textarea>
 
 			<div class="flex flex-wrap gap-1.5">
 				<button
