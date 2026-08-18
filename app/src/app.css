@@ -80,6 +80,22 @@
 			font: -apple-system-body;
 			line-height: 1.5;
 		}
+
+		/*
+			Keep rem-based layout values fixed while the root font-size tracks
+			Dynamic Type. This stops spacing, icon boxes, and other non-text
+			measurements from ballooning with the text size.
+		*/
+		:root {
+			--spacing: 4px;
+			--container-sm: 384px;
+			--container-lg: 512px;
+			--radius-lg: 8px;
+			--radius-xl: 12px;
+			--radius-2xl: 16px;
+			--radius-3xl: 24px;
+			--measure: 896px;
+		}
 	}
 
 	/* Pinning the document is what keeps iOS from rubber-banding the whole shell, tab bar included. */
