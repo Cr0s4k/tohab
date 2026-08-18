@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import type { Habit, HabitLog } from '$lib/db/schemas';
@@ -43,7 +44,28 @@
 
 <header class="hairline raised z-20 shrink-0 border-b pt-safe">
 	<div class="flex items-center justify-between px-4 pt-2 pb-2">
-		<h1 class="text-2xl font-bold tracking-tight">Journal</h1>
+		<div class="flex min-w-0 items-center gap-2">
+			<button
+				type="button"
+				onclick={() => goto('/tasks?view=today')}
+				aria-label="Switch to Tasks"
+				class="tap sunken hairline flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-semibold"
+			>
+				<svg
+					viewBox="0 0 24 24"
+					class="size-4"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4-4m-4 4l4 4" />
+				</svg>
+				Tasks
+			</button>
+			<h1 class="truncate text-2xl font-bold tracking-tight">Journal</h1>
+		</div>
 		<div class="flex items-center gap-2">
 			<SyncBadge />
 			<SettingsButton />
