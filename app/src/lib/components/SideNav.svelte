@@ -4,6 +4,7 @@
 	import { settings, setSidebarCollapsed } from '$lib/settings.svelte';
 	import { settingsSheet } from '$lib/settingsSheet.svelte';
 	import { taskCompose } from '$lib/compose.svelte';
+	import UndoToast from '$lib/components/UndoToast.svelte';
 
 	const groups = [
 		{
@@ -155,6 +156,8 @@
 			{/each}
 		{/each}
 	</nav>
+
+	<UndoToast placement="sidebar" {collapsed} />
 
 	<div class="hairline border-t px-2.5 py-2.5">
 		<button
