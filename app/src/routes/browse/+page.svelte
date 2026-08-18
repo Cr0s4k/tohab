@@ -110,7 +110,10 @@
 			</form>
 		{/if}
 
-		<a href="/projects/inbox" class="raised hairline flex items-center gap-3 border-b px-4 py-3.5">
+		<a
+			href="/projects/inbox"
+			class="raised hairline flex items-center gap-3 border-b px-4 py-3.5 transition-colors hover:sunken"
+		>
 			<span class="size-3 rounded-full" style="background: var(--text-dim)"></span>
 			<span class="flex-1 text-[0.95rem]">Inbox</span>
 			<span class="dim text-sm tabular-nums">{counts.get('') ?? 0}</span>
@@ -120,7 +123,7 @@
 			<div
 				transition:collapse
 				animate:flip={flipCfg}
-				class="raised hairline flex items-center gap-3 border-b px-4 py-3.5"
+				class="raised hairline flex items-center gap-3 border-b px-4 py-3.5 transition-colors hover:sunken"
 			>
 				<span class="size-3 shrink-0 rounded-full" style="background: {project.color}"></span>
 				{#if renaming === project.id}

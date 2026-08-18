@@ -6,7 +6,7 @@
 </script>
 
 {#if current}
-	<div class="absolute bottom-20 left-4 z-40" role="status" aria-live="polite" transition:veil>
+	<div class="absolute bottom-20 left-4 z-40 md:bottom-6" role="status" aria-live="polite" transition:veil>
 		<button
 			type="button"
 			onclick={runUndo}

@@ -25,7 +25,10 @@
 	);
 </script>
 
-<div class="raised hairline flex items-center gap-3 border-b px-4 py-3" class:opacity-55={!due}>
+<div
+	class="raised hairline flex items-center gap-3 border-b px-4 py-3 transition-colors hover:sunken"
+	class:opacity-55={!due}
+>
 	<a href="/habits/{habit.id}" class="min-w-0 flex-1 flex items-center gap-3 text-left">
 		<span
 			class="grid size-10 shrink-0 place-items-center rounded-xl text-lg"

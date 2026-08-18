@@ -49,7 +49,7 @@
 				type="button"
 				onclick={() => goto('/tasks?view=today')}
 				aria-label="Switch to Tasks"
-				class="tap sunken hairline flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-semibold"
+				class="tap sunken hairline flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-semibold md:hidden"
 			>
 				<svg
 					viewBox="0 0 24 24"
@@ -72,7 +72,7 @@
 		</div>
 	</div>
 
-	<div class="flex items-center justify-between px-4 pb-3">
+	<div class="flex items-center justify-between px-4 pb-3 md:justify-center md:gap-12">
 		<button
 			type="button"
 			aria-label="Previous day"

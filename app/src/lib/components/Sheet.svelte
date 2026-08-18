@@ -18,7 +18,7 @@
 </script>
 
 {#if open}
-	<div class="fixed inset-0 z-50 flex flex-col justify-end">
+	<div class="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center md:p-8">
 		<button
 			type="button"
 			aria-label="Close"
@@ -28,7 +28,7 @@
 		></button>
 
 		<div
-			class="raised relative max-h-[88vh] overflow-y-auto rounded-t-3xl pb-safe"
+			class="raised hairline relative max-h-[88vh] w-full overflow-y-auto rounded-t-3xl pb-safe md:max-h-[80vh] md:max-w-lg md:rounded-3xl md:border md:shadow-2xl"
 			transition:sheet
 		>
 			<div

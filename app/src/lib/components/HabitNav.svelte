@@ -21,7 +21,7 @@
 </script>
 
 <nav
-	class="hairline z-30 grid shrink-0 grid-cols-2 border-t pb-safe backdrop-blur-xl"
+	class="hairline z-30 grid shrink-0 grid-cols-2 border-t pb-safe backdrop-blur-xl md:hidden"
 	style="background: color-mix(in oklch, var(--surface-raised) 88%, transparent); view-transition-name: habitnav"
 >
 	{#each tabs as tab (tab.href)}

@@ -60,6 +60,8 @@
 		overflow-y: auto;
 		overscroll-behavior-y: contain;
 		-webkit-overflow-scrolling: touch;
+		scrollbar-width: thin;
+		scrollbar-color: var(--line) transparent;
 	}
 
 	button,
@@ -68,6 +70,20 @@
 	select {
 		font: inherit;
 		color: inherit;
+	}
+
+	a:focus-visible,
+	button:focus-visible,
+	[role='group']:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: -2px;
+	}
+
+	/* Inputs carry `outline-none`, which a base-layer outline cannot win against. */
+	input:focus-visible,
+	textarea:focus-visible,
+	select:focus-visible {
+		box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent) 55%, transparent);
 	}
 
 	::selection {

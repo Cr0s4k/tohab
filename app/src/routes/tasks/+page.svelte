@@ -66,7 +66,7 @@
 				<span class="text-2xl font-bold tracking-tight">Tasks</span>
 				<svg
 					viewBox="0 0 24 24"
-					class="dim size-4"
+					class="dim size-4 md:hidden"
 					fill="none"
 					stroke="currentColor"
 					stroke-width="2"
@@ -132,7 +132,7 @@
 				</div>
 			{/each}
 		{/each}
-		<p class="dim px-4 py-4 text-center text-[0.68rem]">Swipe a task right to complete, left to delete</p>
+		<p class="dim px-4 py-4 text-center text-[0.68rem] md:hidden">Swipe a task right to complete, left to delete</p>
 	{/if}
 </main>
 

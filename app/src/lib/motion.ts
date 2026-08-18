@@ -43,7 +43,15 @@ export function collapse(node: Element, { duration = 240 }: Options = {}): Trans
 	};
 }
 
+/** Slides up from the bottom on phones; on desktop the same panel is a centred dialog. */
 export function sheet(_node: Element, { duration = 260 }: Options = {}): TransitionConfig {
+	if (browser && matchMedia('(min-width: 768px)').matches) {
+		return {
+			duration: ms(200),
+			easing: EASE,
+			css: (t, u) => `transform: translateY(${u * 10}px) scale(${1 - u * 0.02}); opacity: ${t}`
+		};
+	}
 	return {
 		duration: ms(duration),
 		easing: EASE,

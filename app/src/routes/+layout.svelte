@@ -4,6 +4,7 @@
 	import { onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import TabBar from '$lib/components/TabBar.svelte';
+	import SideNav from '$lib/components/SideNav.svelte';
 	import HabitNav from '$lib/components/HabitNav.svelte';
 	import UndoToast from '$lib/components/UndoToast.svelte';
 	import SettingsSheet from '$lib/components/SettingsSheet.svelte';
@@ -72,17 +73,24 @@
 	<meta name="description" content="Offline-first tasks and habits" />
 </svelte:head>
 
-<div class="relative mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden">
+<div class="flex h-dvh w-full overflow-hidden">
 	{#if !auth.session}
-		<AuthGate />
+		<div class="mx-auto flex w-full max-w-lg flex-col">
+			<AuthGate />
+		</div>
 	{:else if ready}
-		{@render children()}
-		<SettingsSheet open={settingsSheet.open} onClose={() => (settingsSheet.open = false)} />
-		<UndoToast />
-		{#if page.url.pathname === '/habits' || page.url.pathname === '/progress'}
-			<HabitNav />
-		{:else if !page.url.pathname.startsWith('/habits')}
-			<TabBar />
-		{/if}
+		<SideNav />
+		<div
+			class="hairline relative mx-auto flex min-w-0 w-full max-w-lg flex-1 flex-col overflow-hidden md:max-w-3xl md:border-x"
+		>
+			{@render children()}
+			<SettingsSheet open={settingsSheet.open} onClose={() => (settingsSheet.open = false)} />
+			<UndoToast />
+			{#if page.url.pathname === '/habits' || page.url.pathname === '/progress'}
+				<HabitNav />
+			{:else if !page.url.pathname.startsWith('/habits')}
+				<TabBar />
+			{/if}
+		</div>
 	{/if}
 </div>

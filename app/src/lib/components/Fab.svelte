@@ -8,15 +8,10 @@
 	}: { label: string; onPress: () => void; withTabBar?: boolean } = $props();
 </script>
 
-<!-- Fixed to the viewport but constrained to the app column, so it stays beside the list on
-     wide screens instead of drifting to the window edge. -->
-<div class="pointer-events-none fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-lg">
-	<div
-		class="flex justify-end px-4"
-		style:padding-bottom={withTabBar
-			? 'calc(env(safe-area-inset-bottom) + 4.75rem)'
-			: 'calc(env(safe-area-inset-bottom) + 1.25rem)'}
-	>
+<!-- Anchored to the app column, so it stays beside the list on wide screens instead of
+     drifting to the window edge. -->
+<div class="pointer-events-none absolute inset-x-0 bottom-0 z-40">
+	<div class="fab-pad flex justify-end px-4" style:--fab-gap={withTabBar ? '4.75rem' : '1.25rem'}>
 		<button
 			type="button"
 			aria-label={label}
@@ -24,7 +19,7 @@
 				haptic('tap');
 				onPress();
 			}}
-			class="tap accent-bg pointer-events-auto grid size-14 place-items-center rounded-full shadow-lg"
+			class="tap accent-bg pointer-events-auto grid size-14 place-items-center rounded-full shadow-lg transition-shadow hover:shadow-xl md:size-12"
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -39,3 +34,16 @@
 		</button>
 	</div>
 </div>
+
+<style>
+	.fab-pad {
+		padding-bottom: calc(env(safe-area-inset-bottom) + var(--fab-gap));
+	}
+
+	/* The tab bar the button clears only exists below md. */
+	@media (min-width: 768px) {
+		.fab-pad {
+			padding-bottom: 1.5rem;
+		}
+	}
+</style>

@@ -32,7 +32,7 @@
 </script>
 
 <nav
-	class="hairline z-30 grid shrink-0 grid-cols-4 border-t pb-safe backdrop-blur-xl"
+	class="hairline z-30 grid shrink-0 grid-cols-4 border-t pb-safe backdrop-blur-xl md:hidden"
 	style="background: color-mix(in oklch, var(--surface-raised) 88%, transparent); view-transition-name: tabbar"
 >
 	{#each tabs as tab (tab.href)}
