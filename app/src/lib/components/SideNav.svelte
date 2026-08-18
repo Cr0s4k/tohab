@@ -214,7 +214,7 @@
 		gap: 0.7rem;
 		border-radius: 0.7rem;
 		padding: 0.5rem 0.65rem;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 400;
 		color: var(--text);
 		transition: background-color 140ms ease;

@@ -158,31 +158,31 @@
 	color: var(--accent-muted, var(--accent));
 }
 @utility text-caption {
-	font-size: 12px;
+	font-size: 0.75rem;
 	line-height: 20px;
 }
 @utility text-copy {
-	font-size: 13px;
+	font-size: 0.8125rem;
 	line-height: 21px;
 }
 @utility text-body {
-	font-size: 14px;
+	font-size: 0.875rem;
 	line-height: 21px;
 }
 @utility text-subtitle {
-	font-size: 16px;
+	font-size: 1rem;
 	line-height: 24px;
 }
 @utility text-header {
-	font-size: 20px;
+	font-size: 1.25rem;
 	line-height: 24px;
 }
 @utility text-header-large {
-	font-size: 24px;
+	font-size: 1.5rem;
 	line-height: 30px;
 }
 @utility text-header-xlarge {
-	font-size: 32px;
+	font-size: 2rem;
 	line-height: 36px;
 }
 @utility danger {
