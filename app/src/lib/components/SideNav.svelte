@@ -202,7 +202,7 @@
 		border-radius: 0.7rem;
 		padding: 0.5rem 0.65rem;
 		font-size: 0.875rem;
-		font-weight: 500;
+		font-weight: 400;
 		color: var(--text-dim);
 		transition:
 			background-color 140ms ease,
@@ -226,6 +226,6 @@
 	.nav-active {
 		background: var(--surface-sunken);
 		color: var(--accent-muted, var(--accent));
-		font-weight: 600;
+		font-weight: 500;
 	}
 </style>
