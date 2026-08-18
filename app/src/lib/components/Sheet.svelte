@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { sheet, veil } from '$lib/motion';
+	import { lockScroll, unlockScroll } from '$lib/scrollLock';
 
 	let {
 		open = false,
@@ -15,6 +16,12 @@
 		onClose: () => void;
 		children: Snippet;
 	} = $props();
+
+	$effect(() => {
+		if (!open) return;
+		lockScroll();
+		return unlockScroll;
+	});
 </script>
 
 {#if open}

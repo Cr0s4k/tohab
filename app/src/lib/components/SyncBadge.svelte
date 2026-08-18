@@ -21,7 +21,7 @@
 		resync();
 	}}
 	title={sync.message || current.label}
-	class="tap grid size-6 place-items-center"
+	class="tap grid size-9 place-items-center md:size-6"
 >
 	<span
 		class="size-2.5 rounded-full"

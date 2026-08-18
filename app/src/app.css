@@ -56,6 +56,11 @@
 		-webkit-tap-highlight-color: transparent;
 	}
 
+	html[data-scroll-locked] main {
+		overflow: hidden;
+		touch-action: none;
+	}
+
 	main {
 		min-height: 0;
 		overflow-y: auto;

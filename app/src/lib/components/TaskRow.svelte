@@ -116,7 +116,7 @@
 					haptic('success');
 					complete();
 				}}
-				class="tap grid size-6 shrink-0 place-items-center rounded-full border-2 {hasMeta
+				class="tap relative grid size-6 shrink-0 place-items-center rounded-full border-2 before:absolute before:-inset-2.5 before:content-[''] {hasMeta
 					? 'mt-0.5'
 					: ''} {priorityClass(task.priority)}"
 				style="border-color: currentColor; background: {task.done

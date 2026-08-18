@@ -87,11 +87,11 @@
 				type="button"
 				onclick={() => (tuning = true)}
 				aria-label="Sort and group"
-				class="tap hairline relative grid size-8 place-items-center rounded-full border"
+				class="tap hairline relative grid size-9 place-items-center rounded-full border md:size-8"
 				class:accent-bg={isCustomised(view)}
 				class:sunken={!isCustomised(view)}
 			>
-				<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+				<svg viewBox="0 0 24 24" class="size-[1.05rem] md:size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
 					<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />
 					<circle cx="16" cy="6" r="2" />
 					<circle cx="10" cy="12" r="2" />
