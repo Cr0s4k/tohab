@@ -1,16 +1,16 @@
 import { Pool } from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { and, asc, count, eq, gt, max, or, sql } from 'drizzle-orm';
-import { docs, secrets, type DocRow } from './schema.ts';
-import { randomBytes } from 'node:crypto';
+import { docs, secrets, users, type DocRow, type UserRow } from './schema.ts';
+import { randomBytes, randomUUID } from 'node:crypto';
 
 const CONNECTION = process.env.DATABASE_URL ?? 'postgresql://tohab:tohab@localhost:5432/tohab';
 
 const pool = new Pool({ connectionString: CONNECTION, max: 10 });
 
-const schema = { docs, secrets };
+const schema = { docs, secrets, users };
 export const db = drizzle(pool, { schema });
-export type { DocRow };
+export type { DocRow, UserRow };
 
 /**
  * Every query runs either on the pool or inside a transaction. With a pool those are
@@ -26,7 +26,9 @@ export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitLogs'])
 /** Schema lives in schema.ts and is applied by `drizzle-kit push`. Fail loudly if absent. */
 export async function ensureSchema() {
 	const { rows } = await pool.query(
-		`SELECT to_regclass('public.docs') IS NOT NULL AND to_regclass('public.secrets') IS NOT NULL AS ok`
+		`SELECT to_regclass('public.docs') IS NOT NULL
+		    AND to_regclass('public.secrets') IS NOT NULL
+		    AND to_regclass('public.users') IS NOT NULL AS ok`
 	);
 	if (!rows[0]?.ok) {
 		console.error(
@@ -51,10 +53,43 @@ export async function persistedSecret(key: string): Promise<string> {
 	return row?.value ?? value;
 }
 
-/** Every user id that has ever written a document, for resolving opaque feed tokens. */
+/** Every account id, for resolving opaque calendar feed tokens back to their owner. */
 export async function knownUsers(): Promise<string[]> {
-	const rows = await db.selectDistinct({ userId: docs.userId }).from(docs);
-	return rows.map((row) => row.userId);
+	const rows = await db.select({ id: users.id }).from(users);
+	return rows.map((row) => row.id);
+}
+
+export async function userCount(): Promise<number> {
+	const [row] = await db.select({ total: count() }).from(users);
+	return row?.total ?? 0;
+}
+
+export async function userById(id: string): Promise<UserRow | undefined> {
+	const [row] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+	return row;
+}
+
+export async function userByEmail(email: string): Promise<UserRow | undefined> {
+	const [row] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+	return row;
+}
+
+/**
+ * Registration is open only until the first account exists, so the insert races with itself
+ * at most once. `onConflictDoNothing` plus a re-read means the loser reports the winner's
+ * account rather than creating a second one.
+ */
+export async function createUser(email: string, passwordHash: string): Promise<UserRow> {
+	const inserted = await db
+		.insert(users)
+		.values({ id: randomUUID(), email, passwordHash, createdAt: Date.now() })
+		.onConflictDoNothing()
+		.returning();
+	if (inserted[0]) return inserted[0];
+
+	const existing = await userByEmail(email);
+	if (!existing) throw new Error('could not create user');
+	return existing;
 }
 
 export async function liveDocs(userId: string, collection: string): Promise<DocRow[]> {

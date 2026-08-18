@@ -14,7 +14,7 @@ export function calendarBase(serverUrl: string): string {
 export async function feedUrl(alarmMinutes: number): Promise<string> {
 	const base = new URL(calendarBase(settings.serverUrl), location.origin);
 
-	const res = await fetch(`${base}/token`, { headers: { 'x-user-id': settings.userId } });
+	const res = await fetch(`${base}/token`, { credentials: 'include' });
 	if (!res.ok) throw new Error(`Server returned ${res.status}`);
 	const { token } = (await res.json()) as { token?: string };
 	if (!token) throw new Error('Server did not return a feed token');

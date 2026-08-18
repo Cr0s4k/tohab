@@ -1,5 +1,4 @@
 import { browser } from '$app/environment';
-import { uid } from './ids.ts';
 
 export type Theme = 'system' | 'light' | 'dark';
 
@@ -8,21 +7,10 @@ function read(key: string, fallback: string): string {
 	return localStorage.getItem(key) ?? fallback;
 }
 
-function persistedUserId(): string {
-	if (!browser) return 'local';
-	let id = localStorage.getItem('tohab.userId');
-	if (!id) {
-		id = uid();
-		localStorage.setItem('tohab.userId', id);
-	}
-	return id;
-}
-
 export const settings = $state({
 	theme: read('tohab.theme', 'system') as Theme,
 	serverUrl: read('tohab.serverUrl', '/sync'),
 	syncEnabled: read('tohab.syncEnabled', 'true') === 'true',
-	userId: persistedUserId(),
 	startOfWeek: Number(read('tohab.startOfWeek', '1')) as 0 | 1,
 	/** Minutes before a timed task that the calendar feed's alarm fires. 0 is off. */
 	reminderMinutes: Number(read('tohab.reminderMinutes', '10'))

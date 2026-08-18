@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { cleanup, signIn } from './auth.ts';
 
 const APP = process.env.APP ?? 'http://localhost:5177';
 const CHROME =
@@ -95,6 +96,7 @@ const { targetId } = await send('Target.createTarget', { url: 'about:blank' }, f
 ({ sessionId } = await send('Target.attachToTarget', { targetId, flatten: true }, false));
 await send('Page.enable');
 await send('Runtime.enable');
+await send('Network.enable');
 
 async function evaluate<T>(expression: string): Promise<T> {
 	const res = await send('Runtime.evaluate', {
@@ -123,17 +125,47 @@ async function waitFor(expression: string, timeout = 8000, label = expression) {
 		}
 		await new Promise((r) => setTimeout(r, 150));
 	}
-	throw new Error(`timed out waiting for: ${label}`);
+	const seen = await evaluate<string>(`document.body.innerText`).catch(() => '<unavailable>');
+	throw new Error(`timed out waiting for: ${label}\n        page showed: ${JSON.stringify(seen)}`);
 }
 
 const text = (sel: string) => `document.querySelector(${JSON.stringify(sel)})?.textContent?.trim()`;
+/** Screen titles are an h1 on some screens and a span on others; both carry this class. */
+const title = text('.text-2xl.font-bold');
 const bodyText = `document.body.innerText`;
 
+/**
+ * The app is behind a sign-in screen now. Registration is closed after the first account, so
+ * the session is minted out of band and handed to the browser: the cookie is the credential,
+ * and the localStorage record is what lets the app know offline whose data it is holding.
+ */
+async function authenticate() {
+	// Start from empty storage, so a profile carrying an older schema cannot decide the run.
+	await send('Storage.clearDataForOrigin', { origin: APP, storageTypes: 'all' });
+	const session = await signIn('smoke');
+	const [name, value] = session.cookie.split('=');
+	await send('Network.setCookie', { name, value, domain: 'localhost', path: '/' });
+	await evaluate(
+		`localStorage.setItem('tohab.session', ${JSON.stringify(
+			JSON.stringify({ userId: session.userId, email: session.email })
+		)})`
+	);
+	return session;
+}
+
 try {
+	// --- 0. an unauthenticated visit stops at the sign-in screen ---
+	await goto('/tasks');
+	await waitFor(`${text('h1')} === 'Tohab'`, 20000, 'sign-in screen rendered');
+	check('unauthenticated visit shows sign-in', await evaluate<boolean>(`${bodyText}.includes('Password')`), true);
+	check('unauthenticated visit hides the app', await evaluate<boolean>(`${bodyText}.includes('Tasks')`), false);
+
+	const session = await authenticate();
+
 	// --- 1. the app boots and lands on Tasks ---
 	await goto('/tasks');
-	await waitFor(`${text('h1')} === 'Tasks'`, 20000, 'tasks screen rendered');
-	check('tasks screen renders', await evaluate(text('h1')), 'Tasks');
+	await waitFor(`${title} === 'Tasks'`, 20000, 'tasks screen rendered');
+	check('tasks screen renders', await evaluate(title), 'Tasks');
 
 	// --- 2. the compose sheet parses natural language and persists ---
 	await evaluate(`document.querySelector('button[aria-label="New task"]').click()`);
@@ -159,14 +191,14 @@ try {
 	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'sheet closed');
 
 	// The task is due tomorrow, so it belongs to Upcoming rather than Today.
-	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'Upcoming').click()`);
+	await evaluate(`document.querySelector('nav a[href="/tasks?view=upcoming"]').click()`);
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'task appears in Upcoming');
 	check('task was created with the parsed title', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), true);
 
 	// --- 3. it survives a reload, i.e. IndexedDB really persisted ---
 	await goto('/tasks');
-	await waitFor(`${text('h1')} === 'Tasks'`, 20000);
-	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'Upcoming').click()`);
+	await waitFor(`${title} === 'Tasks'`, 20000);
+	await evaluate(`document.querySelector('nav a[href="/tasks?view=upcoming"]').click()`);
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'task survived reload');
 	check('task persisted across a reload', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), true);
 
@@ -184,7 +216,7 @@ try {
 	await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
 	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'sheet closed');
 
-	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'Inbox').click()`);
+	await evaluate(`document.querySelector('nav a[href="/tasks?view=inbox"]').click()`);
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'Inbox lists the unfiled task');
 	check(
 		'Inbox holds unfiled tasks only',
@@ -192,7 +224,7 @@ try {
 		true
 	);
 
-	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'All').click()`);
+	await evaluate(`document.querySelector('nav a[href="/browse"]').click()`);
 	await waitFor(`${bodyText}.includes('file taxes')`, 8000, 'All lists the projected task');
 	check(
 		'All spans every project',
@@ -201,7 +233,7 @@ try {
 	);
 
 	// Back to Upcoming, where only the dated task lives, for the completion step.
-	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'Upcoming').click()`);
+	await evaluate(`document.querySelector('nav a[href="/tasks?view=upcoming"]').click()`);
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'back on Upcoming');
 
 	// --- 4. completing a task moves it out of the open views ---
@@ -210,7 +242,7 @@ try {
 	check('completing removes it from Upcoming', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), false);
 
 	// --- 4b. show completed is how finished work is reached, per view ---
-	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'All').click()`);
+	await evaluate(`document.querySelector('nav a[href="/browse"]').click()`);
 	await waitFor(`!${bodyText}.includes('buy oat milk')`, 8000, 'All hides completed by default');
 	check('All hides completed tasks by default', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), false);
 
@@ -230,8 +262,8 @@ try {
 	);
 
 	await goto('/tasks');
-	await waitFor(`${text('h1')} === 'Tasks'`, 20000);
-	await evaluate(`[...document.querySelectorAll('header button')].find(b => b.textContent.trim() === 'All').click()`);
+	await waitFor(`${title} === 'Tasks'`, 20000);
+	await evaluate(`document.querySelector('nav a[href="/browse"]').click()`);
 	await waitFor(`document.querySelector('main h2')`, 8000, 'options survived reload');
 	check(
 		'view options persist across a reload',
@@ -241,10 +273,10 @@ try {
 
 	// --- 5. habits: create, log, and confirm the streak ---
 	await goto('/habits');
-	await waitFor(`${text('h1')} === 'Habits'`, 20000, 'habits screen rendered');
-	check('habits screen renders', await evaluate(text('h1')), 'Habits');
+	await waitFor(`${title} === 'Journal'`, 20000, 'habit journal rendered');
+	check('habit journal renders', await evaluate(title), 'Journal');
 
-	await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.includes('Create your first habit')).click()`);
+	await evaluate(`document.querySelector('button[aria-label="New habit"]').click()`);
 	await waitFor(`document.querySelector('input[placeholder="Habit name"]')`, 5000, 'habit sheet opened');
 	await evaluate(`(() => {
 		const input = document.querySelector('input[placeholder="Habit name"]');
@@ -273,27 +305,28 @@ try {
 	);
 
 	// --- 7. settings renders and reports sync state ---
-	await goto('/settings');
-	await waitFor(`${text('h1')} === 'Settings'`, 20000, 'settings rendered');
-	check('settings renders', await evaluate(text('h1')), 'Settings');
-	check('settings shows the device id', await evaluate<boolean>(`${bodyText}.includes('Device ID')`), true);
+	await goto('/tasks');
+	await waitFor(`document.querySelector('button[aria-label="Settings"]')`, 20000, 'settings button');
+	await evaluate(`document.querySelector('button[aria-label="Settings"]').click()`);
+	await waitFor(`${bodyText}.includes('Sync with server')`, 10000, 'settings sheet opened');
+	check('settings sheet opens', await evaluate<boolean>(`${bodyText}.includes('Server URL')`), true);
+	check('settings shows the account', await evaluate<boolean>(`${bodyText}.includes(${JSON.stringify(session.email)})`), true);
 
 	// --- 8. the client actually replicated to the server ---
 	// Sampling twice would race: an incoming change event flips the badge back to Syncing.
 	const reachedSynced = await waitFor(`${bodyText}.includes('Synced')`, 20000, 'sync badge reached Synced');
 	check('sync badge reports Synced', reachedSynced, true);
 
-	const userId = await evaluate<string>(`localStorage.getItem('tohab.userId')`);
 	const pulled = await (
 		await fetch(`http://localhost:5178/sync/pull?collection=habits&cursor=0&id=&limit=50`, {
-			headers: { 'x-user-id': userId }
+			headers: { cookie: session.cookie }
 		})
 	).json();
 	check('habit reached the sync server', pulled.documents.map((d: any) => d.name), ['Morning run']);
 
 	const pulledTasks = await (
 		await fetch(`http://localhost:5178/sync/pull?collection=tasks&cursor=0&id=&limit=50`, {
-			headers: { 'x-user-id': userId }
+			headers: { cookie: session.cookie }
 		})
 	).json();
 	check('task reached the sync server', pulledTasks.documents.map((d: any) => d.title).sort(), [
@@ -308,6 +341,7 @@ try {
 	console.log(`FAIL  ${err instanceof Error ? err.message : err}`);
 	if (consoleErrors.length) console.log('  console output:\n   ' + consoleErrors.join('\n   '));
 } finally {
+	await cleanup();
 	ws.close();
 	chrome.kill();
 	try {

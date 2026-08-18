@@ -1,6 +1,6 @@
 # Tohab
 
-Offline-first tasks and habit tracking. Mobile-only PWA, single user, syncs to a small
+Offline-first tasks and habit tracking. Mobile-only PWA, single account, syncs to a small
 self-hosted server.
 
 ```
@@ -47,8 +47,8 @@ gets its schema). Compose builds both; the `server` container is never published
 only reached through `web`.
 
 Postgres keeps its data in the `tohab-pgdata` volume. The `db` port is published for local
-`drizzle-kit studio` work — drop the `ports` block on a shared host, and remember the sync
-server still has no authentication, so keep the published port behind a VPN or tunnel.
+`drizzle-kit studio` work — drop the `ports` block on a shared host, since that port is a
+direct route around the sync server's authentication.
 
 ### Database
 
@@ -72,8 +72,10 @@ If the schema ever needs to survive real data, swap `push` for `drizzle-kit gene
 failing per-request.
 
 `app/build/` is a plain static directory — host it anywhere. Point **Settings → Sync →
-Server URL** at wherever the sync server lives (e.g. `https://api.example.com/sync`); the
-server sets permissive CORS, so a cross-origin deployment works.
+Server URL** at wherever the sync server lives (e.g. `https://api.example.com/sync`). A
+cross-origin deployment additionally needs `ALLOWED_ORIGINS` set to the app's origin, since
+the session cookie cannot be sent to a wildcard origin — and, being `Secure`, needs HTTPS on
+both sides. Serving both from one origin (what `docker-compose` does) avoids all of that.
 
 `DATABASE_URL` defaults to `postgresql://tohab:tohab@localhost:5432/tohab`. `PORT`
 overrides the server port. The `pg` driver is pure JavaScript, so there is nothing to
@@ -89,7 +91,10 @@ pnpm check              # typecheck app and server
 
 The integration suite needs Postgres and the sync server running, and the browser smoke test
 needs the app running plus Chrome at the standard macOS path (override with `CHROME` /
-`APP`).
+`APP`). Because registration closes after the first account, the integration tests create
+their accounts directly in Postgres via `server/test/helpers.ts` and then sign in over HTTP;
+they delete every `@test.invalid` account and its documents afterwards, so a run leaves
+registration exactly as it found it.
 
 ## What's in it
 
@@ -133,7 +138,7 @@ get a 30-minute block with a `VALARM` reminder, date-only tasks become all-day e
 Completed tasks are excluded, and a task's project becomes the event's category.
 
 ```
-GET /calendar/token                    → { token }   (identified by x-user-id)
+GET /calendar/token                    → { token }   (requires a session)
 GET /calendar/<token>/tohab.ics?alarm=10
 ```
 
@@ -157,6 +162,8 @@ endpoints:
 - `GET /sync/pull?collection=&cursor=&id=&limit=` → `{ documents, checkpoint }`
 - `POST /sync/push` → array of conflicting master documents
 - `GET /sync/events` → SSE; a `change` event tells clients to re-pull
+
+All three require a session cookie and answer `401` without one.
 
 Two decisions worth knowing:
 
@@ -199,10 +206,33 @@ lock.
 Deletes are soft — `_deleted: true` tombstones replicate like any other change, so a delete
 on one device removes the document on the others.
 
-Every row is scoped by an `x-user-id` header, which currently holds a device-generated id
-kept in `localStorage`. There is no authentication: anyone who can reach the server can
-read and write any user's data by setting that header. Fine on a private network or behind
-a tunnel; add real auth before exposing it publicly.
+### Authentication
+
+One account per server. `POST /auth/register` works until the first account exists and is
+`403` forever after, so the deployment belongs to whoever claims it first. Passwords are
+`scrypt` hashes; `GET /auth/state` tells a cold client whether to show sign-up or sign-in.
+
+The session is an `httpOnly`, `SameSite=Lax`, `Secure`-when-HTTPS cookie holding
+`userId.expiry.hmac`, signed with a key in the `secrets` table and good for a year. Nothing
+is stored per session, so there is no session table to expire — the trade is that a leaked
+cookie stays valid until it expires; deleting the `session` row from `secrets` invalidates
+every session at once. `/sync/*` and `/calendar/token` require it; the `.ics` feed does not,
+because a calendar client cannot sign in and its unguessable token is the credential.
+
+A cookie rather than a token in `localStorage`: the API is same-origin with the app in every
+deployment here (nginx in production, the Vite proxy in dev), so the cookie needs no CORS
+work, cannot be read by script if the page is ever XSS'd, and — the practical part — rides
+along on `EventSource`, which cannot send headers and previously took the user id in its
+query string.
+
+Being offline-first, the app cannot ask the server who you are at launch, so a non-secret
+`tohab.session` record in `localStorage` holds the signed-in id and email. That is what
+renders the right screen offline and scopes the local database; the cookie remains the only
+thing the server trusts. If it has expired, sync stops with a `Signed out` badge while the
+local data stays usable and editable.
+
+The local RxDB store belongs to one account: signing in as a different id drops it rather
+than pushing its documents up under the new owner.
 
 ## Notes and limits
 

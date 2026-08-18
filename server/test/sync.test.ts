@@ -1,5 +1,6 @@
+import { cleanup, signIn } from './helpers.ts';
+
 const BASE = process.env.BASE ?? 'http://localhost:5178/sync';
-const USER = `test-${process.pid}`;
 
 let failures = 0;
 
@@ -14,7 +15,7 @@ function check(label: string, got: unknown, want: unknown) {
 	}
 }
 
-const headers = { 'content-type': 'application/json', 'x-user-id': USER };
+const headers = { 'content-type': 'application/json', cookie: (await signIn('sync')).cookie };
 
 function task(id: string, updatedAt: number, over: Record<string, unknown> = {}) {
 	return {
@@ -123,9 +124,19 @@ check('unknown collection rejected', bad.status, 400);
 
 // 11. Users cannot see each other's documents.
 const other = await fetch(`${BASE}/pull?collection=tasks&cursor=0&id=&limit=100`, {
-	headers: { ...headers, 'x-user-id': `${USER}-other` }
+	headers: { ...headers, cookie: (await signIn('sync-other')).cookie }
 });
 check('user isolation', (await other.json()).documents, []);
+
+// 11b. No session at all is rejected outright rather than falling back to a shared user.
+const anon = await fetch(`${BASE}/pull?collection=tasks&cursor=0&id=&limit=100`);
+check('unauthenticated pull rejected', anon.status, 401);
+
+// 11c. A tampered session signature does not authenticate.
+const forged = await fetch(`${BASE}/pull?collection=tasks&cursor=0&id=&limit=100`, {
+	headers: { cookie: 'tohab_session=someone-else.9999999999999.deadbeef' }
+});
+check('forged session rejected', forged.status, 401);
 
 // 12. The server stamps its own received_at, independent of client clocks.
 const beforeWrite = Date.now();
@@ -152,4 +163,5 @@ check(
 );
 
 console.log(failures ? `\n${failures} failing` : '\nall passing');
+await cleanup();
 process.exit(failures ? 1 : 0);

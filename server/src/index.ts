@@ -5,6 +5,7 @@ import { streamSSE } from 'hono/streaming';
 import {
 	COLLECTIONS,
 	clockSkew,
+	createUser,
 	docsSince,
 	ensureSchema,
 	getDocForUpdate,
@@ -14,8 +15,18 @@ import {
 	rowToDoc,
 	stats,
 	transaction,
+	userByEmail,
+	userCount,
 	writeDoc
 } from './db.ts';
+import {
+	clearSession,
+	hashPassword,
+	issueSession,
+	requireAuth,
+	verifyPassword,
+	type AuthedEnv
+} from './auth.ts';
 import { buildCalendar, feedToken, resolveFeedToken, type FeedTask } from './ics.ts';
 
 const PORT = Number(process.env.PORT ?? 5178);
@@ -26,13 +37,27 @@ type PushRow = {
 	newDocumentState: Record<string, unknown>;
 };
 
-const app = new Hono();
-app.use('*', cors({ origin: '*', allowHeaders: ['content-type', 'x-user-id'] }));
+/**
+ * Empty by default, which is the same-origin deployment: the app is served by nginx (or the
+ * Vite proxy in dev) from the origin it calls, so no CORS headers are involved at all. A
+ * cross-origin sync server has to name the app's origin here — a session cookie cannot be
+ * sent to a wildcard origin.
+ */
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
+	.split(',')
+	.map((o) => o.trim())
+	.filter(Boolean);
 
-/** Single-user today, but every row is scoped by user id so auth can be added later. */
-function userOf(header: string | undefined, query?: string): string {
-	return (header || query || 'local').slice(0, 64);
-}
+const app = new Hono();
+app.use(
+	'*',
+	cors({
+		origin: (origin) => (ALLOWED_ORIGINS.includes(origin) ? origin : null),
+		allowHeaders: ['content-type'],
+		allowMethods: ['GET', 'POST', 'OPTIONS'],
+		credentials: true
+	})
+);
 
 const listeners = new Map<string, Set<() => void>>();
 
@@ -44,13 +69,62 @@ function notify(userId: string, except?: string) {
 	void except;
 }
 
-const sync = new Hono();
+const auth = new Hono<AuthedEnv>();
+
+function credentials(body: unknown): { email: string; password: string } | null {
+	const { email, password } = (body ?? {}) as { email?: unknown; password?: unknown };
+	if (typeof email !== 'string' || typeof password !== 'string') return null;
+	const trimmed = email.trim().toLowerCase();
+	if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed) || password.length < 8) return null;
+	return { email: trimmed, password };
+}
+
+/** Open until the first account exists, then permanently closed: this is a single-user app,
+ *  and an open endpoint on a public host is how it would stop being one. */
+auth.post('/register', async (c) => {
+	if ((await userCount()) > 0) return c.json({ error: 'registration closed' }, 403);
+
+	const creds = credentials(await c.req.json().catch(() => null));
+	if (!creds) return c.json({ error: 'email and a password of 8+ characters required' }, 400);
+
+	const user = await createUser(creds.email, await hashPassword(creds.password));
+	await issueSession(c, user.id);
+	return c.json({ userId: user.id, email: user.email });
+});
+
+auth.post('/login', async (c) => {
+	const creds = credentials(await c.req.json().catch(() => null));
+	if (!creds) return c.json({ error: 'invalid credentials' }, 401);
+
+	const user = await userByEmail(creds.email);
+	// Hash even when the account is missing, so a wrong email is not faster than a wrong password.
+	const stored = user?.passwordHash ?? (await hashPassword('placeholder'));
+	if (!(await verifyPassword(creds.password, stored)) || !user) {
+		return c.json({ error: 'invalid credentials' }, 401);
+	}
+
+	await issueSession(c, user.id);
+	return c.json({ userId: user.id, email: user.email });
+});
+
+auth.post('/logout', (c) => {
+	clearSession(c);
+	return c.json({ ok: true });
+});
+
+/** Lets a cold client tell "never registered" (show sign-up) from "signed out" (show login). */
+auth.get('/state', async (c) => c.json({ registrationOpen: (await userCount()) === 0 }));
+
+auth.get('/me', requireAuth, async (c) => c.json({ userId: c.get('userId') }));
+
+const sync = new Hono<AuthedEnv>();
+sync.use('*', requireAuth);
 
 sync.get('/pull', async (c) => {
 	const collection = c.req.query('collection') ?? '';
 	if (!COLLECTIONS.has(collection)) return c.json({ error: 'unknown collection' }, 400);
 
-	const userId = userOf(c.req.header('x-user-id'));
+	const userId = c.get('userId');
 	const cursor = Number(c.req.query('cursor') ?? 0) || 0;
 	const id = c.req.query('id') ?? '';
 	const limit = Math.min(500, Math.max(1, Number(c.req.query('limit') ?? 100)));
@@ -69,7 +143,7 @@ sync.post('/push', async (c) => {
 	const collection = body.collection ?? '';
 	if (!COLLECTIONS.has(collection)) return c.json({ error: 'unknown collection' }, 400);
 
-	const userId = userOf(c.req.header('x-user-id'));
+	const userId = c.get('userId');
 	const rows = body.rows ?? [];
 
 	const conflicts = await transaction(async (tx) => {
@@ -100,7 +174,7 @@ sync.post('/push', async (c) => {
 });
 
 sync.get('/events', (c) => {
-	const userId = userOf(c.req.header('x-user-id'), c.req.query('userId'));
+	const userId = c.get('userId');
 
 	return streamSSE(c, async (stream) => {
 		let wake: (() => void) | null = null;
@@ -141,7 +215,7 @@ sync.get('/events', (c) => {
 });
 
 sync.get('/status', async (c) => {
-	const userId = userOf(c.req.header('x-user-id'), c.req.query('userId'));
+	const userId = c.get('userId');
 	return c.json({
 		ok: true,
 		userId,
@@ -151,17 +225,19 @@ sync.get('/status', async (c) => {
 	});
 });
 
-const calendar = new Hono();
+const calendar = new Hono<AuthedEnv>();
 
 /** Env wins so a deployment can pin the key; otherwise it is minted once and persisted. */
 async function calendarSecret(): Promise<string> {
 	return process.env.CALENDAR_SECRET || (await persistedSecret('calendar'));
 }
 
-calendar.get('/token', async (c) => {
-	const userId = userOf(c.req.header('x-user-id'), c.req.query('userId'));
-	return c.json({ token: feedToken(await calendarSecret(), userId) });
+calendar.get('/token', requireAuth, async (c) => {
+	return c.json({ token: feedToken(await calendarSecret(), c.get('userId')) });
 });
+
+/** The feed itself stays unauthenticated: a calendar client cannot sign in, so the
+ *  unguessable token in the URL is the credential. */
 
 calendar.get('/:token/tohab.ics', async (c) => {
 	const userId = resolveFeedToken(await calendarSecret(), c.req.param('token'), await knownUsers());
@@ -189,6 +265,7 @@ calendar.get('/:token/tohab.ics', async (c) => {
 	return c.body(body);
 });
 
+app.route('/auth', auth);
 app.route('/sync', sync);
 app.route('/calendar', calendar);
 app.get('/', (c) => c.text('tohab sync server'));

@@ -3,6 +3,8 @@
  * run on separate pool connections, so two clients can be inside the conflict check at the
  * same time. A lost update here is silent — the losing client believes its write landed.
  */
+import { cleanup, signIn } from './helpers.ts';
+
 const BASE = process.env.BASE ?? 'http://localhost:5178/sync';
 
 let failures = 0;
@@ -17,8 +19,16 @@ function check(label: string, got: unknown, want: unknown) {
 	}
 }
 
-function headers(user: string) {
-	return { 'content-type': 'application/json', 'x-user-id': user };
+/** Each "user" here is a real account with its own session cookie. */
+const cookies = new Map<string, string>();
+
+async function user(label: string): Promise<string> {
+	if (!cookies.has(label)) cookies.set(label, (await signIn(label)).cookie);
+	return label;
+}
+
+function headers(label: string) {
+	return { 'content-type': 'application/json', cookie: cookies.get(label)! };
 }
 
 function task(id: string, updatedAt: number, over: Record<string, unknown> = {}) {
@@ -56,7 +66,7 @@ async function pull(user: string, collection = 'tasks') {
 
 // --- 1. Two clients race to update the same document from the same base state. ---
 // Exactly one may win; the other must be told it conflicted rather than silently losing.
-const raceUser = `race-${process.pid}`;
+const raceUser = await user('race');
 await push(raceUser, [{ newDocumentState: task('doc', 100) }]);
 
 const [aConflicts, bConflicts] = await Promise.all([
@@ -82,7 +92,7 @@ check(
 );
 
 // --- 2. Many concurrent writers to one document: exactly one wins per generation. ---
-const stormUser = `storm-${process.pid}`;
+const stormUser = await user('storm');
 await push(stormUser, [{ newDocumentState: task('hot', 1000) }]);
 
 const attempts = await Promise.all(
@@ -99,7 +109,7 @@ check('only one of eight racers wins', attempts.filter((c) => c.length === 0).le
 check('the other seven all conflict', attempts.filter((c) => c.length === 1).length, 7);
 
 // --- 3. Concurrent writes to *different* documents must all succeed. ---
-const fanUser = `fan-${process.pid}`;
+const fanUser = await user('fan');
 const fan = await Promise.all(
 	Array.from({ length: 12 }, (_, i) => push(fanUser, [{ newDocumentState: task(`d${i}`, 500 + i) }]))
 );
@@ -119,4 +129,5 @@ check(
 void sortedRevs;
 
 console.log(failures ? `\n${failures} failing` : '\nall passing');
+await cleanup();
 process.exit(failures ? 1 : 0);

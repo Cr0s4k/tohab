@@ -43,9 +43,22 @@ export const docs = pgTable(
 export type DocRow = typeof docs.$inferSelect;
 
 /**
- * Server-side values that must survive a restart. Currently just the HMAC key that calendar
- * feed URLs are derived from: regenerating it would silently break every subscription
- * already added to someone's calendar client.
+ * Accounts. `docs.user_id` points here by convention rather than a foreign key: sync writes
+ * must not be able to fail on a constraint the client cannot see or repair.
+ */
+export const users = pgTable('users', {
+	id: text('id').primaryKey(),
+	email: text('email').notNull().unique(),
+	passwordHash: text('password_hash').notNull(),
+	createdAt: bigint('created_at', { mode: 'number' }).notNull()
+});
+
+export type UserRow = typeof users.$inferSelect;
+
+/**
+ * Server-side values that must survive a restart: the HMAC key that calendar feed URLs are
+ * derived from (regenerating it would silently break every subscription already added to
+ * someone's calendar client) and the key that signs session cookies.
  */
 export const secrets = pgTable('secrets', {
 	key: text('key').primaryKey(),

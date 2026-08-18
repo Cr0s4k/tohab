@@ -18,8 +18,9 @@ import {
 	COLLECTION_NAMES
 } from '../src/lib/db/schemas.ts';
 
+import { cleanup, signIn } from './auth.ts';
+
 const BASE = process.env.BASE ?? 'http://localhost:5178/sync';
-const USER = `rxtest-${process.pid}`;
 
 disableWarnings();
 addRxPlugin(RxDBDevModePlugin);
@@ -53,7 +54,7 @@ async function makeDb(name: string) {
 	return db;
 }
 
-const headers = { 'content-type': 'application/json', 'x-user-id': USER };
+const headers = { 'content-type': 'application/json', cookie: (await signIn('rxtest')).cookie };
 
 function startReplication(db: any, name: string) {
 	const stream$ = new Subject<any>();
@@ -206,6 +207,8 @@ check('queued offline write flushed after reconnect', (await deviceB.tasks.findO
 await Promise.all([...replA2, ...replB].map((r) => r.state.cancel()));
 await deviceA.close();
 await deviceB.close();
+
+await cleanup();
 
 console.log(failures ? `\n${failures} failing` : '\nall passing');
 process.exit(failures ? 1 : 0);

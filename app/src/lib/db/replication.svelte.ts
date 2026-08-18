@@ -3,6 +3,7 @@ import { replicateRxCollection, type RxReplicationState } from 'rxdb/plugins/rep
 import type { RxReplicationPullStreamItem } from 'rxdb';
 import { browser } from '$app/environment';
 import { settings } from '$lib/settings.svelte';
+import { auth, forget } from '$lib/auth.svelte';
 import { getDb } from './index.ts';
 import { COLLECTION_NAMES, type CollectionName } from './schemas.ts';
 
@@ -10,7 +11,7 @@ import { COLLECTION_NAMES, type CollectionName } from './schemas.ts';
  *  skew can never make the pull cursor skip documents. */
 export type Checkpoint = { cursor: number; id: string };
 
-export type SyncPhase = 'off' | 'offline' | 'syncing' | 'synced' | 'error';
+export type SyncPhase = 'off' | 'offline' | 'syncing' | 'synced' | 'error' | 'unauthorized';
 
 export const sync = $state({
 	phase: 'off' as SyncPhase,
@@ -34,11 +35,22 @@ let source: EventSource | null = null;
 const active = new Set<CollectionName>();
 
 function headers() {
-	return { 'content-type': 'application/json', 'x-user-id': settings.userId };
+	return { 'content-type': 'application/json' };
+}
+
+/**
+ * The session cookie has expired or been revoked. Local data stays put and usable; only the
+ * replication stops, and the layout shows the sign-in screen again.
+ */
+function unauthorized() {
+	sync.phase = 'unauthorized';
+	sync.message = 'Session expired. Sign in again to resume syncing.';
+	forget();
+	void stopSync();
 }
 
 function settle() {
-	if (sync.phase === 'off') return;
+	if (sync.phase === 'off' || sync.phase === 'unauthorized') return;
 	if (active.size > 0) {
 		sync.phase = 'syncing';
 		return;
@@ -59,7 +71,7 @@ function replicate(name: CollectionName, collection: never) {
 
 	const state = replicateRxCollection<unknown, Checkpoint>({
 		collection,
-		replicationIdentifier: `tohab-${name}-${settings.serverUrl}`,
+		replicationIdentifier: `tohab-${name}-${auth.session?.userId ?? 'anon'}-${settings.serverUrl}`,
 		live: true,
 		retryTime: 6000,
 		waitForLeadership: true,
@@ -75,7 +87,14 @@ function replicate(name: CollectionName, collection: never) {
 					cursor: String(checkpoint?.cursor ?? 0),
 					id: checkpoint?.id ?? ''
 				});
-				const res = await fetch(`${settings.serverUrl}/pull?${params}`, { headers: headers() });
+				const res = await fetch(`${settings.serverUrl}/pull?${params}`, {
+					credentials: 'include',
+					headers: headers()
+				});
+				if (res.status === 401) {
+					unauthorized();
+					throw new Error('unauthorized');
+				}
 				if (!res.ok) throw new Error(`pull ${name} failed: ${res.status}`);
 				return res.json();
 			}
@@ -85,9 +104,14 @@ function replicate(name: CollectionName, collection: never) {
 			async handler(rows) {
 				const res = await fetch(`${settings.serverUrl}/push`, {
 					method: 'POST',
+					credentials: 'include',
 					headers: headers(),
 					body: JSON.stringify({ collection: name, rows })
 				});
+				if (res.status === 401) {
+					unauthorized();
+					throw new Error('unauthorized');
+				}
 				if (!res.ok) throw new Error(`push ${name} failed: ${res.status}`);
 				const conflicts = await res.json();
 				if (conflicts.length) sync.conflicts += conflicts.length;
@@ -107,6 +131,7 @@ function replicate(name: CollectionName, collection: never) {
 	});
 
 	state.error$.subscribe((err) => {
+		if (sync.phase === 'unauthorized') return;
 		sync.phase = navigator.onLine ? 'error' : 'offline';
 		sync.message = err.message ?? String(err);
 	});
@@ -122,7 +147,9 @@ export function resync() {
 function openEventStream() {
 	source?.close();
 	try {
-		source = new EventSource(`${settings.serverUrl}/events?userId=${settings.userId}`);
+		// EventSource cannot set headers, which is exactly why the session is a cookie: it
+		// rides along automatically instead of being spelled out in the query string.
+		source = new EventSource(`${settings.serverUrl}/events`, { withCredentials: true });
 		source.addEventListener('change', () => resync());
 		source.addEventListener('error', () => {
 			// EventSource retries on its own; replication keeps polling meanwhile.
@@ -135,6 +162,10 @@ function openEventStream() {
 export async function startSync() {
 	if (!browser || states.length) return;
 	if (!settings.syncEnabled) {
+		sync.phase = 'off';
+		return;
+	}
+	if (!auth.session) {
 		sync.phase = 'off';
 		return;
 	}

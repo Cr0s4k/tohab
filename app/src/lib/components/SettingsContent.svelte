@@ -5,7 +5,7 @@
 	import { openTasksQuery } from '$lib/tasks';
 	import { downloadBackup, importBackup } from '$lib/backup';
 	import { importTodoistCsv } from '$lib/todoist';
-	import { resync, restartSync, sync } from '$lib/db/replication.svelte';
+	import { resync, restartSync, stopSync, sync } from '$lib/db/replication.svelte';
 	import {
 		setReminderMinutes,
 		setServerUrl,
@@ -16,6 +16,7 @@
 		type Theme
 	} from '$lib/settings.svelte';
 	import { feedUrl } from '$lib/calendar';
+	import { auth, logout } from '$lib/auth.svelte';
 	import { haptic } from '$lib/haptics';
 
 	let serverDraft = $state(settings.serverUrl);
@@ -185,9 +186,30 @@
 			<p class="dim">
 				Status: {sync.phase}{sync.message ? ` — ${sync.message}` : ''}
 			</p>
-			<p class="dim mt-1 break-all">Device ID: {settings.userId}</p>
+			<p class="dim mt-1 break-all">Account: {auth.session?.email ?? 'signed out'}</p>
 		</div>
 	</div>
+</section>
+
+<section class="mb-6">
+	<h2 class="dim mb-2 text-[0.7rem] font-semibold tracking-wide uppercase">Account</h2>
+	<div class="raised hairline rounded-2xl border">
+		<button
+			type="button"
+			onclick={async () => {
+				haptic('tap');
+				await stopSync();
+				await logout();
+			}}
+			class="tap w-full px-4 py-3 text-left text-sm"
+		>
+			Sign out
+		</button>
+	</div>
+	<p class="dim mt-2 text-[0.7rem]">
+		Signing out leaves this device's data in place; it is cleared if a different account
+		signs in.
+	</p>
 </section>
 
 <section class="mb-6">

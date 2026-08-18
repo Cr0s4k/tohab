@@ -63,7 +63,52 @@ async function create(): Promise<Db> {
 	return db;
 }
 
+/** Drops the Dexie databases RxDB keeps for this app, without needing to open them first. */
+async function wipeStorage() {
+	const found = await indexedDB.databases();
+	await Promise.all(
+		found
+			.filter((d) => d.name?.startsWith('rxdb-dexie-tohab'))
+			.map(
+				(d) =>
+					new Promise<void>((resolve) => {
+						const req = indexedDB.deleteDatabase(d.name!);
+						req.onsuccess = req.onerror = req.onblocked = () => resolve();
+					})
+			)
+	);
+}
+
+/**
+ * A schema change without a migration leaves the stored database unopenable, which would
+ * otherwise mean a permanently blank app. The local store is a cache of what the server
+ * holds, so dropping it and starting over is the recoverable choice.
+ */
+async function open(): Promise<Db> {
+	try {
+		return await create();
+	} catch (err) {
+		console.warn('local database could not be opened; resetting it', err);
+		await wipeStorage();
+		return create();
+	}
+}
+
 export function getDb(): Promise<Db> {
-	if (!pending) pending = create();
+	if (!pending) pending = open();
 	return pending;
+}
+
+/**
+ * Deletes the local store outright. Used when the signed-in account changes: RxDB documents
+ * carry no owner, so leaving another account's rows behind would push them up as this one's.
+ */
+export async function removeDb() {
+	try {
+		const db = await getDb();
+		await db.remove();
+	} catch {
+		await wipeStorage();
+	}
+	pending = null;
 }
