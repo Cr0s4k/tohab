@@ -76,7 +76,7 @@
 </script>
 
 <aside
-	class="raised hairline hidden shrink-0 flex-col border-r md:flex"
+	class="raised hairline hidden shrink-0 flex-col md:flex"
 	class:rail={collapsed}
 	class:panel={!collapsed}
 	style="view-transition-name: sidenav"

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import type { Habit, HabitLog } from '$lib/db/schemas';
@@ -16,6 +17,7 @@
 	} from '$lib/habits';
 	import { shiftKey, today, type DayKey } from '$lib/dates';
 	import { settings } from '$lib/settings.svelte';
+	import { haptic, hapticTap } from '$lib/haptics';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
 
@@ -82,10 +84,32 @@
 	);
 </script>
 
-<header class="hairline z-20 shrink-0 border-b pt-safe">
+<header class="z-20 shrink-0 border-b pt-safe" style:border-color="var(--product-library-divider-secondary)">
 	<div class="measure flex items-center justify-between px-4 pt-2 pb-3">
 		<h1 class="text-header md:text-header-large font-bold tracking-tight">Progress</h1>
 		<div class="flex items-center gap-2">
+			<button
+				type="button"
+				use:hapticTap
+				onclick={() => {
+					haptic('tap');
+					goto('/tasks?view=today');
+				}}
+				aria-label="Switch to Tasks"
+				class="tap sunken hairline grid size-9 shrink-0 place-items-center rounded-full border md:hidden"
+			>
+				<svg
+					viewBox="0 0 24 24"
+					class="size-[1.05rem]"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4-4m-4 4l4 4" />
+				</svg>
+			</button>
 			<SettingsButton />
 		</div>
 	</div>
