@@ -124,7 +124,7 @@
 					: ''} {priorityClass(task.priority)}"
 				style="border-color: currentColor"
 			>
-				<svg viewBox="0 0 24 24" class="task-check__tick size-4" fill="none" stroke="var(--accent-text)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+				<svg viewBox="0 0 24 24" class="task-check__tick size-3" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M4 12.5l5 5L20 6.5" />
 				</svg>
 			</button>
@@ -168,12 +168,8 @@
 		inset: 0;
 		border-radius: 9999px;
 		background: currentColor;
-		opacity: 0;
-		transition: opacity 160ms ease;
-	}
-
-	.task-check:hover::before {
 		opacity: 0.08;
+		transition: opacity 160ms ease;
 	}
 
 	.task-check[aria-checked='true'] {
@@ -192,5 +188,9 @@
 	.task-check:hover .task-check__tick,
 	.task-check[aria-checked='true'] .task-check__tick {
 		opacity: 1;
+	}
+
+	.task-check[aria-checked='true'] .task-check__tick {
+		stroke: var(--surface);
 	}
 </style>
