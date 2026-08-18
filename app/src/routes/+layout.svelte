@@ -16,6 +16,7 @@
 	import { startSync } from '$lib/db/replication.svelte';
 	import { removeDb } from '$lib/db';
 	import { motionOk } from '$lib/motion';
+	import { hideSplash } from '$lib/splash';
 
 	let { children } = $props();
 
@@ -44,6 +45,10 @@
 				await navigation.complete;
 			});
 		});
+	});
+
+	$effect(() => {
+		if (!auth.session || ready) hideSplash();
 	});
 
 	$effect(() => {
