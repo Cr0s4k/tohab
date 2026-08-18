@@ -36,7 +36,7 @@
 	<h3 class="dim mb-2 text-caption font-semibold tracking-wide uppercase">{label}</h3>
 {/snippet}
 
-<Sheet {open} {title} {onClose}>
+<Sheet {open} {title} showHeader={false} {onClose}>
 	{@render section('Grouping')}
 	<div class="mb-5 grid grid-cols-3 gap-1.5">
 		{#each GROUP_CHOICES as choice (choice.id)}
