@@ -9,6 +9,7 @@
 	import {
 		setReminderMinutes,
 		setServerUrl,
+		setSound,
 		setStartOfWeek,
 		setSyncEnabled,
 		setTheme,
@@ -136,6 +137,18 @@
 				{opt.label}
 			</button>
 		{/each}
+	</div>
+
+	<div class="raised hairline mt-4 rounded-2xl border">
+		<label class="flex items-center justify-between gap-3 px-4 py-3">
+			<span class="text-sm">Sound on complete</span>
+			<input
+				type="checkbox"
+				checked={settings.sound}
+				onchange={(e) => setSound(e.currentTarget.checked)}
+				class="size-5 accent-current"
+			/>
+		</label>
 	</div>
 </section>
 

@@ -2,8 +2,10 @@
 	import type { Task, Project } from '$lib/db/schemas';
 	import { humanDay, humanTime, daysFromToday } from '$lib/dates';
 	import { haptic } from '$lib/haptics';
+	import { playComplete } from '$lib/sound';
 	import { priorityClass } from '$lib/tasks';
 	import { pop } from '$lib/motion';
+	import { isDesktop } from '$lib/viewport';
 
 	let {
 		task,
@@ -30,7 +32,13 @@
 	let overdue = $derived(!task.done && !!task.due && daysFromToday(task.due) < 0);
 	let hasMeta = $derived(Boolean(task.due || project || task.notes));
 
+	function complete() {
+		if (!task.done) playComplete();
+		onToggle();
+	}
+
 	function down(e: PointerEvent) {
+		if (isDesktop()) return;
 		if (e.pointerType === 'mouse' && e.button !== 0) return;
 		start = { x: e.clientX, y: e.clientY };
 		axis = 'none';
@@ -63,7 +71,7 @@
 		if (axis !== 'x') return;
 		if (settled > THRESHOLD) {
 			haptic('success');
-			onToggle();
+			complete();
 		} else if (settled < -THRESHOLD) {
 			haptic('warn');
 			onDelete();
@@ -106,7 +114,7 @@
 				aria-label={task.done ? 'Mark as not done' : 'Mark as done'}
 				onclick={() => {
 					haptic('success');
-					onToggle();
+					complete();
 				}}
 				class="tap grid size-6 shrink-0 place-items-center rounded-full border-2 {hasMeta
 					? 'mt-0.5'

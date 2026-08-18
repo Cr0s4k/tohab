@@ -14,7 +14,8 @@ export const settings = $state({
 	startOfWeek: Number(read('tohab.startOfWeek', '1')) as 0 | 1,
 	/** Minutes before a timed task that the calendar feed's alarm fires. 0 is off. */
 	reminderMinutes: Number(read('tohab.reminderMinutes', '10')),
-	sidebarCollapsed: read('tohab.sidebarCollapsed', 'false') === 'true'
+	sidebarCollapsed: read('tohab.sidebarCollapsed', 'false') === 'true',
+	sound: read('tohab.sound', 'true') === 'true'
 });
 
 export function applyTheme() {
@@ -49,6 +50,11 @@ export function setReminderMinutes(minutes: number) {
 export function setStartOfWeek(day: 0 | 1) {
 	settings.startOfWeek = day;
 	localStorage.setItem('tohab.startOfWeek', String(day));
+}
+
+export function setSound(on: boolean) {
+	settings.sound = on;
+	localStorage.setItem('tohab.sound', String(on));
 }
 
 export function setSidebarCollapsed(collapsed: boolean) {
