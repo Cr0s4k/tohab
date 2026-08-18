@@ -115,9 +115,9 @@
 
 		<a
 			href="/projects/inbox"
-			class="raised hairline block border-b px-4 py-3.5 transition-colors hover:sunken"
+			class="raised block px-4 pt-3.5 pb-0 transition-colors hover:sunken"
 		>
-			<span class="measure flex items-center gap-3">
+			<span class="hairline measure flex items-center gap-3 border-b pb-3.5">
 				<span class="size-3 rounded-full" style="background: var(--text-dim)"></span>
 				<span class="flex-1 text-body">Inbox</span>
 				<span class="dim text-sm tabular-nums">{counts.get('') ?? 0}</span>
@@ -128,9 +128,9 @@
 			<div
 				transition:collapse
 				animate:flip={flipCfg}
-				class="raised hairline border-b px-4 py-3.5 transition-colors hover:sunken"
+				class="raised px-4 pt-3.5 pb-0 transition-colors hover:sunken"
 			>
-				<div class="measure flex items-center gap-3">
+				<div class="hairline measure flex items-center gap-3 border-b pb-3.5">
 					<span class="size-3 shrink-0 rounded-full" style="background: {project.color}"></span>
 					{#if renaming === project.id}
 						<input

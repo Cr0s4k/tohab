@@ -99,7 +99,7 @@
 
 	<div
 		role="group"
-		class="surface hairline relative border-b px-4 py-2.5 hover:surface-hover active:surface-hover"
+		class="surface relative px-4 pt-2.5 pb-0 hover:surface-hover active:surface-hover"
 		style="transform: translateX({dx}px); transition: {dragging
 			? 'none'
 			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: pan-y"
@@ -108,7 +108,11 @@
 		onpointerup={up}
 		onpointercancel={up}
 	>
-		<div class="measure flex gap-3" class:items-start={hasMeta} class:items-center={!hasMeta}>
+		<div
+			class="hairline measure flex gap-3 border-b pb-2.5"
+			class:items-start={hasMeta}
+			class:items-center={!hasMeta}
+		>
 			<button
 				type="button"
 				role="checkbox"

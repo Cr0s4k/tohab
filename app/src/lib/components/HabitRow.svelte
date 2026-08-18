@@ -26,10 +26,10 @@
 </script>
 
 <div
-	class="hairline border-b px-4 py-3 transition-colors hover:sunken"
+	class="px-4 pt-3 pb-0 transition-colors hover:sunken"
 	class:opacity-55={!due}
 >
-	<div class="measure flex items-center gap-3">
+	<div class="hairline measure flex items-center gap-3 border-b pb-3">
 		<a href="/habits/{habit.id}" class="min-w-0 flex-1 flex items-center gap-3 text-left">
 			<span
 				class="grid size-10 shrink-0 place-items-center rounded-xl text-lg"

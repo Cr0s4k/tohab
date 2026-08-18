@@ -195,6 +195,7 @@
 @utility measure {
 	width: 100%;
 	max-width: var(--measure);
+	margin-inline: auto;
 }
 
 @utility tap {
