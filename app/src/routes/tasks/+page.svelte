@@ -69,30 +69,12 @@
 >
 	<div class="measure relative flex items-center justify-between px-4 pt-2 pb-2">
 		<div class="flex items-center gap-2">
-			<button
-				type="button"
-				onclick={() => goto(`/habits?from=${view}`)}
-				class="tap flex items-center gap-1.5 text-left"
-				aria-label="Switch to Habits"
+			<h1
+				class="min-w-0 truncate text-header md:text-header-large font-bold tracking-tight transition-opacity duration-200"
+				class:opacity-0={scrolled}
 			>
-				<span
-					class="text-header md:text-header-large font-bold tracking-tight transition-opacity duration-200"
-					class:opacity-0={scrolled}
-				>
-					{viewTitles[view]}
-				</span>
-				<svg
-					viewBox="0 0 24 24"
-					class="dim size-4 md:hidden"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4-4m-4 4l4 4" />
-				</svg>
-			</button>
+				{viewTitles[view]}
+			</h1>
 			{#if overdueCount > 0}
 				<p class="danger text-xs font-medium">
 					{overdueCount} overdue
@@ -122,6 +104,24 @@
 					<circle cx="16" cy="6" r="2" />
 					<circle cx="10" cy="12" r="2" />
 					<circle cx="18" cy="18" r="2" />
+				</svg>
+			</button>
+			<button
+				type="button"
+				onclick={() => goto(`/habits?from=${view}`)}
+				aria-label="Switch to Habits"
+				class="tap sunken hairline grid size-9 place-items-center rounded-full border md:hidden"
+			>
+				<svg
+					viewBox="0 0 24 24"
+					class="size-[1.05rem]"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4-4m-4 4l4 4" />
 				</svg>
 			</button>
 			<SettingsButton />
