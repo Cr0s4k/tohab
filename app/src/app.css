@@ -70,6 +70,18 @@
 		overscroll-behavior: none;
 	}
 
+	/*
+		Opt iOS Safari and installed iOS PWAs into Dynamic Type. WebKit maps
+		`-apple-system-body` to the system's Larger Text / Text Size setting,
+		and every rem-based font size below scales with it.
+	*/
+	@supports (-webkit-touch-callout: none) {
+		html {
+			font: -apple-system-body;
+			line-height: 1.5;
+		}
+	}
+
 	/* Pinning the document is what keeps iOS from rubber-banding the whole shell, tab bar included. */
 	body {
 		position: fixed;
@@ -159,31 +171,31 @@
 }
 @utility text-caption {
 	font-size: 0.75rem;
-	line-height: 20px;
+	line-height: 1.6667;
 }
 @utility text-copy {
 	font-size: 0.8125rem;
-	line-height: 21px;
+	line-height: 1.6154;
 }
 @utility text-body {
 	font-size: 0.875rem;
-	line-height: 21px;
+	line-height: 1.5;
 }
 @utility text-subtitle {
 	font-size: 1rem;
-	line-height: 24px;
+	line-height: 1.5;
 }
 @utility text-header {
 	font-size: 1.25rem;
-	line-height: 24px;
+	line-height: 1.2;
 }
 @utility text-header-large {
 	font-size: 1.5rem;
-	line-height: 30px;
+	line-height: 1.25;
 }
 @utility text-header-xlarge {
 	font-size: 2rem;
-	line-height: 36px;
+	line-height: 1.125;
 }
 @utility danger {
 	color: var(--danger);
