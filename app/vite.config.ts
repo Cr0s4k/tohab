@@ -18,9 +18,11 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter({ fallback: 'index.html' })
+			adapter: adapter({ fallback: 'index.html' }),
+			/** The SPA fallback answers deep paths, where relative asset URLs would resolve wrong. */
+			paths: { relative: false }
 		})
 	],
-	server: { proxy: PROXY },
+	server: { proxy: PROXY, allowedHosts: ['.ts.net'] },
 	preview: { proxy: PROXY }
 });
