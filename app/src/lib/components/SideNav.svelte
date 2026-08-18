@@ -216,10 +216,8 @@
 		padding: 0.5rem 0.65rem;
 		font-size: 0.875rem;
 		font-weight: 400;
-		color: var(--text-dim);
-		transition:
-			background-color 140ms ease,
-			color 140ms ease;
+		color: var(--text);
+		transition: background-color 140ms ease;
 	}
 
 	.rail .nav-item {
@@ -228,7 +226,6 @@
 
 	.nav-item:hover {
 		background: var(--surface-sunken);
-		color: var(--text);
 	}
 
 	.nav-add {
@@ -239,6 +236,6 @@
 	.nav-active {
 		background: var(--surface-sunken);
 		color: var(--accent-muted, var(--accent));
-		font-weight: 500;
+		font-weight: 400;
 	}
 </style>
