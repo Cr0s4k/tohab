@@ -57,8 +57,8 @@
 	<div class="measure flex items-center justify-between px-4 pt-2 pb-3">
 		<h1 class="text-2xl font-bold tracking-tight">Browse</h1>
 		<div class="flex items-center gap-2">
-			<SyncBadge />
 			<SettingsButton />
+			<SyncBadge />
 		</div>
 	</div>
 </header>

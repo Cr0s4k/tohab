@@ -67,8 +67,8 @@
 			<h1 class="truncate text-2xl font-bold tracking-tight">Journal</h1>
 		</div>
 		<div class="flex items-center gap-2">
-			<SyncBadge />
 			<SettingsButton />
+			<SyncBadge />
 		</div>
 	</div>
 

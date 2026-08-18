@@ -83,7 +83,6 @@
 			{/if}
 		</div>
 		<div class="flex items-center gap-2">
-			<SyncBadge />
 			<button
 				type="button"
 				onclick={() => (tuning = true)}
@@ -100,6 +99,7 @@
 				</svg>
 			</button>
 			<SettingsButton />
+			<SyncBadge />
 		</div>
 	</div>
 </header>
