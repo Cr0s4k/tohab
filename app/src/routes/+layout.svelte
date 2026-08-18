@@ -81,7 +81,7 @@
 	{:else if ready}
 		<SideNav />
 		<div
-			class="hairline relative mx-auto flex min-w-0 w-full max-w-lg flex-1 flex-col overflow-hidden md:max-w-3xl md:border-x"
+			class="relative mx-auto flex min-w-0 w-full max-w-lg flex-1 flex-col overflow-hidden md:max-w-3xl"
 		>
 			{@render children()}
 			<SettingsSheet open={settingsSheet.open} onClose={() => (settingsSheet.open = false)} />
