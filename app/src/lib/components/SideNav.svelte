@@ -83,7 +83,7 @@
 >
 	<div class="flex items-center px-2.5 pt-4 pb-2" class:justify-center={collapsed}>
 		{#if !collapsed}
-			<span class="flex-1 pl-2.5 text-lg font-bold tracking-tight">Tohab</span>
+			<span class="flex-1 pl-2.5 text-subtitle font-semibold tracking-tight">Tohab</span>
 		{/if}
 		<button
 			type="button"
@@ -135,7 +135,7 @@
 			{#if collapsed}
 				<hr class="hairline mx-1.5 my-2.5 border-t" />
 			{:else}
-				<h2 class="dim px-2.5 pt-3 pb-1.5 text-[0.66rem] font-semibold tracking-wide uppercase">
+				<h2 class="dim px-2.5 pt-3 pb-1.5 text-body font-semibold">
 					{group.label}
 				</h2>
 			{/if}
@@ -214,7 +214,7 @@
 		gap: 0.7rem;
 		border-radius: 0.7rem;
 		padding: 0.5rem 0.65rem;
-		font-size: 0.875rem;
+		font-size: 14px;
 		font-weight: 400;
 		color: var(--text);
 		transition: background-color 140ms ease;

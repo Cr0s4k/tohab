@@ -55,7 +55,7 @@
 
 <header class="hairline z-20 shrink-0 border-b pt-safe">
 	<div class="measure flex items-center justify-between px-4 pt-2 pb-3">
-		<h1 class="text-2xl font-bold tracking-tight">Browse</h1>
+		<h1 class="text-header md:text-header-large font-bold tracking-tight">Browse</h1>
 		<div class="flex items-center gap-2">
 			<SettingsButton />
 			<SyncBadge />
@@ -67,7 +67,7 @@
 	<section>
 		<div class="sunken sticky top-0 z-10 px-4 pt-3 pb-1.5">
 			<div class="measure flex items-center justify-between">
-				<h2 class="dim text-[0.7rem] font-semibold tracking-wide uppercase">Projects</h2>
+				<h2 class="dim text-caption font-semibold tracking-wide uppercase">Projects</h2>
 				<button
 					type="button"
 					use:hapticTap
@@ -92,7 +92,7 @@
 						bind:this={input}
 						bind:value={name}
 						placeholder="New project…"
-						class="sunken min-w-0 flex-1 rounded-xl px-3 py-2 text-[0.9rem] outline-none placeholder:opacity-50"
+						class="sunken min-w-0 flex-1 rounded-xl px-3 py-2 text-copy outline-none placeholder:opacity-50"
 					/>
 					<button
 						type="submit"
@@ -119,7 +119,7 @@
 		>
 			<span class="measure flex items-center gap-3">
 				<span class="size-3 rounded-full" style="background: var(--text-dim)"></span>
-				<span class="flex-1 text-[0.95rem]">Inbox</span>
+				<span class="flex-1 text-body">Inbox</span>
 				<span class="dim text-sm tabular-nums">{counts.get('') ?? 0}</span>
 			</span>
 		</a>
@@ -137,10 +137,10 @@
 							bind:value={renameValue}
 							onblur={() => commitRename(project.id)}
 							onkeydown={(e) => e.key === 'Enter' && commitRename(project.id)}
-							class="sunken min-w-0 flex-1 rounded-lg px-2 py-1 text-[0.95rem] outline-none"
+							class="sunken min-w-0 flex-1 rounded-lg px-2 py-1 text-body outline-none"
 						/>
 					{:else}
-						<a href="/projects/{project.id}" class="min-w-0 flex-1 truncate text-[0.95rem]">
+						<a href="/projects/{project.id}" class="min-w-0 flex-1 truncate text-body">
 							{project.name}
 						</a>
 						<span class="dim text-sm tabular-nums">{counts.get(project.id) ?? 0}</span>
@@ -169,13 +169,13 @@
 			</div>
 		{/each}
 
-		<p class="dim px-4 py-3 text-[0.68rem]">
+		<p class="dim px-4 py-3 text-caption">
 			Deleting a project keeps its tasks and moves them to the Inbox.
 		</p>
 	</section>
 
 	<section class="measure px-4 pb-4">
-		<h2 class="dim pt-4 pb-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">Filters</h2>
+		<h2 class="dim pt-4 pb-1.5 text-caption font-semibold tracking-wide uppercase">Filters</h2>
 		<div class="raised hairline rounded-2xl border px-4 py-6 text-center">
 			<p class="dim text-sm">Filters are coming soon.</p>
 		</div>

@@ -52,18 +52,18 @@
 			<input
 				bind:value={draft.title}
 				placeholder="Title"
-				class="sunken w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+				class="sunken w-full rounded-lg px-3 py-2.5 text-body outline-none"
 			/>
 
 			<textarea
 				bind:value={draft.notes}
 				placeholder="Notes"
 				rows="3"
-				class="sunken w-full resize-none rounded-lg px-3 py-2.5 text-[0.9rem] outline-none placeholder:opacity-50"
+				class="sunken w-full resize-none rounded-lg px-3 py-2.5 text-copy outline-none placeholder:opacity-50"
 			></textarea>
 
 			<div>
-				<p class="dim mb-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">Due</p>
+				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Due</p>
 				<div class="mb-2 flex flex-wrap gap-1.5">
 					{#each shortcuts() as s (s.label)}
 						<button
@@ -73,7 +73,7 @@
 								haptic('tap');
 								draft.due = s.value;
 							}}
-							class="tap rounded-full px-3 py-1.5 text-[0.78rem] font-medium"
+							class="tap rounded-full px-3 py-1.5 text-caption font-medium"
 							class:accent-bg={draft.due === s.value}
 							class:sunken={draft.due !== s.value}
 						>
@@ -85,21 +85,21 @@
 					<input
 						type="date"
 						bind:value={draft.due}
-						class="sunken min-w-0 flex-1 rounded-xl px-3 py-2.5 text-sm outline-none"
+						class="sunken min-w-0 flex-1 rounded-xl px-3 py-2.5 text-copy outline-none"
 					/>
 					<input
 						type="time"
 						bind:value={draft.dueTime}
-						class="sunken w-28 rounded-xl px-3 py-2.5 text-sm outline-none"
+						class="sunken w-28 rounded-xl px-3 py-2.5 text-copy outline-none"
 					/>
 				</div>
 				{#if draft.due}
-					<p class="dim mt-1.5 text-[0.7rem]">{humanDay(draft.due)}</p>
+					<p class="dim mt-1.5 text-caption">{humanDay(draft.due)}</p>
 				{/if}
 			</div>
 
 			<div>
-				<p class="dim mb-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">Priority</p>
+				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Priority</p>
 				<div class="flex gap-1.5">
 					{#each [1, 2, 3, 4] as p (p)}
 						<button
@@ -109,11 +109,11 @@
 								haptic('tap');
 								draft.priority = p;
 							}}
-							class="tap sunken flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[0.7rem] font-medium"
+							class="tap sunken flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-caption font-medium"
 							class:ring-2={draft.priority === p}
 							style="--tw-ring-color: var(--accent)"
 						>
-							<span class="{priorityClass(p)} text-sm font-bold">P{p}</span>
+							<span class="{priorityClass(p)} text-body font-bold">P{p}</span>
 							<span class="dim">{PRIORITY_LABELS[p]}</span>
 						</button>
 					{/each}
@@ -121,10 +121,10 @@
 			</div>
 
 			<div>
-				<p class="dim mb-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">Project</p>
+				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Project</p>
 				<select
 					bind:value={draft.projectId}
-					class="sunken w-full rounded-xl px-3 py-2.5 text-sm outline-none"
+					class="sunken w-full rounded-xl px-3 py-2.5 text-copy outline-none"
 				>
 					<option value="">Inbox</option>
 					{#each projects as p (p.id)}
@@ -137,7 +137,7 @@
 				<button
 					type="button"
 					onclick={close}
-					class="tap accent-bg flex-1 rounded-lg py-2.5 text-sm font-semibold"
+					class="tap accent-bg flex-1 rounded-lg py-2.5 text-body font-semibold"
 				>
 					Save
 				</button>
@@ -148,7 +148,7 @@
 						haptic('warn');
 						deleteTask(id).then(onClose);
 					}}
-					class="tap sunken danger rounded-lg px-5 py-2.5 text-sm font-semibold"
+					class="tap sunken danger rounded-lg px-5 py-2.5 text-body font-semibold"
 				>
 					Delete
 				</button>

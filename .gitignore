@@ -11,6 +11,7 @@ server/drizzle/
 
 # Local design references.
 /design/
+/tohab-seed-backup.json
 
 .env
 .env.*

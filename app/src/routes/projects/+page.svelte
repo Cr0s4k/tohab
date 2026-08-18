@@ -41,7 +41,7 @@
 				<path d="M15 19l-7-7 7-7" />
 			</svg>
 		</a>
-		<h1 class="text-2xl font-bold tracking-tight">Projects</h1>
+		<h1 class="text-header md:text-header-large font-bold tracking-tight">Projects</h1>
 	</div>
 </header>
 
@@ -49,7 +49,7 @@
 	<a href="/projects/inbox" class="raised hairline block border-b px-4 py-3.5">
 		<span class="measure flex items-center gap-3">
 			<span class="size-3 rounded-full" style="background: var(--text-dim)"></span>
-			<span class="flex-1 text-[0.95rem]">Inbox</span>
+			<span class="flex-1 text-body">Inbox</span>
 			<span class="dim text-sm tabular-nums">{counts.get('') ?? 0}</span>
 		</span>
 	</a>
@@ -67,10 +67,10 @@
 						bind:value={renameValue}
 						onblur={() => commitRename(project.id)}
 						onkeydown={(e) => e.key === 'Enter' && commitRename(project.id)}
-						class="sunken min-w-0 flex-1 rounded-lg px-2 py-1 text-[0.95rem] outline-none"
+						class="sunken min-w-0 flex-1 rounded-lg px-2 py-1 text-body outline-none"
 					/>
 				{:else}
-					<a href="/projects/{project.id}" class="min-w-0 flex-1 truncate text-[0.95rem]">
+					<a href="/projects/{project.id}" class="min-w-0 flex-1 truncate text-body">
 						{project.name}
 					</a>
 					<span class="dim text-sm tabular-nums">{counts.get(project.id) ?? 0}</span>
@@ -102,7 +102,7 @@
 		</div>
 	{/each}
 
-	<p class="dim px-4 py-3 text-[0.68rem]">
+	<p class="dim px-4 py-3 text-caption">
 		Deleting a project keeps its tasks and moves them to the Inbox.
 	</p>
 </main>
@@ -112,7 +112,7 @@
 		<input
 			bind:value={name}
 			placeholder="New project…"
-			class="sunken min-w-0 flex-1 rounded-2xl px-4 py-3 text-[0.95rem] outline-none placeholder:opacity-50"
+			class="sunken min-w-0 flex-1 rounded-2xl px-4 py-3 text-body outline-none placeholder:opacity-50"
 		/>
 		<button
 			type="submit"

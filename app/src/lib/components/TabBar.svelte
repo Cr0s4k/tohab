@@ -42,7 +42,7 @@
 			use:hapticTap
 			onclick={() => haptic('tap')}
 			aria-current={active ? 'page' : undefined}
-			class="tap flex flex-col items-center gap-1 pt-2.5 pb-1 text-[0.68rem] font-medium"
+			class="tap flex flex-col items-center gap-1 pt-2.5 pb-1 text-caption font-medium"
 			class:accent-fg={active}
 			class:dim={!active}
 			style="transition: color 180ms ease"

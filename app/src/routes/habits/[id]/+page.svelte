@@ -63,7 +63,7 @@
 				<path d="M15 19l-7-7 7-7" />
 			</svg>
 		</a>
-		<h1 class="min-w-0 flex-1 truncate text-xl font-bold tracking-tight">
+		<h1 class="min-w-0 flex-1 truncate text-header md:text-header-large font-bold tracking-tight">
 			{habit ? `${habit.emoji} ${habit.name}` : 'Habit'}
 		</h1>
 		<button

@@ -33,7 +33,7 @@
 </script>
 
 {#snippet section(label: string)}
-	<h3 class="dim mb-2 text-[0.7rem] font-semibold tracking-wide uppercase">{label}</h3>
+	<h3 class="dim mb-2 text-caption font-semibold tracking-wide uppercase">{label}</h3>
 {/snippet}
 
 <Sheet {open} {title} {onClose}>

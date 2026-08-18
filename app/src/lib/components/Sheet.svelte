@@ -33,7 +33,7 @@
 			aria-label="Close"
 			onclick={onClose}
 			transition:veil
-			class="absolute inset-0 touch-none bg-black/45 backdrop-blur-[2px]"
+			class="absolute inset-0 touch-none bg-black/45"
 		></button>
 
 		<div
@@ -44,8 +44,8 @@
 			<div
 				class="hairline raised sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3"
 			>
-				<h2 class="text-base font-semibold">{title}</h2>
-				<button type="button" onclick={onClose} class="tap accent-fg text-sm font-medium">
+				<h2 class="text-subtitle font-semibold">{title}</h2>
+				<button type="button" onclick={onClose} class="tap accent-fg text-copy font-medium">
 					{confirmLabel}
 				</button>
 			</div>

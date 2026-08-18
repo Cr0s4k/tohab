@@ -80,7 +80,7 @@
 </script>
 
 <div class="relative overflow-hidden">
-	<div class="absolute inset-0 px-5 text-sm font-semibold">
+	<div class="absolute inset-0 px-5 text-copy font-semibold">
 		<div class="measure flex h-full items-center justify-between">
 			<span
 				class="flex items-center gap-2"
@@ -111,32 +111,30 @@
 		<div class="measure flex gap-3" class:items-start={hasMeta} class:items-center={!hasMeta}>
 			<button
 				type="button"
+				role="checkbox"
+				aria-checked={task.done}
 				use:hapticTap
 				aria-label={task.done ? 'Mark as not done' : 'Mark as done'}
 				onclick={() => {
 					haptic('success');
 					complete();
 				}}
-				class="tap relative grid size-5 shrink-0 place-items-center rounded-full border-2 before:absolute before:-inset-2.5 before:content-[''] {hasMeta
+				class="task-check tap relative grid size-5 shrink-0 place-items-center rounded-full border-2 before:absolute before:-inset-2.5 before:content-[''] {hasMeta
 					? 'mt-0.5'
 					: ''} {priorityClass(task.priority)}"
-				style="border-color: currentColor; background: {task.done
-					? 'currentColor'
-					: 'transparent'}; transition: background 160ms ease"
+				style="border-color: currentColor"
 			>
-				{#if task.done}
-					<svg transition:pop={{ duration: 200 }} viewBox="0 0 24 24" class="size-4" fill="none" stroke="var(--surface-raised)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M4 12.5l5 5L20 6.5" />
-					</svg>
-				{/if}
+				<svg viewBox="0 0 24 24" class="task-check__tick size-4" fill="none" stroke="var(--accent-text)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M4 12.5l5 5L20 6.5" />
+				</svg>
 			</button>
 
 			<button type="button" onclick={onOpen} class="min-w-0 flex-1 text-left">
-				<div class="truncate text-sm leading-snug" class:line-through={task.done} class:dim={task.done}>
+				<div class="truncate text-body leading-snug" class:line-through={task.done} class:dim={task.done}>
 					{task.title}
 				</div>
 				{#if task.due || project || task.notes}
-					<div class="mt-1 flex items-center gap-2 text-xs">
+					<div class="mt-1 flex items-center gap-2 text-caption">
 						{#if task.due}
 							<span class:dim={!overdue} style={overdue ? 'color: var(--danger)' : ''}>
 								{humanDay(task.due)}{task.dueTime ? ` · ${humanTime(task.dueTime)}` : ''}
@@ -157,3 +155,42 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.task-check {
+		background: transparent;
+		transition: background-color 160ms ease;
+	}
+
+	.task-check::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 9999px;
+		background: currentColor;
+		opacity: 0;
+		transition: opacity 160ms ease;
+	}
+
+	.task-check:hover::before {
+		opacity: 0.08;
+	}
+
+	.task-check[aria-checked='true'] {
+		background: currentColor;
+	}
+
+	.task-check[aria-checked='true']::before {
+		opacity: 0;
+	}
+
+	.task-check__tick {
+		opacity: 0;
+		transition: opacity 160ms ease;
+	}
+
+	.task-check:hover .task-check__tick,
+	.task-check[aria-checked='true'] .task-check__tick {
+		opacity: 1;
+	}
+</style>

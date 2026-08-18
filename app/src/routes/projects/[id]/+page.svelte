@@ -43,7 +43,7 @@
 		{#if project}
 			<span class="size-3 shrink-0 rounded-full" style="background: {project.color}"></span>
 		{/if}
-		<h1 class="min-w-0 flex-1 truncate text-2xl font-bold tracking-tight">{title}</h1>
+		<h1 class="min-w-0 flex-1 truncate text-header md:text-header-large font-bold tracking-tight">{title}</h1>
 		<button
 			type="button"
 			onclick={() => (tuning = true)}
@@ -69,7 +69,7 @@
 		{#each groups as group (group.key)}
 			{#if group.label}
 				<h2
-					class="sunken dim sticky top-0 z-10 px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
+					class="raised hairline sticky top-0 z-10 border-b px-4 py-1.5 text-caption font-semibold tracking-wide uppercase dim"
 				>
 					<span class="measure flex items-center justify-between">
 						<span>{group.label}</span>

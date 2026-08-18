@@ -108,7 +108,7 @@
 				enterkeyhint="done"
 				autocapitalize="sentences"
 				autocomplete="off"
-				class="sunken w-full rounded-lg px-3 py-2.5 text-sm outline-none placeholder:opacity-50"
+				class="sunken w-full rounded-lg px-3 py-2.5 text-body outline-none placeholder:opacity-50"
 			/>
 
 			<div class="flex flex-wrap gap-1.5">
@@ -116,7 +116,7 @@
 					type="button"
 					use:hapticTap
 					onclick={() => toggle('date')}
-					class="tap hairline rounded-full border px-3 py-1.5 text-[0.78rem] font-medium"
+					class="tap hairline rounded-full border px-3 py-1.5 text-caption font-medium"
 					class:accent-fg={Boolean(due)}
 					class:dim={!due}
 					class:sunken={panel === 'date'}
@@ -127,7 +127,7 @@
 					type="button"
 					use:hapticTap
 					onclick={() => toggle('priority')}
-					class="tap hairline rounded-full border px-3 py-1.5 text-[0.78rem] font-medium {priority <
+					class="tap hairline rounded-full border px-3 py-1.5 text-caption font-medium {priority <
 					4
 						? priorityClass(priority)
 						: 'dim'}"
@@ -139,7 +139,7 @@
 					type="button"
 					use:hapticTap
 					onclick={() => toggle('project')}
-					class="tap hairline dim rounded-full border px-3 py-1.5 text-[0.78rem] font-medium"
+					class="tap hairline dim rounded-full border px-3 py-1.5 text-caption font-medium"
 					class:sunken={panel === 'project'}
 				>
 					{projectLabel}
@@ -158,7 +158,7 @@
 									picked.due = s.value;
 									if (!s.value) picked.dueTime = '';
 								}}
-								class="tap rounded-full px-3 py-1.5 text-[0.78rem] font-medium"
+								class="tap rounded-full px-3 py-1.5 text-caption font-medium"
 								class:accent-bg={due === s.value}
 								class:sunken={due !== s.value}
 							>
@@ -171,13 +171,13 @@
 							type="date"
 							value={due}
 							onchange={(e) => (picked.due = e.currentTarget.value)}
-							class="sunken min-w-0 flex-1 rounded-xl px-3 py-2.5 text-sm outline-none"
+							class="sunken min-w-0 flex-1 rounded-xl px-3 py-2.5 text-copy outline-none"
 						/>
 						<input
 							type="time"
 							value={dueTime}
 							onchange={(e) => (picked.dueTime = e.currentTarget.value)}
-							class="sunken w-28 rounded-xl px-3 py-2.5 text-sm outline-none"
+							class="sunken w-28 rounded-xl px-3 py-2.5 text-copy outline-none"
 						/>
 					</div>
 				</div>
@@ -193,11 +193,11 @@
 								haptic('tap');
 								picked.priority = p;
 							}}
-							class="tap sunken flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[0.7rem] font-medium"
+							class="tap sunken flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-caption font-medium"
 							class:ring-2={priority === p}
 							style="--tw-ring-color: var(--accent)"
 						>
-							<span class="{priorityClass(p)} text-sm font-bold">P{p}</span>
+							<span class="{priorityClass(p)} text-body font-bold">P{p}</span>
 							<span class="dim">{PRIORITY_LABELS[p]}</span>
 						</button>
 					{/each}
@@ -213,7 +213,7 @@
 							haptic('tap');
 							picked.projectId = '';
 						}}
-						class="tap rounded-full px-3 py-1.5 text-[0.78rem] font-medium"
+						class="tap rounded-full px-3 py-1.5 text-caption font-medium"
 						class:accent-bg={projectId === ''}
 						class:sunken={projectId !== ''}
 					>
@@ -227,7 +227,7 @@
 								haptic('tap');
 								picked.projectId = p.id;
 							}}
-							class="tap flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.78rem] font-medium"
+							class="tap flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption font-medium"
 							class:accent-bg={projectId === p.id}
 							class:sunken={projectId !== p.id}
 						>
@@ -242,12 +242,12 @@
 				type="submit"
 				use:hapticTap
 				disabled={!title}
-				class="tap accent-bg rounded-lg py-2.5 text-sm font-semibold disabled:opacity-30"
+				class="tap accent-bg rounded-lg py-2.5 text-body font-semibold disabled:opacity-30"
 			>
 				Add task
 			</button>
 
-			<p class="dim text-center text-[0.68rem]">
+			<p class="dim text-center text-caption">
 				{#if parsed?.matched.length}
 					Understood: {parsed.matched.join(' · ')}
 				{:else if added}

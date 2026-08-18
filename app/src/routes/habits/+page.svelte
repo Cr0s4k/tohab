@@ -64,7 +64,7 @@
 				</svg>
 				Tasks
 			</button>
-			<h1 class="truncate text-2xl font-bold tracking-tight">Journal</h1>
+			<h1 class="truncate text-header md:text-header-large font-bold tracking-tight">Journal</h1>
 		</div>
 		<div class="flex items-center gap-2">
 			<SettingsButton />
@@ -133,7 +133,7 @@
 		{#if rest.length}
 			<h2
 				transition:collapse
-				class="sunken dim sticky top-0 z-10 px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
+				class="raised hairline sticky top-0 z-10 border-b px-4 py-1.5 text-caption font-semibold tracking-wide uppercase dim"
 			>
 				Not scheduled today
 			</h2>

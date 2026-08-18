@@ -38,7 +38,7 @@
 				{habit.emoji}
 			</span>
 			<span class="min-w-0 flex-1">
-				<span class="block truncate text-[0.95rem] leading-snug" class:dim={complete}>{habit.name}</span>
+				<span class="block truncate text-body leading-snug" class:dim={complete}>{habit.name}</span>
 				<span class="dim mt-0.5 block text-xs">
 					{#if !due}
 						Rest day

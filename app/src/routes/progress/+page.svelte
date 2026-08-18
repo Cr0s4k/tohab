@@ -85,7 +85,7 @@
 
 <header class="hairline z-20 shrink-0 border-b pt-safe">
 	<div class="measure flex items-center justify-between px-4 pt-2 pb-3">
-		<h1 class="text-2xl font-bold tracking-tight">Progress</h1>
+		<h1 class="text-header md:text-header-large font-bold tracking-tight">Progress</h1>
 		<div class="flex items-center gap-2">
 			<SettingsButton />
 			<SyncBadge />
@@ -141,7 +141,7 @@
 		</section>
 
 		<section class="mt-5">
-			<h2 class="dim mb-2 text-[0.7rem] font-semibold tracking-wide uppercase">Habits</h2>
+			<h2 class="dim mb-2 text-caption font-semibold tracking-wide uppercase">Habits</h2>
 			<div class="raised hairline overflow-hidden rounded-2xl border">
 				{#each rows as row (row.habit.id)}
 					<a
@@ -155,7 +155,7 @@
 							{row.habit.emoji}
 						</span>
 						<span class="min-w-0 flex-1">
-							<span class="block truncate text-[0.95rem] leading-snug">
+							<span class="block truncate text-body leading-snug">
 								{row.habit.name}
 							</span>
 							<span class="dim mt-0.5 block text-xs">

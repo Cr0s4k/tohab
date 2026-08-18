@@ -63,7 +63,7 @@
 				class="tap flex items-center gap-1.5 text-left"
 				aria-label="Switch to Habits"
 			>
-				<span class="text-2xl font-bold tracking-tight">Tasks</span>
+				<span class="text-header md:text-header-large font-bold tracking-tight">Tasks</span>
 				<svg
 					viewBox="0 0 24 24"
 					class="dim size-4 md:hidden"
@@ -114,7 +114,7 @@
 			{#if group.label}
 				<h2
 					transition:collapse
-					class="raised hairline sticky top-0 z-10 border-b px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase dim"
+					class="raised hairline sticky top-0 z-10 border-b px-4 py-1.5 text-caption font-semibold tracking-wide uppercase dim"
 				>
 					<span class="measure flex items-center justify-between">
 						<span>{group.label}</span>
@@ -134,7 +134,7 @@
 				</div>
 			{/each}
 		{/each}
-		<p class="dim measure px-4 py-4 text-center text-[0.68rem] md:hidden">Swipe a task right to complete, left to delete</p>
+		<p class="dim measure px-4 py-4 text-center text-caption md:hidden">Swipe a task right to complete, left to delete</p>
 	{/if}
 </main>
 
