@@ -84,7 +84,7 @@
 </script>
 
 <header class="hairline raised z-20 shrink-0 border-b pt-safe">
-	<div class="flex items-center justify-between px-4 pt-2 pb-3">
+	<div class="measure flex items-center justify-between px-4 pt-2 pb-3">
 		<h1 class="text-2xl font-bold tracking-tight">Progress</h1>
 		<div class="flex items-center gap-2">
 			<SyncBadge />
@@ -93,9 +93,9 @@
 	</div>
 </header>
 
-<main class="flex-1 px-4 py-4 pb-20">
+<main class="measure flex-1 px-4 py-4 pb-20">
 	{#if !habits.value.length}
-		<p class="dim px-8 py-14 text-center text-sm">
+		<p class="dim measure px-8 py-14 text-center text-sm">
 			No habits yet. Add one from Habits to start tracking progress.
 		</p>
 	{:else}

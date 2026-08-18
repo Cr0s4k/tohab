@@ -55,7 +55,7 @@
 </script>
 
 <header class="hairline raised z-20 shrink-0 border-b pt-safe">
-	<div class="flex items-center justify-between px-4 pt-2 pb-2">
+	<div class="measure flex items-center justify-between px-4 pt-2 pb-2">
 		<div class="flex items-center gap-2">
 			<button
 				type="button"
@@ -106,18 +106,20 @@
 
 <main class="flex-1 pb-20">
 	{#if tasks.loading && !tasks.value.length}
-		<p class="dim px-4 py-10 text-center text-sm">Loading…</p>
+		<p class="dim measure px-4 py-10 text-center text-sm">Loading…</p>
 	{:else if !count}
-		<p class="dim px-8 py-14 text-center text-sm" in:veil>{emptyCopy[view]}</p>
+		<p class="dim measure px-8 py-14 text-center text-sm" in:veil>{emptyCopy[view]}</p>
 	{:else}
 		{#each groups as group (group.key)}
 			{#if group.label}
 				<h2
 					transition:collapse
-					class="sunken dim sticky top-0 z-10 flex items-center justify-between px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
+					class="sunken dim sticky top-0 z-10 px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
 				>
-					<span>{group.label}</span>
-					<span>{group.tasks.length}</span>
+					<span class="measure flex items-center justify-between">
+						<span>{group.label}</span>
+						<span>{group.tasks.length}</span>
+					</span>
 				</h2>
 			{/if}
 			{#each group.tasks as task (task.id)}
@@ -132,7 +134,7 @@
 				</div>
 			{/each}
 		{/each}
-		<p class="dim px-4 py-4 text-center text-[0.68rem] md:hidden">Swipe a task right to complete, left to delete</p>
+		<p class="dim measure px-4 py-4 text-center text-[0.68rem] md:hidden">Swipe a task right to complete, left to delete</p>
 	{/if}
 </main>
 

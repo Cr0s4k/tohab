@@ -54,7 +54,7 @@
 </script>
 
 <header class="hairline raised z-20 shrink-0 border-b pt-safe">
-	<div class="flex items-center justify-between px-4 pt-2 pb-3">
+	<div class="measure flex items-center justify-between px-4 pt-2 pb-3">
 		<h1 class="text-2xl font-bold tracking-tight">Browse</h1>
 		<div class="flex items-center gap-2">
 			<SyncBadge />
@@ -65,100 +65,105 @@
 
 <main class="flex-1">
 	<section>
-		<div class="sunken sticky top-0 z-10 flex items-center justify-between px-4 pt-3 pb-1.5">
-			<h2 class="dim text-[0.7rem] font-semibold tracking-wide uppercase">Projects</h2>
-			<button
-				type="button"
-				aria-label="Add project"
-				onclick={() => {
-					haptic('tap');
-					adding = !adding;
-				}}
-				class="tap accent-bg grid size-8 place-items-center rounded-full"
-			>
-				<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
-					<path d="M12 5v14M5 12h14" />
-				</svg>
-			</button>
+		<div class="sunken sticky top-0 z-10 px-4 pt-3 pb-1.5">
+			<div class="measure flex items-center justify-between">
+				<h2 class="dim text-[0.7rem] font-semibold tracking-wide uppercase">Projects</h2>
+				<button
+					type="button"
+					aria-label="Add project"
+					onclick={() => {
+						haptic('tap');
+						adding = !adding;
+					}}
+					class="tap accent-bg grid size-8 place-items-center rounded-full"
+				>
+					<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+						<path d="M12 5v14M5 12h14" />
+					</svg>
+				</button>
+			</div>
 		</div>
 
 		{#if adding}
-			<form
-				onsubmit={submit}
-				class="hairline raised flex gap-2 border-y px-4 py-3"
-			>
-				<input
-					bind:this={input}
-					bind:value={name}
-					placeholder="New project…"
-					class="sunken min-w-0 flex-1 rounded-xl px-3 py-2 text-[0.9rem] outline-none placeholder:opacity-50"
-				/>
-				<button
-					type="submit"
-					disabled={!name.trim()}
-					class="tap accent-bg rounded-xl px-4 text-sm font-semibold disabled:opacity-30"
-				>
-					Add
-				</button>
-				<button
-					type="button"
-					onclick={cancelAdd}
-					class="tap sunken rounded-xl px-3 text-sm font-medium"
-				>
-					Cancel
-				</button>
+			<form onsubmit={submit} class="hairline raised border-y px-4 py-3">
+				<div class="measure flex gap-2">
+					<input
+						bind:this={input}
+						bind:value={name}
+						placeholder="New project…"
+						class="sunken min-w-0 flex-1 rounded-xl px-3 py-2 text-[0.9rem] outline-none placeholder:opacity-50"
+					/>
+					<button
+						type="submit"
+						disabled={!name.trim()}
+						class="tap accent-bg rounded-xl px-4 text-sm font-semibold disabled:opacity-30"
+					>
+						Add
+					</button>
+					<button
+						type="button"
+						onclick={cancelAdd}
+						class="tap sunken rounded-xl px-3 text-sm font-medium"
+					>
+						Cancel
+					</button>
+				</div>
 			</form>
 		{/if}
 
 		<a
 			href="/projects/inbox"
-			class="raised hairline flex items-center gap-3 border-b px-4 py-3.5 transition-colors hover:sunken"
+			class="raised hairline block border-b px-4 py-3.5 transition-colors hover:sunken"
 		>
-			<span class="size-3 rounded-full" style="background: var(--text-dim)"></span>
-			<span class="flex-1 text-[0.95rem]">Inbox</span>
-			<span class="dim text-sm tabular-nums">{counts.get('') ?? 0}</span>
+			<span class="measure flex items-center gap-3">
+				<span class="size-3 rounded-full" style="background: var(--text-dim)"></span>
+				<span class="flex-1 text-[0.95rem]">Inbox</span>
+				<span class="dim text-sm tabular-nums">{counts.get('') ?? 0}</span>
+			</span>
 		</a>
 
 		{#each projects.value as project (project.id)}
 			<div
 				transition:collapse
 				animate:flip={flipCfg}
-				class="raised hairline flex items-center gap-3 border-b px-4 py-3.5 transition-colors hover:sunken"
+				class="raised hairline border-b px-4 py-3.5 transition-colors hover:sunken"
 			>
-				<span class="size-3 shrink-0 rounded-full" style="background: {project.color}"></span>
-				{#if renaming === project.id}
-					<input
-						bind:value={renameValue}
-						onblur={() => commitRename(project.id)}
-						onkeydown={(e) => e.key === 'Enter' && commitRename(project.id)}
-						class="sunken min-w-0 flex-1 rounded-lg px-2 py-1 text-[0.95rem] outline-none"
-					/>
-				{:else}
-					<a href="/projects/{project.id}" class="min-w-0 flex-1 truncate text-[0.95rem]">
-						{project.name}
-					</a>
-					<span class="dim text-sm tabular-nums">{counts.get(project.id) ?? 0}</span>
-					<button
-						type="button"
-						aria-label="Rename {project.name}"
-						onclick={() => startRename(project.id, project.name)}
-						class="tap dim p-1 text-xs"
-					>
-						Edit
-					</button>
-					<button
-						type="button"
-						aria-label="Delete {project.name}"
-						onclick={() => {
-							haptic('warn');
-							deleteProject(project.id);
-						}}
-						class="tap p-1 text-xs"
-						style="color: oklch(0.62 0.2 25)"
-					>
-						Delete
-					</button>
-				{/if}
+				<div class="measure flex items-center gap-3">
+					<span class="size-3 shrink-0 rounded-full" style="background: {project.color}"></span>
+					{#if renaming === project.id}
+						<input
+							bind:value={renameValue}
+							onblur={() => commitRename(project.id)}
+							onkeydown={(e) => e.key === 'Enter' && commitRename(project.id)}
+							class="sunken min-w-0 flex-1 rounded-lg px-2 py-1 text-[0.95rem] outline-none"
+						/>
+					{:else}
+						<a href="/projects/{project.id}" class="min-w-0 flex-1 truncate text-[0.95rem]">
+							{project.name}
+						</a>
+						<span class="dim text-sm tabular-nums">{counts.get(project.id) ?? 0}</span>
+						<button
+							type="button"
+							aria-label="Rename {project.name}"
+							onclick={() => startRename(project.id, project.name)}
+							class="tap dim p-1 text-xs"
+						>
+							Edit
+						</button>
+						<button
+							type="button"
+							aria-label="Delete {project.name}"
+							onclick={() => {
+								haptic('warn');
+								deleteProject(project.id);
+							}}
+							class="tap p-1 text-xs"
+							style="color: oklch(0.62 0.2 25)"
+						>
+							Delete
+						</button>
+					{/if}
+				</div>
 			</div>
 		{/each}
 
@@ -167,7 +172,7 @@
 		</p>
 	</section>
 
-	<section class="px-4 pb-4">
+	<section class="measure px-4 pb-4">
 		<h2 class="dim pt-4 pb-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">Filters</h2>
 		<div class="raised hairline rounded-2xl border px-4 py-6 text-center">
 			<p class="dim text-sm">Filters are coming soon.</p>

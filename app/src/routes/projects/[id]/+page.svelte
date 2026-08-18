@@ -34,7 +34,7 @@
 </script>
 
 <header class="hairline raised z-20 shrink-0 border-b pt-safe">
-	<div class="flex items-center gap-3 px-4 pt-2 pb-3">
+	<div class="measure flex items-center gap-3 px-4 pt-2 pb-3">
 		<a href="/browse" aria-label="Back" class="tap dim -ml-1 p-1">
 			<svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M15 19l-7-7 7-7" />
@@ -64,15 +64,17 @@
 
 <main class="flex-1 pb-20">
 	{#if !count}
-		<p class="dim px-8 py-14 text-center text-sm">No tasks in this project.</p>
+		<p class="dim measure px-8 py-14 text-center text-sm">No tasks in this project.</p>
 	{:else}
 		{#each groups as group (group.key)}
 			{#if group.label}
 				<h2
-					class="sunken dim sticky top-0 z-10 flex items-center justify-between px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
+					class="sunken dim sticky top-0 z-10 px-4 py-1.5 text-[0.7rem] font-semibold tracking-wide uppercase"
 				>
-					<span>{group.label}</span>
-					<span>{group.tasks.length}</span>
+					<span class="measure flex items-center justify-between">
+						<span>{group.label}</span>
+						<span>{group.tasks.length}</span>
+					</span>
 				</h2>
 			{/if}
 			{#each group.tasks as task (task.id)}

@@ -43,7 +43,7 @@
 </script>
 
 <header class="hairline raised z-20 shrink-0 border-b pt-safe">
-	<div class="flex items-center justify-between px-4 pt-2 pb-2">
+	<div class="measure flex items-center justify-between px-4 pt-2 pb-2">
 		<div class="flex min-w-0 items-center gap-2">
 			<button
 				type="button"
@@ -72,7 +72,7 @@
 		</div>
 	</div>
 
-	<div class="flex items-center justify-between px-4 pb-3 md:justify-center md:gap-12">
+	<div class="measure flex items-center justify-between px-4 pb-3 md:justify-center md:gap-12">
 		<button
 			type="button"
 			aria-label="Previous day"
@@ -114,7 +114,7 @@
 
 <main class="flex-1 pb-20">
 	{#if !habits.value.length}
-		<div class="px-8 py-14 text-center">
+		<div class="measure px-8 py-14 text-center">
 			<p class="dim text-sm">No habits yet.</p>
 		</div>
 	{:else}

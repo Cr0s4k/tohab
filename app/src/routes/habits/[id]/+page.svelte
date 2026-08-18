@@ -57,7 +57,7 @@
 </script>
 
 <header class="hairline raised z-20 shrink-0 border-b pt-safe">
-	<div class="flex items-center gap-3 px-4 pt-2 pb-3">
+	<div class="measure flex items-center gap-3 px-4 pt-2 pb-3">
 		<a href="/habits" aria-label="Back" class="tap dim -ml-1 p-1">
 			<svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M15 19l-7-7 7-7" />
@@ -77,7 +77,7 @@
 	</div>
 </header>
 
-<main class="flex-1 px-4 py-4">
+<main class="measure flex-1 px-4 py-4">
 	{#if !habit}
 		<p class="dim py-14 text-center text-sm">
 			{habitBox.loading ? 'Loading…' : 'This habit no longer exists.'}
