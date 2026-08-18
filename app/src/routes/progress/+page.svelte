@@ -17,7 +17,6 @@
 	import { shiftKey, today, type DayKey } from '$lib/dates';
 	import { settings } from '$lib/settings.svelte';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
-	import SyncBadge from '$lib/components/SyncBadge.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
 
 	let todayKey = $derived(today());
@@ -88,7 +87,6 @@
 		<h1 class="text-header md:text-header-large font-bold tracking-tight">Progress</h1>
 		<div class="flex items-center gap-2">
 			<SettingsButton />
-			<SyncBadge />
 		</div>
 	</div>
 </header>

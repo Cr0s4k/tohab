@@ -5,7 +5,6 @@
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg } from '$lib/motion';
-	import SyncBadge from '$lib/components/SyncBadge.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
 
 	let name = $state('');
@@ -58,7 +57,6 @@
 		<h1 class="text-header md:text-header-large font-bold tracking-tight">Browse</h1>
 		<div class="flex items-center gap-2">
 			<SettingsButton />
-			<SyncBadge />
 		</div>
 	</div>
 </header>

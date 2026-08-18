@@ -19,7 +19,6 @@
 	import HabitRow from '$lib/components/HabitRow.svelte';
 	import HabitEditor from '$lib/components/HabitEditor.svelte';
 	import Fab from '$lib/components/Fab.svelte';
-	import SyncBadge from '$lib/components/SyncBadge.svelte';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
 	import { flip } from 'svelte/animate';
@@ -68,7 +67,6 @@
 		</div>
 		<div class="flex items-center gap-2">
 			<SettingsButton />
-			<SyncBadge />
 		</div>
 	</div>
 

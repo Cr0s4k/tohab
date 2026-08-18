@@ -14,7 +14,6 @@
 	import TaskRow from '$lib/components/TaskRow.svelte';
 	import TaskEditor from '$lib/components/TaskEditor.svelte';
 	import ViewOptionsSheet from '$lib/components/ViewOptionsSheet.svelte';
-	import SyncBadge from '$lib/components/SyncBadge.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg, veil } from '$lib/motion';
@@ -126,7 +125,6 @@
 				</svg>
 			</button>
 			<SettingsButton />
-			<SyncBadge />
 		</div>
 	</div>
 </header>
