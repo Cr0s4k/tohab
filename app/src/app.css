@@ -239,10 +239,12 @@
 }
 
 @utility pressable {
-	transition: background-color 120ms ease;
-	&:active,
-	&:has(:active) {
-		background: var(--surface-hover);
+	@media (hover: none) and (pointer: coarse) {
+		transition: background-color 120ms ease;
+		&:active,
+		&:has(:active) {
+			background: var(--surface-hover);
+		}
 	}
 }
 
