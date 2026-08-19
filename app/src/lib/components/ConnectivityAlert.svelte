@@ -23,12 +23,10 @@
 				? { kind, message: 'You are offline. Changes will sync when you reconnect.' }
 				: { kind, message: 'You are back online.' };
 
-		if (kind === 'online') {
-			timer = setTimeout(() => {
-				timer = null;
-				alert = null;
-			}, 2400);
-		}
+		timer = setTimeout(() => {
+			timer = null;
+			alert = null;
+		}, kind === 'offline' ? 4000 : 2400);
 	}
 
 	$effect(() => {
