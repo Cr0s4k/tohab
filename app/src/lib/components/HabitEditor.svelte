@@ -109,7 +109,13 @@
 	}
 </script>
 
-<Sheet {open} title={habit ? 'Edit habit' : 'New habit'} confirmLabel="Cancel" onClose={onClose}>
+<Sheet
+	{open}
+	title={habit ? 'Edit habit' : 'New habit'}
+	confirmLabel="Cancel"
+	showHeader={false}
+	onClose={onClose}
+>
 	{#snippet children()}
 		<div class="flex flex-col gap-4">
 			<div>
