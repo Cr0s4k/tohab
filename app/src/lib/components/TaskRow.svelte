@@ -107,7 +107,7 @@
 	<div
 		role="group"
 		bind:this={swipeEl}
-		class="surface pressable relative px-4 pt-2.5 pb-0"
+		class="surface pressable group relative px-4 pt-2.5 pb-0"
 		style="transform: translateX({dx}px); transition: {dragging
 			? 'none'
 			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: {axis === 'x'
@@ -165,6 +165,18 @@
 						{/if}
 					</div>
 				{/if}
+			</button>
+
+			<button
+				type="button"
+				onclick={onOpen}
+				aria-label="Edit {task.title}"
+				class="edit-hint dim size-8 shrink-0 self-center place-items-center rounded-lg opacity-0 transition-opacity group-hover:opacity-100"
+			>
+				<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M12 20h9" />
+					<path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+				</svg>
 			</button>
 		</div>
 	</div>

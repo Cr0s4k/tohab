@@ -248,6 +248,14 @@
 	}
 }
 
+/** Hover affordance: pointer devices only, so touch rows stay uncluttered. */
+@utility edit-hint {
+	display: none;
+	@media (hover: hover) and (pointer: fine) {
+		display: grid;
+	}
+}
+
 @utility pb-safe {
 	padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
