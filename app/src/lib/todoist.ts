@@ -60,9 +60,11 @@ function parseCsv(text: string): string[][] {
 	return rows;
 }
 
-function parseTodoistDate(value: string, base = new Date()): { due: string; dueTime: string } {
+type ParsedDate = { due: string; dueTime: string; repeat: string };
+
+function parseTodoistDate(value: string, base = new Date()): ParsedDate {
 	const trimmed = value.trim();
-	if (!trimmed) return { due: '', dueTime: '' };
+	if (!trimmed) return { due: '', dueTime: '', repeat: '' };
 
 	// Todoist exports absolute dates like 2026-08-17 or 2026-08-17T17:00:00Z.
 	const absolute = trimmed.match(
@@ -82,6 +84,7 @@ function parseTodoistDate(value: string, base = new Date()): { due: string; dueT
 			const h = absolute[4] ? Number(absolute[4]) : undefined;
 			const min = absolute[5] ? Number(absolute[5]) : undefined;
 			return {
+				repeat: '',
 				due: toKey(date),
 				dueTime:
 					h !== undefined && min !== undefined && h < 24 && min < 60
@@ -91,9 +94,10 @@ function parseTodoistDate(value: string, base = new Date()): { due: string; dueT
 		}
 	}
 
-	// Fall back to the same natural-language parser used by quick add.
+	// Fall back to the same natural-language parser used by quick add, which is also what
+	// reads Todoist's recurring rules: it exports those as the phrase, "every 3 weeks".
 	const parsed = parseQuickAdd(trimmed, base);
-	return { due: parsed.due, dueTime: parsed.dueTime };
+	return { due: parsed.due, dueTime: parsed.dueTime, repeat: parsed.repeat };
 }
 
 export function parseTodoistRows(raw: string): TodoistRow[] {
@@ -147,7 +151,7 @@ export async function importTodoistCsv(raw: string): Promise<ImportResult> {
 	let skipped = 0;
 
 	for (const row of rows) {
-		const { due, dueTime } = parseTodoistDate(row.date || row.deadline);
+		const { due, dueTime, repeat } = parseTodoistDate(row.date || row.deadline);
 		const notes =
 			row.description ||
 			(row.type === 'note' ? 'Imported Todoist note' : '');
@@ -158,6 +162,7 @@ export async function importTodoistCsv(raw: string): Promise<ImportResult> {
 				notes,
 				due,
 				dueTime,
+				repeat,
 				priority: row.priority
 			});
 			imported++;

@@ -9,6 +9,7 @@ export type FeedTask = {
 	dueTime: string;
 	priority: number;
 	projectId: string;
+	repeat?: string;
 	updatedAt: number;
 };
 
@@ -94,6 +95,42 @@ function floating(due: string, time: string, addMinutes = 0): string {
 	return at.toISOString().replace(/[-:]/g, '').slice(0, 15);
 }
 
+const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+
+/**
+ * The compact rule the app stores on a task — `[!]unit:interval[:extra]`, mirroring
+ * `app/src/lib/repeat.ts` — as an RFC 5545 recurrence.
+ *
+ * `!` rules are deliberately left out: those count from whenever the task is actually
+ * completed, so no fixed schedule describes them and only the current due date is known.
+ */
+export function toRrule(rule: string | undefined): string {
+	if (!rule || rule.startsWith('!')) return '';
+
+	const [unit, rawInterval, extra] = rule.split(':');
+	const freq = { day: 'DAILY', week: 'WEEKLY', month: 'MONTHLY', year: 'YEARLY' }[unit];
+	if (!freq) return '';
+
+	const interval = Number(rawInterval);
+	if (!Number.isInteger(interval) || interval < 1 || interval > 999) return '';
+
+	const parts = [`FREQ=${freq}`];
+	if (interval > 1) parts.push(`INTERVAL=${interval}`);
+
+	if (unit === 'week' && extra) {
+		const days = extra.split(',').map(Number);
+		if (days.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) return '';
+		parts.push(`BYDAY=${days.map((d) => BYDAY[d]).join(',')}`);
+	}
+	if ((unit === 'month' || unit === 'year') && extra) {
+		const day = Number(extra);
+		if (!Number.isInteger(day) || day < 1 || day > 31) return '';
+		parts.push(`BYMONTHDAY=${day}`);
+	}
+
+	return parts.join(';');
+}
+
 /** iCalendar priority runs 1 (highest) to 9; 0 means unset, which is Tohab's own P4. */
 const PRIORITY: Record<number, number> = { 1: 1, 2: 3, 3: 6 };
 
@@ -110,6 +147,9 @@ export function taskToEvent(task: FeedTask, options: FeedOptions = {}): string[]
 		lines.push(`DTSTART;VALUE=DATE:${dateOnly(task.due)}`);
 		lines.push(`DTEND;VALUE=DATE:${shiftDate(task.due, 1)}`);
 	}
+
+	const rrule = toRrule(task.repeat);
+	if (rrule) lines.push(`RRULE:${rrule}`);
 
 	lines.push(`SUMMARY:${escape(task.title || 'Untitled task')}`);
 	if (task.notes) lines.push(`DESCRIPTION:${escape(task.notes)}`);

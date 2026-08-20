@@ -93,7 +93,7 @@ compile and any managed Postgres works.
 ## Tests
 
 ```bash
-pnpm test               # pure logic: streak math, quick-add parser, calendar feed (85 assertions)
+pnpm test               # pure logic: streak math, quick-add parser, recurrence, calendar feed
 pnpm test:integration   # sync protocol, concurrency, RxDB replication, browser smoke test
 pnpm check              # typecheck app and server
 ```
@@ -108,8 +108,8 @@ registration exactly as it found it.
 ## What's in it
 
 **Tasks** — a compose sheet behind the + button, natural-language parsing, due dates,
-Today / Upcoming / All / Done views, four priorities, projects, notes, swipe to complete or
-delete.
+recurrence, Today / Upcoming / All / Done views, four priorities, projects, notes, swipe to
+complete or delete.
 
 **Habits** — binary and quantity habits, three schedule kinds (daily, chosen weekdays,
 N× per week), schedule-aware streaks, a 12-week heatmap you can tap to backfill, per-habit
@@ -133,18 +133,45 @@ them in live, and tapping a chip overrides whatever the parser found for that on
 | `in 3 days`, `in 2 weeks`, `in 1 month` | offsets |
 | `5 jan`, `jan 5`, `25/12`, `25/12/2027` | explicit dates (day-first) |
 | `5pm`, `at 9`, `14:30`, `9:30am` | times; a bare time implies today |
+| `every day`, `every other friday`, `every 3 weeks`, `every 15th` | recurrence |
 | `p1`–`p4`, `!1`–`!4` or `!!1`–`!!4` | priority |
 | `#work` | project, created on demand if new |
 
 `buy oat milk tomorrow 5pm p1 #groceries` → title "buy oat milk", due tomorrow 17:00,
 priority 1, in the Groceries project.
 
+### Repeating tasks
+
+A task can carry a recurrence rule, set from the Repeat chip or by typing one. Completing it
+does not file it away: the due date moves to the next occurrence and the task stays open, so
+the series *is* the task and there is one row for it rather than a graveyard of instances.
+
+`daily`, `weekly`, `monthly` and `yearly` work as bare words, and `every …` takes an
+interval (`every 3 days`, `every other week`), weekdays (`every friday`, `every mon, wed and
+fri`, `every weekday`, `every weekend`) or a day of the month (`every 15th`). Todoist's
+`every!` is supported too: `every! 10 days` counts from the day you complete it rather than
+the day it was due, for the chores whose clock starts when you finish.
+
+Rules are stored on the task as one string — `[!]unit:interval[:extra]`, so `week:2:1` is
+every other Monday. `app/src/lib/repeat.ts` owns the format, the descriptions the UI shows,
+and the date arithmetic; `app/test/repeat.test.ts` covers it.
+
+Two behaviours worth knowing. Completing an overdue repeating task rolls forward past today
+rather than to a date already gone, so a daily task ignored for three weeks lands tomorrow.
+And month-length overflow clamps rather than skips: `every 31st` falls on 28 February and is
+back on the 31st in March.
+
+Recurrence and Habits overlap on purpose but stay separate: recurrence is for dated work with
+a next occurrence (bins, rent, filters), Habits are for things measured as a streak.
+
 ### Calendar feed
 
 Settings → Calendar feed reveals a subscription URL you can add to Google Calendar (Other
 calendars → From URL) or iOS Calendar. Open tasks with a due date become events: timed tasks
 get a 30-minute block with a `VALARM` reminder, date-only tasks become all-day events.
-Completed tasks are excluded, and a task's project becomes the event's category.
+Completed tasks are excluded, and a task's project becomes the event's category. A repeating
+task becomes one event with an `RRULE`, so the whole series shows up rather than only its next
+occurrence.
 
 ```
 GET /calendar/token                    → { token }   (requires a session)
@@ -158,6 +185,8 @@ GET /calendar/<token>/tohab.ics?alarm=10
 - `alarm` is the reminder lead time in minutes, baked into the URL by the settings screen.
   `alarm=0` omits alarms. Only timed tasks get one: relative alarms on all-day events fire
   at midnight in most clients, which is noise rather than a reminder.
+- `every!` rules deliberately get no `RRULE`. They count from whenever the task is actually
+  completed, so no fixed schedule describes them and only the current due date is known.
 - Times are emitted as floating local wall-clock — no `TZID`, no `Z`. Tohab stores what the
   device's calendar showed with no zone attached, so 9am stays 9am wherever it is read.
 - Anyone holding the URL can read your tasks, and the server must be reachable from the

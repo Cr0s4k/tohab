@@ -33,7 +33,25 @@ const cases: [string, Partial<ReturnType<typeof parseQuickAdd>>][] = [
 	['call the bank p1', { title: 'call the bank', priority: 1 }],
 	['ship !!2 tomorrow', { title: 'ship', priority: 2, due: '2026-08-20' }],
 	['no priority !!5', { title: 'no priority !!5', priority: 4 }],
-	['wow!! excited', { title: 'wow!! excited', priority: 4 }]
+	['wow!! excited', { title: 'wow!! excited', priority: 4 }],
+	['water plants every day', { title: 'water plants', repeat: 'day:1', due: '2026-08-19' }],
+	['water plants daily', { title: 'water plants', repeat: 'day:1', due: '2026-08-19' }],
+	['bins every other day', { title: 'bins', repeat: 'day:2', due: '2026-08-19' }],
+	['deep clean every 3 weeks', { title: 'deep clean', repeat: 'week:3', due: '2026-08-19' }],
+	['bins every friday', { title: 'bins', repeat: 'week:1:5', due: '2026-08-21' }],
+	['gym every mon, wed and fri', { title: 'gym', repeat: 'week:1:1,3,5', due: '2026-08-19' }],
+	['standup every weekday at 9:30', { title: 'standup', repeat: 'week:1:1,2,3,4,5', due: '2026-08-19', dueTime: '09:30' }],
+	['brunch every weekend', { title: 'brunch', repeat: 'week:1:0,6', due: '2026-08-22' }],
+	['pay rent every 1st', { title: 'pay rent', repeat: 'month:1:1', due: '2026-09-01' }],
+	['review every month #work', { title: 'review', repeat: 'month:1', project: 'work' }],
+	['mot every year p2', { title: 'mot', repeat: 'year:1', priority: 2 }],
+	['sheets every! 10 days', { title: 'sheets', repeat: '!day:10', due: '2026-08-19' }],
+	['audit each 2 months', { title: 'audit', repeat: 'month:2' }],
+	['bins every other friday 5pm', { title: 'bins', repeat: 'week:2:5', due: '2026-08-21', dueTime: '17:00' }],
+	// A rule wins the weekday it contains; a plain weekday still means a one-off date.
+	['gym friday', { title: 'gym', repeat: '', due: '2026-08-21' }],
+	['every so often', { title: 'every so often', repeat: '' }],
+	['buy 12 eggs', { title: 'buy 12 eggs', repeat: '' }]
 ];
 
 let fail = 0;

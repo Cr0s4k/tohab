@@ -4,6 +4,7 @@
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { playComplete } from '$lib/sound';
 	import { priorityClass } from '$lib/tasks';
+	import { describeRepeat, isRepeating } from '$lib/repeat';
 	import { pop } from '$lib/motion';
 	import { isDesktop } from '$lib/viewport';
 
@@ -31,7 +32,8 @@
 	let axis = $state<'none' | 'x' | 'y'>('none');
 
 	let overdue = $derived(!task.done && !!task.due && daysFromToday(task.due) < 0);
-	let hasMeta = $derived(Boolean(task.due || project || task.notes));
+	let repeats = $derived(isRepeating(task.repeat));
+	let hasMeta = $derived(Boolean(task.due || project || task.notes || repeats));
 
 	function complete() {
 		if (!task.done) playComplete();
@@ -147,7 +149,7 @@
 				<div class="truncate text-body leading-snug" class:line-through={task.done} class:dim={task.done}>
 					{task.title}
 				</div>
-				{#if task.due || project || task.notes}
+				{#if hasMeta}
 					<div class="mt-1 flex items-center gap-2 text-caption">
 						{#if task.due}
 							<span class:dim={!overdue} style={overdue ? 'color: var(--danger)' : ''}>
@@ -159,6 +161,9 @@
 								<span class="size-2 rounded-full" style="background: {project.color}"></span>
 								{project.name}
 							</span>
+						{/if}
+						{#if repeats}
+							<span class="dim" title={describeRepeat(task.repeat!)}>↻</span>
 						{/if}
 						{#if task.notes}
 							<span class="dim">📝</span>

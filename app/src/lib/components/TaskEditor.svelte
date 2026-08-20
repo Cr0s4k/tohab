@@ -2,6 +2,7 @@
 	import type { Project, Task } from '$lib/db/schemas';
 	import { deleteTask, PRIORITY_LABELS, priorityClass, updateTask } from '$lib/tasks';
 	import { humanDay, shiftKey, today } from '$lib/dates';
+	import { describeRepeat, REPEAT_PRESETS } from '$lib/repeat';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import Sheet from './Sheet.svelte';
 
@@ -11,7 +12,15 @@
 		onClose
 	}: { task: Task | null; projects: Project[]; onClose: () => void } = $props();
 
-	let draft = $state({ title: '', notes: '', due: '', dueTime: '', priority: 4, projectId: '' });
+	let draft = $state({
+		title: '',
+		notes: '',
+		due: '',
+		dueTime: '',
+		repeat: '',
+		priority: 4,
+		projectId: ''
+	});
 	let id = $state('');
 
 	$effect(() => {
@@ -22,6 +31,7 @@
 			notes: task.notes,
 			due: task.due,
 			dueTime: task.dueTime,
+			repeat: task.repeat ?? '',
 			priority: task.priority,
 			projectId: task.projectId
 		};
@@ -95,6 +105,32 @@
 				</div>
 				{#if draft.due}
 					<p class="dim mt-1.5 text-caption">{humanDay(draft.due)}</p>
+				{/if}
+			</div>
+
+			<div>
+				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Repeat</p>
+				<div class="flex flex-wrap gap-1.5">
+					{#each REPEAT_PRESETS as r (r.label)}
+						<button
+							type="button"
+							use:hapticTap
+							onclick={() => {
+								haptic('tap');
+								draft.repeat = r.value;
+							}}
+							class="tap rounded-full px-3 py-1.5 text-caption font-medium"
+							class:accent-bg={draft.repeat === r.value}
+							class:sunken={draft.repeat !== r.value}
+						>
+							{r.label}
+						</button>
+					{/each}
+				</div>
+				{#if draft.repeat}
+					<p class="dim mt-1.5 text-caption">
+						{describeRepeat(draft.repeat)} · completing it moves the due date on
+					</p>
 				{/if}
 			</div>
 
