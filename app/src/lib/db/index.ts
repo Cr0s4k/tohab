@@ -10,10 +10,12 @@ import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { dev } from '$app/environment';
 import {
+	activitySchema,
 	habitLogSchema,
 	habitSchema,
 	projectSchema,
 	taskSchema,
+	type Activity,
 	type Habit,
 	type HabitLog,
 	type Project,
@@ -25,6 +27,7 @@ export type Collections = {
 	projects: RxCollection<Project>;
 	habits: RxCollection<Habit>;
 	habitLogs: RxCollection<HabitLog>;
+	activity: RxCollection<Activity>;
 };
 
 export type Db = RxDatabase<Collections>;
@@ -57,7 +60,8 @@ async function create(): Promise<Db> {
 		tasks: { schema: taskSchema },
 		projects: { schema: projectSchema },
 		habits: { schema: habitSchema },
-		habitLogs: { schema: habitLogSchema }
+		habitLogs: { schema: habitLogSchema },
+		activity: { schema: activitySchema }
 	});
 
 	return db;

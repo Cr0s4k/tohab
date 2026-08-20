@@ -93,10 +93,16 @@ compile and any managed Postgres works.
 ## Tests
 
 ```bash
-pnpm test               # pure logic: streak math, quick-add parser, calendar feed (85 assertions)
+pnpm test               # pure logic: streak math, quick-add parser, task arranging,
+                        # activity log and undo, calendar feed (190 assertions)
 pnpm test:integration   # sync protocol, concurrency, RxDB replication, browser smoke test
 pnpm check              # typecheck app and server
 ```
+
+`test/activity-e2e.test.ts` is the odd one out: it drives the real `tasks.ts` and `habits.ts`
+against an in-memory RxDB to check that every recorded action can actually be undone. Node
+runs them through `test/activity-e2e.hooks.mjs`, which points `db/lazy.ts` at that in-memory
+database and stubs the `$state` rune, so no browser or server is involved.
 
 The integration suite needs Postgres and the sync server running, and the browser smoke test
 needs the app running plus Chrome at the standard macOS path (override with `CHROME` /
@@ -116,7 +122,7 @@ N× per week), schedule-aware streaks, a 12-week heatmap you can tap to backfill
 stats, archiving.
 
 **Platform** — installable PWA that works fully offline, sync status indicator, dark mode,
-JSON export/import, haptics.
+JSON export/import, haptics, an activity history you can undo from.
 
 ### Adding a task
 
@@ -138,6 +144,37 @@ them in live, and tapping a chip overrides whatever the parser found for that on
 
 `buy oat milk tomorrow 5pm p1 #groceries` → title "buy oat milk", due tomorrow 17:00,
 priority 1, in the Groceries project.
+
+### Activity history
+
+**Browse → Activity** lists what you have changed, newest first and grouped by day: tasks
+and projects added, edited, completed or deleted, habits created or archived, days logged or
+cleared. Every entry has an **Undo** that puts the affected documents back the way they were.
+
+Each entry stores the documents the action touched, `before` and `after`, as a JSON blob on
+the entry itself. Undoing is then the same operation for every kind of action — upsert every
+`before` that existed, remove every document that did not — which is why one code path
+covers a task edit and a project delete that moved eleven tasks to the Inbox alike. The
+immediate undo toast and the history screen's Undo button both call it, so the two can never
+disagree about what an action did.
+
+Reverting marks the entry rather than adding a new one, and an entry is revertible once. An
+undone entry stays in the list, struck through, because a history that quietly rewrites
+itself is worse at answering "what did I do?" than one that does not.
+
+Two consequences worth knowing:
+
+- **The log is capped at 200 entries.** It replicates like every other collection, so an
+  unbounded one would grow forever and be pushed forever; the oldest entries are dropped
+  once the cap is passed. Repeated taps on the same thing within ten seconds — a habit
+  counter climbing to eight — fold into one entry rather than eight, keeping both the cap
+  and the list useful.
+- **Undo restores documents, not the world around them.** It writes the old document back
+  with a fresh `updatedAt`, so it is an ordinary last-write-wins change like any other. If
+  another device edited the same task in the meantime, undoing here overwrites that edit.
+
+Entries are per account, not per device, so the history covers everything you did anywhere.
+**Clear** empties it without touching the tasks and habits it describes.
 
 ### Calendar feed
 

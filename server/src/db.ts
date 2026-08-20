@@ -21,7 +21,7 @@ export type Executor =
 	| NodePgDatabase<typeof schema>
 	| Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitLogs']);
+export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitLogs', 'activity']);
 
 /** Schema lives in schema.ts and is applied by `drizzle-kit push`. Fail loudly if absent. */
 export async function ensureSchema() {

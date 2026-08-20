@@ -5,6 +5,7 @@ import { markLocalWrite } from './db/syncState.svelte.ts';
 import { today } from './dates.ts';
 import { now, uid } from './ids.ts';
 import { queueUndo } from './undo.svelte.ts';
+import { applyRevert, changeSummary, record, revertActivity, type DocChange } from './activity.ts';
 
 export type View = 'inbox' | 'today' | 'upcoming' | 'all';
 
@@ -73,6 +74,13 @@ export async function createProject(name: string): Promise<Project> {
 	};
 	await db.projects.insert(doc);
 	markLocalWrite();
+	await record({
+		entity: 'project',
+		entityId: doc.id,
+		verb: 'create',
+		subject: doc.name,
+		changes: [{ collection: 'projects', id: doc.id, before: null, after: doc }]
+	});
 	return doc;
 }
 
@@ -80,18 +88,49 @@ export async function renameProject(id: string, name: string) {
 	const db = await getDb();
 	const doc = await db.projects.findOne(id).exec();
 	if (!doc) return;
-	await doc.patch({ name: name.trim(), updatedAt: now() });
+	const before = doc.toMutableJSON();
+	const updated = await doc.patch({ name: name.trim(), updatedAt: now() });
 	markLocalWrite();
+	const after = updated.toMutableJSON();
+	await record({
+		entity: 'project',
+		entityId: id,
+		verb: 'update',
+		subject: after.name,
+		detail: before.name === after.name ? '' : `${before.name} \u2192 ${after.name}`,
+		changes: [{ collection: 'projects', id, before, after }]
+	});
 }
 
 /** Deleting a project moves its tasks to the Inbox rather than destroying them. */
 export async function deleteProject(id: string) {
 	const db = await getDb();
-	const tasks = await db.tasks.find({ selector: { projectId: id } }).exec();
-	await Promise.all(tasks.map((t) => t.patch({ projectId: '', updatedAt: now() })));
 	const doc = await db.projects.findOne(id).exec();
-	await doc?.remove();
+	if (!doc) return;
+	const project = doc.toMutableJSON();
+
+	const tasks = await db.tasks.find({ selector: { projectId: id } }).exec();
+	const moved = tasks.map((t) => t.toMutableJSON());
+	await Promise.all(tasks.map((t) => t.patch({ projectId: '', updatedAt: now() })));
+	await doc.remove();
 	markLocalWrite();
+
+	await record({
+		entity: 'project',
+		entityId: id,
+		verb: 'delete',
+		subject: project.name,
+		detail: moved.length ? `${moved.length} task${moved.length === 1 ? '' : 's'} moved to Inbox` : '',
+		changes: [
+			{ collection: 'projects', id, before: project, after: null },
+			...moved.map((task) => ({
+				collection: 'tasks' as const,
+				id: task.id,
+				before: task,
+				after: { ...task, projectId: '' }
+			}))
+		]
+	});
 }
 
 export type NewTask = {
@@ -123,6 +162,13 @@ export async function createTask(input: NewTask): Promise<Task | null> {
 	};
 	await db.tasks.insert(doc);
 	markLocalWrite();
+	await record({
+		entity: 'task',
+		entityId: doc.id,
+		verb: 'create',
+		subject: doc.title,
+		changes: [{ collection: 'tasks', id: doc.id, before: null, after: doc }]
+	});
 	return doc;
 }
 
@@ -133,21 +179,25 @@ export async function toggleTask(id: string) {
 
 	const before = doc.toMutableJSON();
 	const done = !before.done;
-	await doc.patch({ done, completedAt: done ? now() : 0, updatedAt: now() });
+	const updated = await doc.patch({ done, completedAt: done ? now() : 0, updatedAt: now() });
 	markLocalWrite();
+
+	const changes: DocChange[] = [
+		{ collection: 'tasks', id, before, after: updated.toMutableJSON() }
+	];
+	const entryId = await record({
+		entity: 'task',
+		entityId: id,
+		verb: done ? 'complete' : 'reopen',
+		subject: before.title,
+		changes
+	});
 
 	queueUndo({
 		label: done ? 'Task completed' : 'Task reopened',
 		restore: async () => {
-			const current = await db.tasks.findOne(id).exec();
-			if (current) {
-				await current.patch({
-					done: before.done,
-					completedAt: before.completedAt,
-					updatedAt: now()
-				});
-				markLocalWrite();
-			}
+			if (entryId) await revertActivity(entryId);
+			else await applyRevert(changes);
 		}
 	});
 }
@@ -156,8 +206,21 @@ export async function updateTask(id: string, patch: Partial<Task>) {
 	const db = await getDb();
 	const doc = await db.tasks.findOne(id).exec();
 	if (!doc) return;
-	await doc.patch({ ...patch, updatedAt: now() });
+	const before = doc.toMutableJSON();
+	const updated = await doc.patch({ ...patch, updatedAt: now() });
 	markLocalWrite();
+
+	const after = updated.toMutableJSON();
+	const detail = changeSummary(before, after);
+	if (!detail) return;
+	await record({
+		entity: 'task',
+		entityId: id,
+		verb: 'update',
+		subject: after.title,
+		detail,
+		changes: [{ collection: 'tasks', id, before, after }]
+	});
 }
 
 export async function deleteTask(id: string) {
@@ -169,11 +232,20 @@ export async function deleteTask(id: string) {
 	await doc.remove();
 	markLocalWrite();
 
+	const changes: DocChange[] = [{ collection: 'tasks', id, before: snapshot, after: null }];
+	const entryId = await record({
+		entity: 'task',
+		entityId: id,
+		verb: 'delete',
+		subject: snapshot.title,
+		changes
+	});
+
 	queueUndo({
 		label: 'Task deleted',
 		restore: async () => {
-			await db.tasks.upsert({ ...snapshot, updatedAt: now() });
-			markLocalWrite();
+			if (entryId) await revertActivity(entryId);
+			else await applyRevert(changes);
 		}
 	});
 }

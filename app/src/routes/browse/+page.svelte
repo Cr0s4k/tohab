@@ -2,6 +2,7 @@
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import { createProject, deleteProject, openTasksQuery, projectsQuery, renameProject } from '$lib/tasks';
+	import { activityCountQuery } from '$lib/activity';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg } from '$lib/motion';
@@ -15,6 +16,7 @@
 
 	let projects = rx(() => (live.db ? projectsQuery(live.db).$ : null), []);
 	let open = rx(() => (live.db ? openTasksQuery(live.db).$ : null), []);
+	let activityCount = rx(() => (live.db ? activityCountQuery(live.db).$ : null), 0);
 
 	let counts = $derived.by(() => {
 		const map = new Map<string, number>();
@@ -170,6 +172,35 @@
 		<p class="dim px-4 py-3 text-caption">
 			Deleting a project keeps its tasks and moves them to the Inbox.
 		</p>
+	</section>
+
+	<section>
+		<div class="surface px-4 pt-3 pb-0">
+			<h2 class="hairline measure border-b pb-1.5 text-caption font-semibold tracking-wide uppercase">
+				History
+			</h2>
+		</div>
+
+		<a href="/activity" class="pressable raised block px-4 pt-3.5 pb-0">
+			<span class="hairline measure flex items-center gap-3 border-b pb-3.5">
+				<svg
+					viewBox="0 0 24 24"
+					class="dim size-4 shrink-0"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.8"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M3 12a9 9 0 109-9 9 9 0 00-7.6 4.2M3 4v3.6h3.6M12 7.5V12l3 2" />
+				</svg>
+				<span class="min-w-0 flex-1">
+					<span class="block text-body">Activity</span>
+					<span class="faint block text-caption">Recent changes, with undo</span>
+				</span>
+				<span class="dim text-sm tabular-nums">{activityCount.value}</span>
+			</span>
+		</a>
 	</section>
 
 	<section class="measure px-4 pb-4">

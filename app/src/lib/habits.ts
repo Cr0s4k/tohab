@@ -3,7 +3,8 @@ import type { Db } from './db/index.ts';
 import type { Habit, HabitGoal, HabitLog, HabitKind, ScheduleKind } from './db/schemas.ts';
 import { markLocalWrite } from './db/syncState.svelte.ts';
 import { HABIT_COLORS, logId, type LogMap } from './streaks.ts';
-import type { DayKey } from './dates.ts';
+import { humanDay, type DayKey } from './dates.ts';
+import { changeSummary, record } from './activity.ts';
 import { now, uid } from './ids.ts';
 
 export * from './streaks.ts';
@@ -73,6 +74,13 @@ export async function createHabit(input: HabitInput) {
 	};
 	await db.habits.insert(doc);
 	markLocalWrite();
+	await record({
+		entity: 'habit',
+		entityId: doc.id,
+		verb: 'create',
+		subject: doc.name,
+		changes: [{ collection: 'habits', id: doc.id, before: null, after: doc }]
+	});
 	return doc;
 }
 
@@ -86,33 +94,97 @@ export async function updateHabit(id: string, patch: Partial<Habit>) {
 		next.unit = '';
 		next.scheduleKind = 'daily';
 	}
-	await doc.patch(next);
+	const before = doc.toMutableJSON();
+	const updated = await doc.patch(next);
 	markLocalWrite();
+
+	const after = updated.toMutableJSON();
+	const detail = changeSummary(before, after);
+	if (!detail) return;
+	const archiveToggled = before.archived !== after.archived;
+	await record({
+		entity: 'habit',
+		entityId: id,
+		verb: archiveToggled ? (after.archived ? 'archive' : 'restore') : 'update',
+		subject: after.name,
+		detail: archiveToggled ? '' : detail,
+		changes: [{ collection: 'habits', id, before, after }]
+	});
 }
 
 export async function deleteHabit(id: string) {
 	const db = await getDb();
-	const logs = await db.habitLogs.find({ selector: { habitId: id } }).exec();
-	await Promise.all(logs.map((l) => l.remove()));
 	const doc = await db.habits.findOne(id).exec();
-	await doc?.remove();
+	if (!doc) return;
+	const habit = doc.toMutableJSON();
+
+	const logs = await db.habitLogs.find({ selector: { habitId: id } }).exec();
+	const entries = logs.map((l) => l.toMutableJSON());
+	await Promise.all(logs.map((l) => l.remove()));
+	await doc.remove();
 	markLocalWrite();
+
+	await record({
+		entity: 'habit',
+		entityId: id,
+		verb: 'delete',
+		subject: habit.name,
+		detail: entries.length
+			? `${entries.length} logged day${entries.length === 1 ? '' : 's'} removed`
+			: '',
+		changes: [
+			{ collection: 'habits', id, before: habit, after: null },
+			...entries.map((entry) => ({
+				collection: 'habitLogs' as const,
+				id: entry.id,
+				before: entry,
+				after: null
+			}))
+		]
+	});
+}
+
+function logDetail(habit: Habit, date: DayKey, value: number): string {
+	const day = humanDay(date);
+	if (value === 0) return `${day} \u00b7 cleared`;
+	if (habit.goal !== 'break' && habit.kind === 'binary') return day;
+	return `${day} \u00b7 ${value}${habit.unit ? ` ${habit.unit}` : ''}`;
 }
 
 export async function setLog(habit: Habit, date: DayKey, value: number) {
 	const db = await getDb();
 	const clamped = Math.max(0, Math.min(10000, Math.round(value)));
 	const id = logId(habit.id, date);
+	const existing = await db.habitLogs.findOne(id).exec();
+	const before = existing?.toMutableJSON() ?? null;
+
 	if (clamped === 0) {
-		const existing = await db.habitLogs.findOne(id).exec();
-		if (existing) {
-			await existing.remove();
-			markLocalWrite();
-		}
+		if (!existing) return;
+		await existing.remove();
+		markLocalWrite();
+		await record({
+			entity: 'habitLog',
+			entityId: id,
+			verb: 'delete',
+			subject: habit.name,
+			detail: logDetail(habit, date, 0),
+			changes: [{ collection: 'habitLogs', id, before, after: null }]
+		});
 		return;
 	}
-	await db.habitLogs.upsert({ id, habitId: habit.id, date, value: clamped, updatedAt: now() });
+
+	const after = { id, habitId: habit.id, date, value: clamped, updatedAt: now() };
+	await db.habitLogs.upsert(after);
 	markLocalWrite();
+	await record({
+		entity: 'habitLog',
+		entityId: id,
+		verb: 'log',
+		subject: habit.name,
+		detail: logDetail(habit, date, clamped),
+		changes: [{ collection: 'habitLogs', id, before, after }],
+		coalesce: true
+	});
 }
 
 /**

@@ -52,6 +52,36 @@ export type HabitLog = {
 	updatedAt: number;
 };
 
+export type ActivityEntity = 'task' | 'project' | 'habit' | 'habitLog';
+
+export type ActivityVerb =
+	| 'create'
+	| 'update'
+	| 'delete'
+	| 'complete'
+	| 'reopen'
+	| 'archive'
+	| 'restore'
+	| 'log';
+
+/**
+ * One user action, with enough of the documents it touched to put them back. `changes` is a
+ * JSON-encoded `DocChange[]`; it is a string rather than an object because the shape is
+ * per-collection and would otherwise have to be spelled out in this schema.
+ */
+export type Activity = {
+	id: string;
+	at: number;
+	entity: ActivityEntity;
+	entityId: string;
+	verb: ActivityVerb;
+	subject: string;
+	detail: string;
+	changes: string;
+	revertedAt: number;
+	updatedAt: number;
+};
+
 const TS = { type: 'number', minimum: 0, maximum: 1e15, multipleOf: 1 } as const;
 
 export const taskSchema: RxJsonSchema<Task> = {
@@ -160,5 +190,49 @@ export const habitLogSchema: RxJsonSchema<HabitLog> = {
 	indexes: [['habitId', 'date'], ['date'], ['updatedAt']]
 };
 
-export const COLLECTION_NAMES = ['tasks', 'projects', 'habits', 'habitLogs'] as const;
+export const activitySchema: RxJsonSchema<Activity> = {
+	title: 'activity',
+	version: 0,
+	primaryKey: 'id',
+	type: 'object',
+	properties: {
+		id: { type: 'string', maxLength: 40 },
+		at: TS,
+		entity: {
+			type: 'string',
+			enum: ['task', 'project', 'habit', 'habitLog'],
+			maxLength: 10
+		},
+		entityId: { type: 'string', maxLength: 51 },
+		verb: {
+			type: 'string',
+			enum: ['create', 'update', 'delete', 'complete', 'reopen', 'archive', 'restore', 'log'],
+			maxLength: 10
+		},
+		subject: { type: 'string' },
+		detail: { type: 'string' },
+		changes: { type: 'string' },
+		/** 0 until the entry is undone; entries are reverted at most once. */
+		revertedAt: TS,
+		updatedAt: TS
+	},
+	required: [
+		'id',
+		'at',
+		'entity',
+		'entityId',
+		'verb',
+		'subject',
+		'detail',
+		'changes',
+		'revertedAt',
+		'updatedAt'
+	],
+	indexes: [['at'], ['updatedAt']]
+};
+
+export const COLLECTION_NAMES = ['tasks', 'projects', 'habits', 'habitLogs', 'activity'] as const;
 export type CollectionName = (typeof COLLECTION_NAMES)[number];
+
+/** Every collection the activity log can restore a document into — that is, not itself. */
+export type TrackedCollection = Exclude<CollectionName, 'activity'>;
