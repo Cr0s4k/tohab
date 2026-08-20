@@ -6,6 +6,7 @@
 	import { downloadBackup, importBackup } from '$lib/backup';
 	import { importTodoistCsv } from '$lib/todoist';
 	import { resync, restartSync, stopSync, sync } from '$lib/db/replication.svelte';
+	import { removeDb } from '$lib/db/lazy.ts';
 	import {
 		setReminderMinutes,
 		setServerUrl,
@@ -92,6 +93,20 @@
 		setServerUrl(serverDraft.trim() || '/sync');
 		await restartSync();
 		notice = 'Sync target updated.';
+	}
+
+	let confirmReset = $state(false);
+
+	async function resetLocalData() {
+		if (!confirmReset) {
+			confirmReset = true;
+			notice = 'Tap again to confirm — this clears this device’s local copy.';
+			return;
+		}
+		confirmReset = false;
+		await stopSync();
+		await removeDb();
+		location.reload();
 	}
 
 	const themes: { id: Theme; label: string }[] = [
@@ -363,4 +378,26 @@
 		<p><code class="accent-fg">every day</code>, <code class="accent-fg">every other friday</code>, <code class="accent-fg">every 15th</code></p>
 		<p><code class="accent-fg">p1</code>–<code class="accent-fg">p4</code> or <code class="accent-fg">!!1</code>–<code class="accent-fg">!!4</code> priority, <code class="accent-fg">#project</code></p>
 	</div>
+</section>
+
+<section>
+	<h2 class="dim mb-2 text-[0.7rem] font-semibold tracking-wide uppercase">Developer</h2>
+	<div class="raised hairline rounded-2xl border">
+		<button
+			type="button"
+			use:hapticTap
+			onclick={() => {
+				haptic('tap');
+				resetLocalData();
+			}}
+			class="tap w-full px-4 py-3 text-left text-sm"
+			class:danger={confirmReset}
+		>
+			{confirmReset ? 'Tap again to confirm reset' : 'Reset local data'}
+		</button>
+	</div>
+	<p class="dim mt-2 text-[0.68rem]">
+		Clears this device’s local database and re-syncs from the server. Recoverable when a
+		schema change leaves the local store unreadable.
+	</p>
 </section>
