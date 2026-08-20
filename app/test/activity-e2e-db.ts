@@ -3,6 +3,7 @@ import { addRxPlugin, createRxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { RxDBDevModePlugin, disableWarnings } from 'rxdb/plugins/dev-mode';
+import { RxDBMigrationPlugin } from 'rxdb/plugins/migration-schema';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import {
 	activitySchema,
@@ -14,6 +15,7 @@ import {
 
 disableWarnings();
 addRxPlugin(RxDBDevModePlugin);
+addRxPlugin(RxDBMigrationPlugin);
 addRxPlugin(RxDBUpdatePlugin);
 
 let pending: Promise<unknown> | null = null;
@@ -26,7 +28,7 @@ async function create() {
 		eventReduce: true
 	});
 	await db.addCollections({
-		tasks: { schema: taskSchema },
+		tasks: { schema: taskSchema, migrationStrategies: { 1: (doc) => doc } },
 		projects: { schema: projectSchema },
 		habits: { schema: habitSchema },
 		habitLogs: { schema: habitLogSchema },

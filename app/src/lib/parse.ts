@@ -1,4 +1,5 @@
 import { toKey } from './dates.ts';
+import { describeRepeat, firstDue, formatRule, type Repeat } from './repeat.ts';
 
 export type Parsed = {
 	title: string;
@@ -6,6 +7,8 @@ export type Parsed = {
 	dueTime: string;
 	priority: number;
 	project: string;
+	/** A serialised recurrence rule, or '' — see `repeat.ts` for the format. */
+	repeat: string;
 	/** Human-readable chips describing what was recognised, for the live preview. */
 	matched: string[];
 };
@@ -60,6 +63,51 @@ const MONTHS: Record<string, number> = {
 const WEEKDAY_RE = Object.keys(WEEKDAYS).sort((a, b) => b.length - a.length).join('|');
 const MONTH_RE = Object.keys(MONTHS).sort((a, b) => b.length - a.length).join('|');
 
+const WEEKDAY_LIST_RE = `(?:${WEEKDAY_RE})(?:\\s*(?:,|and|&)\\s*(?:${WEEKDAY_RE}))*`;
+
+/** "every day", "each 2 weeks", "every other friday", "every! 3 days", "every 15th". */
+const REPEAT_RE = new RegExp(
+	`\\s(?:every|each)(!)?\\s+(?:(\\d{1,3})\\s+|(other)\\s+)?` +
+		`(${WEEKDAY_LIST_RE}|weekdays?|weekends?|days?|weeks?|months?|years?|\\d{1,2}(?:st|nd|rd|th))\\b`,
+	'i'
+);
+
+const PLAIN_REPEAT_RE = /\s(daily|weekly|fortnightly|monthly|yearly|annually)\b/i;
+
+const PLAIN_REPEATS: Record<string, Partial<Repeat>> = {
+	daily: { unit: 'day' },
+	weekly: { unit: 'week' },
+	fortnightly: { unit: 'week', interval: 2 },
+	monthly: { unit: 'month' },
+	yearly: { unit: 'year' },
+	annually: { unit: 'year' }
+};
+
+function repeatFrom(body: string, interval: number, fromCompletion: boolean): Repeat | null {
+	const rule: Repeat = { unit: 'day', interval, weekdays: [], monthDay: 0, fromCompletion };
+	const word = body.toLowerCase();
+
+	if (word.startsWith('weekday')) return { ...rule, unit: 'week', weekdays: [1, 2, 3, 4, 5] };
+	if (word.startsWith('weekend')) return { ...rule, unit: 'week', weekdays: [0, 6] };
+	if (word.startsWith('day')) return rule;
+	if (word.startsWith('week')) return { ...rule, unit: 'week' };
+	if (word.startsWith('month')) return { ...rule, unit: 'month' };
+	if (word.startsWith('year')) return { ...rule, unit: 'year' };
+
+	const monthDay = word.match(/^(\d{1,2})(?:st|nd|rd|th)$/);
+	if (monthDay) {
+		const day = Number(monthDay[1]);
+		return day >= 1 && day <= 31 ? { ...rule, unit: 'month', monthDay: day } : null;
+	}
+
+	const weekdays = word
+		.split(/\s*(?:,|and|&)\s*/)
+		.map((name) => WEEKDAYS[name])
+		.filter((d) => d !== undefined);
+	if (!weekdays.length) return null;
+	return { ...rule, unit: 'week', weekdays };
+}
+
 function dayAt(base: Date, offset: number): Date {
 	const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
 	d.setDate(d.getDate() + offset);
@@ -92,6 +140,7 @@ export function parseQuickAdd(raw: string, base = new Date()): Parsed {
 	let dueTime = '';
 	let priority = 4;
 	let project = '';
+	let repeat = '';
 
 	const eat = (re: RegExp, onMatch: (m: RegExpMatchArray) => boolean | void) => {
 		const m = text.match(re);
@@ -99,6 +148,29 @@ export function parseQuickAdd(raw: string, base = new Date()): Parsed {
 		if (onMatch(m) === false) return;
 		text = text.replace(re, ' ');
 	};
+
+	// Before everything else: a rule swallows the weekday and number words the date matchers
+	// would otherwise claim, so "every friday" must not first be read as "friday".
+	eat(REPEAT_RE, (m) => {
+		const rule = repeatFrom(m[4], m[2] ? Number(m[2]) : m[3] ? 2 : 1, Boolean(m[1]));
+		if (!rule || rule.interval < 1) return false;
+		repeat = formatRule(rule);
+		matched.push(describeRepeat(repeat));
+	});
+
+	if (!repeat)
+		eat(PLAIN_REPEAT_RE, (m) => {
+			const preset = PLAIN_REPEATS[m[1].toLowerCase()];
+			repeat = formatRule({
+				unit: 'day',
+				interval: 1,
+				weekdays: [],
+				monthDay: 0,
+				fromCompletion: false,
+				...preset
+			});
+			matched.push(describeRepeat(repeat));
+		});
 
 	eat(/\s#([\p{L}\p{N}_-]+)/u, (m) => {
 		project = m[1];
@@ -187,9 +259,13 @@ export function parseQuickAdd(raw: string, base = new Date()): Parsed {
 			setDue(resolveMonthDay(base, month, day, year), m[0].trim());
 		});
 
+	// A rule with no date of its own starts at its first occurrence, which is why this runs
+	// ahead of the bare-time rule: "every monday at 9am" is next Monday, not today at 9am.
+	if (repeat && !due) due = firstDue(repeat, toKey(base));
+
 	// A bare time means today, the way every task app treats "call mum at 6pm".
 	if (dueTime && !due) due = toKey(base);
 
 	const title = text.replace(/\s+/g, ' ').trim();
-	return { title, due, dueTime, priority, project, matched };
+	return { title, due, dueTime, priority, project, repeat, matched };
 }

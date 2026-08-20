@@ -10,6 +10,8 @@ export type Task = {
 	dueTime: string;
 	priority: number;
 	projectId: string;
+	/** Serialised recurrence rule, or absent — see `repeat.ts`. */
+	repeat?: string;
 	createdAt: number;
 	updatedAt: number;
 };
@@ -86,7 +88,7 @@ const TS = { type: 'number', minimum: 0, maximum: 1e15, multipleOf: 1 } as const
 
 export const taskSchema: RxJsonSchema<Task> = {
 	title: 'task',
-	version: 0,
+	version: 1,
 	primaryKey: 'id',
 	type: 'object',
 	properties: {
@@ -100,6 +102,9 @@ export const taskSchema: RxJsonSchema<Task> = {
 		dueTime: { type: 'string', maxLength: 5 },
 		priority: { type: 'number', minimum: 1, maximum: 4, multipleOf: 1 },
 		projectId: { type: 'string', maxLength: 40 },
+		// Optional, not required: documents written by an older client arrive over sync without
+		// it, and a required field would make them fail validation on the way in.
+		repeat: { type: 'string', maxLength: 40 },
 		createdAt: TS,
 		updatedAt: TS
 	},

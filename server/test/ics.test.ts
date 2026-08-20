@@ -87,6 +87,31 @@ check('continuation lines start with a space', long.filter((l) => l.startsWith('
 const unicode = buildCalendar([task({ title: '🔥'.repeat(60) })], opts).split('\r\n');
 check('multibyte folding stays valid utf8', unicode.join('').includes('�'), false);
 
+const daily = buildCalendar([task({ repeat: 'day:1' })], opts).split('\r\n');
+check('daily rule becomes an rrule', daily.includes('RRULE:FREQ=DAILY'), true);
+check('interval 1 is left implicit', daily.some((l) => l.startsWith('RRULE') && l.includes('INTERVAL')), false);
+
+const weekdays = buildCalendar([task({ repeat: 'week:1:1,3,5' })], opts);
+check('weekday list becomes byday', weekdays.includes('RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR'), true);
+
+const fortnightly = buildCalendar([task({ repeat: 'week:2' })], opts);
+check('interval is carried', fortnightly.includes('RRULE:FREQ=WEEKLY;INTERVAL=2'), true);
+
+const monthly = buildCalendar([task({ repeat: 'month:3:15' })], opts);
+check('month day becomes bymonthday', monthly.includes('RRULE:FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=15'), true);
+
+const yearly = buildCalendar([task({ repeat: 'year:1' })], opts);
+check('yearly rule', yearly.includes('RRULE:FREQ=YEARLY'), true);
+
+// A rule counting from the completion date has no fixed schedule to publish.
+const fromCompletion = buildCalendar([task({ repeat: '!day:3' })], opts);
+check('from-completion rules emit no rrule', fromCompletion.includes('RRULE'), false);
+
+check('unknown units emit no rrule', buildCalendar([task({ repeat: 'fortnight:1' })], opts).includes('RRULE'), false);
+check('bad intervals emit no rrule', buildCalendar([task({ repeat: 'day:0' })], opts).includes('RRULE'), false);
+check('bad weekdays emit no rrule', buildCalendar([task({ repeat: 'week:1:9' })], opts).includes('RRULE'), false);
+check('no rule emits no rrule', buildCalendar([task()], opts).includes('RRULE'), false);
+
 const projects = new Map([['p1', 'Home']]);
 const categorised = buildCalendar([task({ projectId: 'p1' })], { ...opts, projects });
 check('project becomes a category', categorised.includes('CATEGORIES:Home'), true);

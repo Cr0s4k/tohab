@@ -3,6 +3,7 @@
 	import { parseQuickAdd } from '$lib/parse';
 	import { createTask, PRIORITY_LABELS, priorityClass, resolveProject } from '$lib/tasks';
 	import { humanDay, humanTime, shiftKey, today } from '$lib/dates';
+	import { describeRepeat, firstDue, REPEAT_PRESETS } from '$lib/repeat';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { collapse } from '$lib/motion';
 	import Sheet from './Sheet.svelte';
@@ -19,7 +20,7 @@
 		onClose: () => void;
 	} = $props();
 
-	type Panel = 'none' | 'date' | 'priority' | 'project';
+	type Panel = 'none' | 'date' | 'repeat' | 'priority' | 'project';
 
 	let raw = $state('');
 	let panel = $state<Panel>('none');
@@ -30,11 +31,20 @@
 	 * Typed syntax and tapped chips are the same fields reached two ways, so a tap has to win:
 	 * without an explicit override, re-parsing the title would keep resetting the chip.
 	 */
-	let picked = $state<{ due?: string; dueTime?: string; priority?: number; projectId?: string }>({});
+	let picked = $state<{
+		due?: string;
+		dueTime?: string;
+		repeat?: string;
+		priority?: number;
+		projectId?: string;
+	}>({});
 
 	let parsed = $derived(raw.trim() ? parseQuickAdd(raw) : null);
 	let title = $derived(parsed?.title ?? '');
-	let due = $derived(picked.due ?? parsed?.due ?? defaults.due ?? '');
+	let repeat = $derived(picked.repeat ?? parsed?.repeat ?? '');
+	let due = $derived(
+		picked.due ?? parsed?.due ?? defaults.due ?? (repeat ? firstDue(repeat) : '')
+	);
 	let dueTime = $derived(picked.dueTime ?? parsed?.dueTime ?? '');
 	let priority = $derived(picked.priority ?? parsed?.priority ?? 4);
 
@@ -48,6 +58,7 @@
 	let dateLabel = $derived(
 		due ? `${humanDay(due)}${dueTime ? ` · ${humanTime(dueTime)}` : ''}` : 'Date'
 	);
+	let repeatLabel = $derived(repeat ? describeRepeat(repeat) : 'Repeat');
 
 	function toggle(next: Panel) {
 		haptic('tap');
@@ -69,6 +80,7 @@
 			title,
 			due,
 			dueTime,
+			repeat,
 			priority,
 			projectId:
 				projectId ?? (parsed?.project ? await resolveProject(parsed.project) : '')
@@ -146,6 +158,17 @@
 				<button
 					type="button"
 					use:hapticTap
+					onclick={() => toggle('repeat')}
+					class="tap hairline rounded-full border px-3 py-1.5 text-caption font-medium"
+					class:accent-fg={Boolean(repeat)}
+					class:dim={!repeat}
+					class:sunken={panel === 'repeat'}
+				>
+					{repeatLabel}
+				</button>
+				<button
+					type="button"
+					use:hapticTap
 					onclick={() => toggle('priority')}
 					class="tap hairline rounded-full border px-3 py-1.5 text-caption font-medium {priority <
 					4
@@ -200,6 +223,26 @@
 							class="sunken w-28 rounded-xl px-3 py-2.5 text-copy outline-none"
 						/>
 					</div>
+				</div>
+			{/if}
+
+			{#if panel === 'repeat'}
+				<div transition:collapse={{ duration: 200 }} class="flex flex-wrap gap-1.5">
+					{#each REPEAT_PRESETS as r (r.label)}
+						<button
+							type="button"
+							use:hapticTap
+							onclick={() => {
+								haptic('tap');
+								picked.repeat = r.value;
+							}}
+							class="tap rounded-full px-3 py-1.5 text-caption font-medium"
+							class:accent-bg={repeat === r.value}
+							class:sunken={repeat !== r.value}
+						>
+							{r.label}
+						</button>
+					{/each}
 				</div>
 			{/if}
 
@@ -264,7 +307,7 @@
 				{:else if added}
 					{added} added · keep going, or Done to close
 				{:else}
-					Typing “tomorrow 5pm !!1 #work” fills these in too
+					Typing “every friday 5pm !!1 #work” fills these in too
 				{/if}
 			</p>
 		</form>

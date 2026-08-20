@@ -2,7 +2,8 @@ import { getDb } from './db/lazy.ts';
 import type { Db } from './db/index.ts';
 import type { Project, Task } from './db/schemas.ts';
 import { markLocalWrite } from './db/syncState.svelte.ts';
-import { today } from './dates.ts';
+import { humanDay, today } from './dates.ts';
+import { advanceDue, firstDue, isRepeating } from './repeat.ts';
 import { now, uid } from './ids.ts';
 import { queueUndo } from './undo.svelte.ts';
 import { applyRevert, changeSummary, record, revertActivity, type DocChange } from './activity.ts';
@@ -140,6 +141,7 @@ export type NewTask = {
 	dueTime?: string;
 	priority?: number;
 	projectId?: string;
+	repeat?: string;
 };
 
 export async function createTask(input: NewTask): Promise<Task | null> {
@@ -147,16 +149,19 @@ export async function createTask(input: NewTask): Promise<Task | null> {
 	if (!title) return null;
 	const db = await getDb();
 	const ts = now();
+	const repeat = isRepeating(input.repeat) ? input.repeat! : '';
 	const doc: Task = {
 		id: uid(),
 		title,
 		notes: input.notes?.trim() ?? '',
 		done: false,
 		completedAt: 0,
-		due: input.due ?? '',
+		// A rule with no date of its own starts at its first occurrence rather than nowhere.
+		due: input.due || (repeat ? firstDue(repeat) : ''),
 		dueTime: input.dueTime ?? '',
 		priority: input.priority ?? 4,
 		projectId: input.projectId ?? '',
+		repeat,
 		createdAt: ts,
 		updatedAt: ts
 	};
@@ -178,6 +183,31 @@ export async function toggleTask(id: string) {
 	if (!doc) return;
 
 	const before = doc.toMutableJSON();
+
+	// Completing a repeating task moves it on instead of filing it away, which is the whole
+	// point: the series is the task. Reopening one is an ordinary uncomplete.
+	if (!before.done && isRepeating(before.repeat)) {
+		const next = advanceDue(before.repeat!, before.due);
+		await doc.patch({ due: next, completedAt: now(), updatedAt: now() });
+		markLocalWrite();
+
+		queueUndo({
+			label: `Completed · next ${humanDay(next)}`,
+			restore: async () => {
+				const current = await db.tasks.findOne(id).exec();
+				if (current) {
+					await current.patch({
+						due: before.due,
+						completedAt: before.completedAt,
+						updatedAt: now()
+					});
+					markLocalWrite();
+				}
+			}
+		});
+		return;
+	}
+
 	const done = !before.done;
 	const updated = await doc.patch({ done, completedAt: done ? now() : 0, updatedAt: now() });
 	markLocalWrite();
@@ -207,7 +237,9 @@ export async function updateTask(id: string, patch: Partial<Task>) {
 	const doc = await db.tasks.findOne(id).exec();
 	if (!doc) return;
 	const before = doc.toMutableJSON();
-	const updated = await doc.patch({ ...patch, updatedAt: now() });
+	const next = { ...patch, updatedAt: now() };
+	if (next.repeat && !(next.due ?? doc.due)) next.due = firstDue(next.repeat);
+	const updated = await doc.patch(next);
 	markLocalWrite();
 
 	const after = updated.toMutableJSON();

@@ -348,8 +348,8 @@
 		/>
 	</div>
 	<p class="dim mt-2 text-[0.68rem]">
-		JSON import merges by record id. Todoist import adds tasks to your inbox and skips
-		projects, sections, and recurring-date rules.
+		JSON import merges by record id. Todoist import adds tasks to your inbox, keeps their
+		recurring-date rules, and skips projects and sections.
 	</p>
 </section>
 
@@ -360,6 +360,7 @@
 		<p><code class="accent-fg">in 3 days</code>, <code class="accent-fg">in 2 weeks</code></p>
 		<p><code class="accent-fg">5 jan</code>, <code class="accent-fg">jan 5</code>, <code class="accent-fg">25/12</code></p>
 		<p><code class="accent-fg">5pm</code>, <code class="accent-fg">at 9</code>, <code class="accent-fg">14:30</code></p>
+		<p><code class="accent-fg">every day</code>, <code class="accent-fg">every other friday</code>, <code class="accent-fg">every 15th</code></p>
 		<p><code class="accent-fg">p1</code>–<code class="accent-fg">p4</code> or <code class="accent-fg">!!1</code>–<code class="accent-fg">!!4</code> priority, <code class="accent-fg">#project</code></p>
 	</div>
 </section>
