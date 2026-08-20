@@ -32,7 +32,8 @@ The whole stack — Postgres, the sync server, and nginx serving the built PWA �
 the root `docker-compose.yml`:
 
 ```bash
-cp .env.example .env   # set at least POSTGRES_PASSWORD, optionally WEB_PORT
+mkdir -p secrets && printf '%s\n' 'strong-password' > secrets/postgres_password
+cp .env.example .env   # optionally set WEB_PORT to a private address
 docker compose up -d --build
 ```
 
@@ -46,9 +47,17 @@ passes through untouched.
 gets its schema). Compose builds both; the `server` container is never published directly,
 only reached through `web`.
 
-Postgres keeps its data in the `tohab-pgdata` volume. The `db` port is published for local
-`drizzle-kit studio` work — drop the `ports` block on a shared host, since that port is a
-direct route around the sync server's authentication.
+Postgres keeps its data in the `tohab-pgdata` volume and takes its password from the
+`postgres_password` Docker secret (`${TOHAB_SECRETS_DIR}/postgres_password`), never an
+environment variable. The `db` port binds to `127.0.0.1` by default — kept only for local
+`drizzle-kit studio` work — so it is not reachable from the network and stays off the
+direct route around the sync server's authentication. `web` binds loopback by default too;
+set `WEB_PORT` to a private address (e.g. `<tailscale-ip>:8080`) to expose it on Tailscale.
+
+The optional GitHub Actions deployment workflow reads `KOMODO_WEBHOOK_URL` and
+`KOMODO_WEBHOOK_SECRET` from repository Actions secrets. Configure both in GitHub;
+if either is missing, the workflow skips deployment. Keep deployment URLs and
+signing keys out of tracked files.
 
 ### Database
 

@@ -1,29 +1,53 @@
+name: tohab
+
+# Docker's default json-file driver keeps every line forever, and this stack runs
+# unattended, so cap it at 30 MB per container.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
-    image: postgres:18-alpine
+    image: postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-tohab}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tohab}
       POSTGRES_DB: ${POSTGRES_DB:-tohab}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    secrets:
+      - postgres_password
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      # Loopback only: Postgres is a direct route around the sync server's auth.
+      # Override POSTGRES_PORT for local `drizzle-kit studio` work.
+      - '${POSTGRES_PORT:-127.0.0.1:5432}:5432'
     volumes:
       # postgres:18+ wants a single mount at /var/lib/postgresql, not at .../data
       - tohab-pgdata:/var/lib/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-tohab} -d ${POSTGRES_DB:-tohab}']
-      interval: 2s
+      interval: 5s
       timeout: 3s
       retries: 30
+      start_period: 10s
 
   server:
     build:
       context: .
       target: server
     restart: unless-stopped
+    logging: *logging
+    entrypoint: ["/usr/local/bin/tohab-server-entrypoint"]
+    secrets:
+      - postgres_password
+    volumes:
+      - ./scripts/server-entrypoint.sh:/usr/local/bin/tohab-server-entrypoint:ro
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-tohab}:${POSTGRES_PASSWORD:-tohab}@db:5432/${POSTGRES_DB:-tohab}
+      POSTGRES_USER: ${POSTGRES_USER:-tohab}
+      POSTGRES_DB: ${POSTGRES_DB:-tohab}
       CALENDAR_SECRET: ${CALENDAR_SECRET:-}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
     depends_on:
@@ -47,10 +71,17 @@ services:
       context: .
       target: web
     restart: unless-stopped
+    logging: *logging
     ports:
-      - '${WEB_PORT:-8080}:80'
+      # Loopback by default, so a deployment opts in to a private address instead of
+      # exposing the PWA on every interface.
+      - '${WEB_PORT:-127.0.0.1:8080}:80'
     depends_on:
       - server
 
 volumes:
   tohab-pgdata:
+
+secrets:
+  postgres_password:
+    file: ${TOHAB_SECRETS_DIR:-./secrets}/postgres_password

@@ -16,3 +16,6 @@ server/drizzle/
 .env
 .env.*
 !.env.example
+
+# File-backed runtime secrets (Postgres password) are generated locally, never committed.
+/secrets/
