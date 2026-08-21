@@ -13,6 +13,8 @@
 	let renaming = $state<string | null>(null);
 	let renameValue = $state('');
 	let input: HTMLInputElement | null = $state(null);
+	let mainEl = $state<HTMLElement | null>(null);
+	let scrolled = $state(false);
 
 	let projects = rx(() => (live.db ? projectsQuery(live.db).$ : null), []);
 	let open = rx(() => (live.db ? openTasksQuery(live.db).$ : null), []);
@@ -54,20 +56,38 @@
 	}
 </script>
 
-<header class="hairline z-20 shrink-0 border-b pt-safe">
-	<div class="measure flex items-center justify-between px-4 pt-2 pb-3">
-		<h1 class="text-header md:text-header-large font-bold tracking-tight">Browse</h1>
-		<div class="flex items-center gap-2">
-			<SettingsButton />
+<header
+	class="z-20 shrink-0 pt-safe"
+	style:border-color="var(--product-library-divider-secondary)"
+	class:border-b={scrolled}
+>
+	<div class="measure relative flex items-center justify-between px-4 pt-2 pb-2">
+		<h1
+			class="text-header md:text-header-large font-bold tracking-tight transition-opacity duration-200"
+			class:opacity-0={scrolled}
+		>
+			Browse
+		</h1>
+		<div
+			class="pointer-events-none absolute inset-x-0 top-0 bottom-0 flex items-center justify-center transition-opacity duration-200"
+			class:opacity-0={!scrolled}
+			aria-hidden={!scrolled}
+		>
+			<span class="text-header md:text-header-large font-bold tracking-tight">Browse</span>
 		</div>
+		<SettingsButton />
 	</div>
 </header>
 
-<main class="flex-1">
+<main
+	class="flex-1 pb-20"
+	bind:this={mainEl}
+	onscroll={() => (scrolled = (mainEl?.scrollTop ?? 0) > 0)}
+>
 	<section>
-		<div class="surface sticky top-0 z-10 px-4 pt-3 pb-0">
+		<div class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-copy font-semibold tracking-wide">
 			<div class="hairline measure flex items-center justify-between border-b pb-1.5">
-				<h2 class="text-caption font-semibold tracking-wide uppercase">Projects</h2>
+				<h2>Projects</h2>
 				<button
 					type="button"
 					use:hapticTap
@@ -86,7 +106,7 @@
 		</div>
 
 		{#if adding}
-			<form onsubmit={submit} class="hairline raised border-y px-4 py-3">
+			<form onsubmit={submit} class="hairline surface border-b px-4 py-3">
 				<div class="measure flex gap-2">
 					<input
 						bind:this={input}
@@ -115,7 +135,7 @@
 
 		<a
 			href="/projects/inbox"
-			class="pressable raised block px-4 pt-3.5 pb-0"
+			class="pressable surface block px-4 pt-3.5 pb-0"
 		>
 			<span class="hairline measure flex items-center gap-3 border-b pb-3.5">
 				<span class="size-3 rounded-full" style="background: var(--text-dim)"></span>
@@ -128,7 +148,7 @@
 			<div
 				transition:collapse
 				animate:flip={flipCfg}
-				class="pressable raised px-4 pt-3.5 pb-0"
+				class="pressable surface px-4 pt-3.5 pb-0"
 			>
 				<div class="hairline measure flex items-center gap-3 border-b pb-3.5">
 					<span class="size-3 shrink-0 rounded-full" style="background: {project.color}"></span>
@@ -169,19 +189,19 @@
 			</div>
 		{/each}
 
-		<p class="dim px-4 py-3 text-caption">
+		<p class="dim measure px-4 py-4 text-center text-caption">
 			Deleting a project keeps its tasks and moves them to the Inbox.
 		</p>
 	</section>
 
 	<section>
-		<div class="surface px-4 pt-3 pb-0">
-			<h2 class="hairline measure border-b pb-1.5 text-caption font-semibold tracking-wide uppercase">
+		<div class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-copy font-semibold tracking-wide">
+			<h2 class="hairline measure border-b pb-1.5">
 				History
 			</h2>
 		</div>
 
-		<a href="/activity" class="pressable raised block px-4 pt-3.5 pb-0">
+		<a href="/activity" class="pressable surface block px-4 pt-3.5 pb-0">
 			<span class="hairline measure flex items-center gap-3 border-b pb-3.5">
 				<svg
 					viewBox="0 0 24 24"
@@ -196,17 +216,11 @@
 				</svg>
 				<span class="min-w-0 flex-1">
 					<span class="block text-body">Activity</span>
-					<span class="faint block text-caption">Recent changes, with undo</span>
+					<span class="faint block text-caption">Recent changes</span>
 				</span>
 				<span class="dim text-sm tabular-nums">{activityCount.value}</span>
 			</span>
 		</a>
 	</section>
 
-	<section class="measure px-4 pb-4">
-		<h2 class="dim pt-4 pb-1.5 text-caption font-semibold tracking-wide uppercase">Filters</h2>
-		<div class="raised hairline rounded-2xl border px-4 py-6 text-center">
-			<p class="dim text-sm">Filters are coming soon.</p>
-		</div>
-	</section>
 </main>

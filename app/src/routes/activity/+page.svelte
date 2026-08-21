@@ -8,15 +8,12 @@
 		activityTitle,
 		activityTone,
 		clearActivity,
-		groupActivity,
-		isRevertible,
-		revertActivity
+		groupActivity
 	} from '$lib/activity';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { collapse } from '$lib/motion';
 
 	let confirmingClear = $state(false);
-	let reverting = $state<string | null>(null);
 
 	let entries = rx<Activity[]>(() => (live.db ? activityQuery(live.db).$ : null), []);
 	let groups = $derived(groupActivity(entries.value));
@@ -27,12 +24,6 @@
 		neutral: 'var(--text-faint)'
 	};
 
-	async function revert(entry: Activity) {
-		reverting = entry.id;
-		haptic('warn');
-		await revertActivity(entry.id);
-		reverting = null;
-	}
 
 	async function clearAll() {
 		await clearActivity();
@@ -111,8 +102,7 @@
 		<p class="dim measure px-8 py-14 text-center text-sm">Loading…</p>
 	{:else if !groups.length}
 		<p class="dim measure px-8 py-14 text-center text-sm">
-			Nothing yet. Changes you make to tasks and habits show up here so you can look back — and
-			put any of them back.
+			Nothing yet. Changes you make to tasks and habits show up here so you can look back.
 		</p>
 	{:else}
 		{#each groups as group (group.key)}
@@ -126,7 +116,6 @@
 				</div>
 
 				{#each group.entries as entry (entry.id)}
-					{@const revertible = isRevertible(entry)}
 					<div transition:collapse class="raised px-4 pt-3.5 pb-0">
 						<div class="hairline measure flex items-start gap-3 border-b pb-3.5">
 							<span
@@ -147,18 +136,6 @@
 										· undone{/if}
 								</p>
 							</div>
-
-							{#if revertible}
-								<button
-									type="button"
-									use:hapticTap
-									disabled={reverting === entry.id}
-									onclick={() => revert(entry)}
-									class="tap sunken shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium disabled:opacity-40"
-								>
-									Undo
-								</button>
-							{/if}
 						</div>
 					</div>
 				{/each}
@@ -166,8 +143,7 @@
 		{/each}
 
 		<p class="dim measure px-4 py-4 text-caption">
-			The last 200 changes, on every device you sync. Undoing puts the affected tasks and habits
-			back as they were; it does not remove the entry.
+			The last 200 changes, on every device you sync.
 		</p>
 	{/if}
 </main>

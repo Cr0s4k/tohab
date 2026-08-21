@@ -24,7 +24,6 @@
 
 	let raw = $state('');
 	let panel = $state<Panel>('none');
-	let added = $state(0);
 	let input: HTMLInputElement | null = $state(null);
 
 	/**
@@ -86,17 +85,13 @@
 				projectId ?? (parsed?.project ? await resolveProject(parsed.project) : '')
 		});
 
-		added++;
 		reset();
-		input?.focus();
+		onClose();
 	}
 
-	// Ready for the next task rather than dismissing: adding several in a row is the whole
-	// point of a compose sheet, and the header's Done button is the way out.
 	$effect(() => {
 		if (!open) {
 			reset();
-			added = 0;
 			return;
 		}
 		queueMicrotask(() => input?.focus());
@@ -304,8 +299,6 @@
 			<p class="dim text-center text-caption">
 				{#if parsed?.matched.length}
 					Understood: {parsed.matched.join(' · ')}
-				{:else if added}
-					{added} added · keep going, or Done to close
 				{:else}
 					Typing “every friday 5pm !!1 #work” fills these in too
 				{/if}

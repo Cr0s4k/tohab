@@ -150,14 +150,14 @@ priority 1, in the Groceries project.
 
 **Browse → Activity** lists what you have changed, newest first and grouped by day: tasks
 and projects added, edited, completed or deleted, habits created or archived, days logged or
-cleared. Every entry has an **Undo** that puts the affected documents back the way they were.
+cleared. The history is read-only; undo is available only from the immediate toast after an
+action.
 
 Each entry stores the documents the action touched, `before` and `after`, as a JSON blob on
 the entry itself. Undoing is then the same operation for every kind of action — upsert every
 `before` that existed, remove every document that did not — which is why one code path
 covers a task edit and a project delete that moved eleven tasks to the Inbox alike. The
-immediate undo toast and the history screen's Undo button both call it, so the two can never
-disagree about what an action did.
+immediate undo toast uses this path to restore an action.
 
 Reverting marks the entry rather than adding a new one, and an entry is revertible once. An
 undone entry stays in the list, struck through, because a history that quietly rewrites
