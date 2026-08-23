@@ -120,6 +120,8 @@
 	main {
 		min-height: 0;
 		overflow-y: auto;
+		/* Keep trackpad/touch swipes in the app instead of triggering browser Back/Forward. */
+		overscroll-behavior-x: none;
 		overscroll-behavior-y: contain;
 		-webkit-overflow-scrolling: touch;
 		scrollbar-width: thin;
