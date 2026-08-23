@@ -126,7 +126,8 @@
 								haptic('tap');
 								draft.due = s.value;
 							}}
-							class="tap rounded-full px-3 py-1.5 text-caption font-medium"
+							class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
+							aria-pressed={draft.due === s.value}
 							class:accent-bg={draft.due === s.value}
 							class:sunken={draft.due !== s.value}
 						>
@@ -137,11 +138,13 @@
 				<div class="flex gap-2">
 					<input
 						type="date"
+						aria-label="Due date"
 						bind:value={draft.due}
 						class="sunken min-w-0 flex-1 rounded-xl px-3 py-2.5 text-copy outline-none"
 					/>
 					<input
 						type="time"
+						aria-label="Due time"
 						bind:value={draft.dueTime}
 						class="sunken w-28 rounded-xl px-3 py-2.5 text-copy outline-none"
 					/>
@@ -162,7 +165,8 @@
 								haptic('tap');
 								draft.repeat = r.value;
 							}}
-							class="tap rounded-full px-3 py-1.5 text-caption font-medium"
+							class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
+							aria-pressed={draft.repeat === r.value}
 							class:accent-bg={draft.repeat === r.value}
 							class:sunken={draft.repeat !== r.value}
 						>
@@ -189,6 +193,7 @@
 								draft.priority = p;
 							}}
 							class="tap sunken flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-caption font-medium"
+							aria-pressed={draft.priority === p}
 							class:ring-2={draft.priority === p}
 							style="--tw-ring-color: var(--accent)"
 						>
@@ -218,7 +223,7 @@
 					<button
 						type="button"
 						onclick={beginSubtask}
-						class="tap accent-fg rounded-lg px-2 py-1 text-caption font-semibold"
+						class="tap accent-fg min-h-11 rounded-lg px-2 py-1 text-caption font-semibold"
 					>
 						+ Add subtask
 					</button>
@@ -233,7 +238,7 @@
 									aria-checked={subtask.done}
 									aria-label={subtask.done ? `Reopen ${subtask.title}` : `Complete ${subtask.title}`}
 									onclick={() => toggleTask(subtask.id)}
-									class="tap grid size-5 shrink-0 place-items-center rounded-full border text-caption"
+									class="tap grid size-11 shrink-0 place-items-center rounded-full border text-caption"
 								>
 									{subtask.done ? '✓' : ''}
 								</button>

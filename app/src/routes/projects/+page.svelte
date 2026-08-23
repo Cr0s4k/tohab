@@ -5,6 +5,7 @@
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg } from '$lib/motion';
+	import { shouldAnimateList } from '$lib/pwa';
 
 	let name = $state('');
 	let renaming = $state<string | null>(null);
@@ -12,6 +13,7 @@
 
 	let projects = rx(() => (live.db ? projectsQuery(live.db).$ : null), []);
 	let open = rx(() => (live.db ? openTasksQuery(live.db).$ : null), []);
+	let listFlipCfg = $derived(shouldAnimateList(projects.value.length) ? flipCfg : { duration: 0 });
 
 	let counts = $derived.by(() => {
 		const map = new Map<string, number>();
@@ -62,8 +64,9 @@
 
 	{#each projects.value as project (project.id)}
 		<div
-			transition:collapse
-			animate:flip={flipCfg}
+			data-list-item
+			transition:collapse={{ duration: shouldAnimateList(projects.value.length) ? 240 : 0 }}
+			animate:flip={listFlipCfg}
 			class="pressable raised px-4 pt-3.5 pb-0"
 		>
 			<div class="hairline measure flex items-center gap-3 border-b pb-3.5">

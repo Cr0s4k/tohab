@@ -10,9 +10,11 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"test": "node test/navigation-gesture.test.ts && node test/streaks.test.ts && node test/parse.test.ts && node test/repeat.test.ts && node test/arrange.test.ts && node test/subtasks-persistence.test.ts && node --import ./test/activity-e2e.hooks.mjs test/arrange-rxdocs.test.ts && node --import ./test/activity-e2e.hooks.mjs test/delete-task-corrupt-parent.test.ts && node test/activity.test.ts && node --import ./test/activity-e2e.hooks.mjs test/activity-e2e.test.ts",
+		"test": "node test/pwa-hardening.test.ts && node test/notifications.test.ts && node test/icon-assets.test.ts && node test/navigation-gesture.test.ts && node test/streaks.test.ts && node test/parse.test.ts && node test/repeat.test.ts && node test/arrange.test.ts && node test/subtasks-persistence.test.ts && node --import ./test/activity-e2e.hooks.mjs test/arrange-rxdocs.test.ts && node --import ./test/activity-e2e.hooks.mjs test/delete-task-corrupt-parent.test.ts && node test/activity.test.ts && node --import ./test/activity-e2e.hooks.mjs test/activity-e2e.test.ts",
 		"test:sync": "node test/replication.test.ts",
-		"test:browser": "node test/smoke.test.ts"
+		"test:browser": "node test/smoke.test.ts",
+		"test:offline": "node test/offline.test.ts",
+		"test:sw-update": "node test/service-worker-update.test.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.1",

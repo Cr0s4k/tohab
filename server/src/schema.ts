@@ -2,6 +2,7 @@ import {
 	bigint,
 	boolean,
 	index,
+	integer,
 	jsonb,
 	pgSequence,
 	pgTable,
@@ -64,3 +65,39 @@ export const secrets = pgTable('secrets', {
 	key: text('key').primaryKey(),
 	value: text('value').notNull()
 });
+
+/** Browser push endpoints are server-owned credentials and never enter the replicated store. */
+export const pushSubscriptions = pgTable(
+	'push_subscriptions',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id').notNull(),
+		endpoint: text('endpoint').notNull().unique(),
+		p256dh: text('p256dh').notNull(),
+		auth: text('auth').notNull(),
+		timeZone: text('time_zone').notNull(),
+		leadMinutes: integer('lead_minutes').notNull().default(10),
+		lastSuccessAt: bigint('last_success_at', { mode: 'number' }).notNull().default(0),
+		failureCount: integer('failure_count').notNull().default(0),
+		createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+		updatedAt: bigint('updated_at', { mode: 'number' }).notNull()
+	},
+	(t) => [index('push_subscriptions_user').on(t.userId)]
+);
+
+export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
+
+/** One row per delivered task occurrence prevents duplicate reminders across scheduler ticks. */
+export const pushReminders = pgTable(
+	'push_reminders',
+	{
+		subscriptionId: text('subscription_id').notNull(),
+		taskId: text('task_id').notNull(),
+		reminderKey: text('reminder_key').notNull(),
+		sentAt: bigint('sent_at', { mode: 'number' }).notNull()
+	},
+	(t) => [
+		primaryKey({ columns: [t.subscriptionId, t.reminderKey] }),
+		index('push_reminders_sent').on(t.sentAt)
+	]
+);

@@ -134,7 +134,7 @@
 					<p class="dim text-xs">
 						{overview.doneToday} of {overview.dueToday} due habits complete
 					</p>
-					<p class="dim mt-1 text-[0.68rem]">
+					<p class="dim mt-1 text-caption">
 						Weekly habits count toward the current week.
 					</p>
 				</div>
@@ -145,8 +145,8 @@
 					<p class="text-xl font-bold tabular-nums">
 						{percent(overview.seven.done, overview.seven.due)}%
 					</p>
-					<p class="dim text-[0.68rem]">Last 7 days</p>
-					<p class="dim text-[0.62rem] tabular-nums">
+					<p class="dim text-caption">Last 7 days</p>
+					<p class="dim text-caption tabular-nums">
 						{overview.seven.done}/{overview.seven.due} due days
 					</p>
 				</div>
@@ -154,8 +154,8 @@
 					<p class="text-xl font-bold tabular-nums">
 						{percent(overview.thirty.done, overview.thirty.due)}%
 					</p>
-					<p class="dim text-[0.68rem]">Last 30 days</p>
-					<p class="dim text-[0.62rem] tabular-nums">
+					<p class="dim text-caption">Last 30 days</p>
+					<p class="dim text-caption tabular-nums">
 						{overview.thirty.done}/{overview.thirty.due} due days
 					</p>
 				</div>

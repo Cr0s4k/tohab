@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { cleanup, signIn } from './auth.ts';
+import { cleanup, signIn, type TestSession } from './auth.ts';
 
 const APP = process.env.APP ?? 'http://localhost:5177';
 const CHROME =
@@ -130,8 +130,8 @@ async function waitFor(expression: string, timeout = 8000, label = expression) {
 }
 
 const text = (sel: string) => `document.querySelector(${JSON.stringify(sel)})?.textContent?.trim()`;
-/** Screen titles are an h1 on some screens and a span on others; both carry this class. */
-const title = text('.text-2xl.font-bold');
+/** Every current route header uses the shared native-scale text-header utility. */
+const title = text('.text-header');
 const bodyText = `document.body.innerText`;
 
 /**
@@ -153,6 +153,20 @@ async function authenticate() {
 	return session;
 }
 
+async function loginThroughUi(session: TestSession) {
+	await waitFor(`document.querySelector('input[type="email"]')`, 8000, 'sign-in form');
+	await evaluate(`(() => {
+		const email = document.querySelector('input[type="email"]');
+		const password = document.querySelector('input[type="password"]');
+		email.value = ${JSON.stringify(session.email)};
+		password.value = ${JSON.stringify(session.password)};
+		email.dispatchEvent(new Event('input', { bubbles: true }));
+		password.dispatchEvent(new Event('input', { bubbles: true }));
+	})()`);
+	await evaluate(`document.querySelector('form button[type="submit"]').click()`);
+	await waitFor(`!document.querySelector('input[type="email"]') && document.querySelector('button[aria-label="New task"]')`, 20000, 'account database mounted');
+}
+
 try {
 	// --- 0. an unauthenticated visit stops at the sign-in screen ---
 	await goto('/tasks');
@@ -162,10 +176,10 @@ try {
 
 	const session = await authenticate();
 
-	// --- 1. the app boots and lands on Tasks ---
+	// --- 1. the app boots and lands on the default Today task view ---
 	await goto('/tasks');
-	await waitFor(`${title} === 'Tasks'`, 20000, 'tasks screen rendered');
-	check('tasks screen renders', await evaluate(title), 'Tasks');
+	await waitFor(`${title} === 'Today'`, 20000, 'tasks screen rendered');
+	check('tasks screen renders', await evaluate(title), 'Today');
 
 	// --- 2. the compose sheet parses natural language and persists ---
 	await evaluate(`document.querySelector('button[aria-label="New task"]').click()`);
@@ -184,21 +198,18 @@ try {
 	check('compose previews the priority', await evaluate<boolean>(`${bodyText}.includes('P1')`), true);
 
 	await evaluate(`document.querySelector('form button[type=submit]').click()`);
-	await waitFor(`${bodyText}.includes('1 added')`, 5000, 'compose confirms the add');
-	check('compose stays open for the next task', await evaluate<boolean>(`${bodyText}.includes('1 added')`), true);
-
-	await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
-	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'sheet closed');
+	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'compose closes after add');
+	check('compose closes after adding the task', await evaluate<boolean>(`!document.querySelector('input[placeholder="What needs doing?"]')`), true);
 
 	// The task is due tomorrow, so it belongs to Upcoming rather than Today.
-	await evaluate(`document.querySelector('nav a[href="/tasks?view=upcoming"]').click()`);
+	await goto('/tasks?view=upcoming');
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'task appears in Upcoming');
 	check('task was created with the parsed title', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), true);
 
 	// --- 3. it survives a reload, i.e. IndexedDB really persisted ---
 	await goto('/tasks');
-	await waitFor(`${title} === 'Tasks'`, 20000);
-	await evaluate(`document.querySelector('nav a[href="/tasks?view=upcoming"]').click()`);
+	await waitFor(`${title} === 'Today'`, 20000);
+	await goto('/tasks?view=upcoming');
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'task survived reload');
 	check('task persisted across a reload', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), true);
 
@@ -212,11 +223,9 @@ try {
 	})()`);
 	await waitFor(`${bodyText}.includes('#finance')`, 5000, 'compose picked up the project');
 	await evaluate(`document.querySelector('form button[type=submit]').click()`);
-	await waitFor(`${bodyText}.includes('1 added')`, 5000, 'projected task added');
-	await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
-	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'sheet closed');
+	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'projected task added');
 
-	await evaluate(`document.querySelector('nav a[href="/tasks?view=inbox"]').click()`);
+	await goto('/tasks?view=inbox');
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'Inbox lists the unfiled task');
 	check(
 		'Inbox holds unfiled tasks only',
@@ -224,16 +233,14 @@ try {
 		true
 	);
 
-	await evaluate(`document.querySelector('nav a[href="/browse"]').click()`);
-	await waitFor(`${bodyText}.includes('file taxes')`, 8000, 'All lists the projected task');
-	check(
-		'All spans every project',
-		await evaluate<boolean>(`${bodyText}.includes('buy oat milk') && ${bodyText}.includes('file taxes')`),
-		true
-	);
+	await goto('/browse');
+	await waitFor(`${bodyText}.includes('finance')`, 8000, 'Browse lists the project');
+	await evaluate(`[...document.querySelectorAll('main a[href^="/projects/"]')].find(a => a.textContent.includes('finance')).click()`);
+	await waitFor(`${bodyText}.includes('file taxes')`, 8000, 'project lists its task');
+	check('projected task appears in its project', await evaluate<boolean>(`${bodyText}.includes('file taxes')`), true);
 
 	// Back to Upcoming, where only the dated task lives, for the completion step.
-	await evaluate(`document.querySelector('nav a[href="/tasks?view=upcoming"]').click()`);
+	await goto('/tasks?view=upcoming');
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'back on Upcoming');
 
 	// --- 4. completing a task moves it out of the open views ---
@@ -241,15 +248,15 @@ try {
 	await waitFor(`!${bodyText}.includes('buy oat milk')`, 8000, 'completed task leaves Upcoming');
 	check('completing removes it from Upcoming', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), false);
 
-	// --- 4b. show completed is how finished work is reached, per view ---
-	await evaluate(`document.querySelector('nav a[href="/browse"]').click()`);
-	await waitFor(`!${bodyText}.includes('buy oat milk')`, 8000, 'All hides completed by default');
-	check('All hides completed tasks by default', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), false);
+	// --- 4b. show completed is how finished work is reached in the current view ---
+	await goto('/tasks?view=upcoming');
+	await waitFor(`!${bodyText}.includes('buy oat milk')`, 8000, 'Upcoming hides completed by default');
+	check('Upcoming hides completed tasks by default', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), false);
 
 	await evaluate(`document.querySelector('header button[aria-label="Sort and group"]').click()`);
 	await waitFor(`${bodyText}.includes('Sort & group')`, 5000, 'options sheet opened');
 	await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Show completed tasks').click()`);
-	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'completed task joins All');
+	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'completed task joins Upcoming');
 	check('show completed reveals the done task', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), true);
 
 	await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Priority').click()`);
@@ -261,9 +268,7 @@ try {
 		true
 	);
 
-	await goto('/tasks');
-	await waitFor(`${title} === 'Tasks'`, 20000);
-	await evaluate(`document.querySelector('nav a[href="/browse"]').click()`);
+	await goto('/tasks?view=upcoming');
 	await waitFor(`document.querySelector('main h2')`, 8000, 'options survived reload');
 	check(
 		'view options persist across a reload',
@@ -314,8 +319,8 @@ try {
 
 	// --- 8. the client actually replicated to the server ---
 	// Sampling twice would race: an incoming change event flips the badge back to Syncing.
-	const reachedSynced = await waitFor(`${bodyText}.includes('Synced')`, 20000, 'sync badge reached Synced');
-	check('sync badge reports Synced', reachedSynced, true);
+	const reachedSynced = await waitFor(`${bodyText}.includes('Status: synced')`, 20000, 'sync badge reached synced');
+	check('sync badge reports synced', reachedSynced, true);
 
 	const pulled = await (
 		await fetch(`http://localhost:5178/sync/pull?collection=habits&cursor=0&id=&limit=50`, {
@@ -334,7 +339,33 @@ try {
 		'file taxes'
 	]);
 
-	// --- 9. no console errors along the way ---
+	// --- 9. switching accounts in one page closes RxDB and mounts the correct isolated store ---
+	const second = await signIn('smoke-second');
+	await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Sign out').click()`);
+	await loginThroughUi(second);
+	await goto('/habits');
+	check('second account cannot query first account habits', await evaluate<boolean>(`!${bodyText}.includes('Morning run')`), true);
+	await goto('/tasks?view=inbox');
+	check('second account cannot query first account tasks', await evaluate<boolean>(`!${bodyText}.includes('file taxes') && !${bodyText}.includes('buy oat milk')`), true);
+	await evaluate(`document.querySelector('button[aria-label="New task"]').click()`);
+	await waitFor(`document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'second account compose');
+	await evaluate(`(() => {
+		const input = document.querySelector('input[placeholder="What needs doing?"]');
+		input.value = 'second account only';
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+	})()`);
+	await evaluate(`document.querySelector('form button[type=submit]').click()`);
+	await waitFor(`${bodyText}.includes('second account only')`, 8000, 'second account task created');
+
+	await evaluate(`document.querySelector('button[aria-label="Settings"]').click()`);
+	await waitFor(`${bodyText}.includes('Sync with server')`, 8000, 'second account settings');
+	await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Sign out').click()`);
+	await loginThroughUi(session);
+	await goto('/habits');
+	await waitFor(`${bodyText}.includes('Morning run')`, 8000, 'first account database remounted');
+	check('first account data returns after switching back', await evaluate<boolean>(`${bodyText}.includes('Morning run') && !${bodyText}.includes('second account only')`), true);
+
+	// --- 10. no console errors along the way ---
 	check('no console errors', consoleErrors, []);
 } catch (err) {
 	failures++;

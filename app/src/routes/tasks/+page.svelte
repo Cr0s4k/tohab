@@ -18,6 +18,7 @@
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg, veil } from '$lib/motion';
+	import { shouldAnimateList } from '$lib/pwa';
 
 	function viewFromUrl(): View {
 		const value = page.url.searchParams.get('view');
@@ -48,6 +49,7 @@
 	let projectById = $derived(new Map(projects.value.map((p) => [p.id, p])));
 	let groups = $derived(arrangeTasks(tasks.value, opts, projects.value));
 	let count = $derived(groups.reduce((n, g) => n + g.tasks.length, 0));
+	let listFlipCfg = $derived(shouldAnimateList(count) ? flipCfg : { duration: 0 });
 
 	let overdueCount = $derived(
 		view === 'today'
@@ -157,7 +159,7 @@
 				</h2>
 			{/if}
 			{#each group.tasks as task (task.id)}
-				<div transition:collapse animate:flip={flipCfg}>
+				<div data-list-item transition:collapse={{ duration: shouldAnimateList(count) ? 240 : 0 }} animate:flip={listFlipCfg}>
 					<TaskRow
 						{task}
 						project={projectById.get(task.projectId)}

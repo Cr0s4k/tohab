@@ -24,6 +24,7 @@
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg } from '$lib/motion';
+	import { shouldAnimateList } from '$lib/pwa';
 
 	let offset = $state(0);
 
@@ -36,6 +37,7 @@
 
 	let due = $derived(habits.value.filter((h) => isDue(h, day)));
 	let rest = $derived(habits.value.filter((h) => !isDue(h, day)));
+	let listFlipCfg = $derived(shouldAnimateList(habits.value.length) ? flipCfg : { duration: 0 });
 
 	let doneCount = $derived(
 		due.filter((h) => isComplete(h, byHabit.get(h.id) ?? new Map(), day)).length
@@ -130,7 +132,7 @@
 	{:else}
 		{#each due as habit (habit.id)}
 			{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
-			<div transition:collapse animate:flip={flipCfg}>
+			<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.value.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
 				<HabitRow
 					{habit}
 					value={valueOn(habitLogs, day)}
@@ -149,7 +151,7 @@
 			</h2>
 			{#each rest as habit (habit.id)}
 				{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
-				<div transition:collapse animate:flip={flipCfg}>
+				<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.value.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
 					<HabitRow
 						{habit}
 						value={valueOn(habitLogs, day)}

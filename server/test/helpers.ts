@@ -5,14 +5,14 @@
  */
 import { and, eq, like } from 'drizzle-orm';
 import { createUser, closeDb, db } from '../src/db.ts';
-import { docs, users } from '../src/schema.ts';
+import { docs, pushReminders, pushSubscriptions, users } from '../src/schema.ts';
 import { hashPassword } from '../src/auth.ts';
 
 const EMAIL_SUFFIX = '@test.invalid';
 const ROOT = (process.env.BASE ?? 'http://localhost:5178/sync').replace(/\/sync\/?$/, '');
 const PASSWORD = 'test-password';
 
-export type TestSession = { userId: string; email: string; cookie: string };
+export type TestSession = { userId: string; email: string; password: string; cookie: string };
 
 export async function signIn(label: string): Promise<TestSession> {
 	const email = `${label}-${process.pid}${EMAIL_SUFFIX}`;
@@ -30,7 +30,7 @@ export async function signIn(label: string): Promise<TestSession> {
 		.map((c) => c.split(';')[0])
 		.join('; ');
 
-	return { userId: user.id, email, cookie };
+	return { userId: user.id, email, password: PASSWORD, cookie };
 }
 
 /**
@@ -44,6 +44,14 @@ export async function cleanup() {
 		.where(like(users.email, `%${EMAIL_SUFFIX}`));
 
 	for (const row of rows) {
+		const subscriptions = await db
+			.select({ id: pushSubscriptions.id })
+			.from(pushSubscriptions)
+			.where(eq(pushSubscriptions.userId, row.id));
+		for (const subscription of subscriptions) {
+			await db.delete(pushReminders).where(eq(pushReminders.subscriptionId, subscription.id));
+		}
+		await db.delete(pushSubscriptions).where(eq(pushSubscriptions.userId, row.id));
 		await db.delete(docs).where(eq(docs.userId, row.id));
 		await db.delete(users).where(and(eq(users.id, row.id)));
 	}

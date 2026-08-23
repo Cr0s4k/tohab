@@ -11,6 +11,7 @@ import { createHabit, deleteHabit, setLog, tapLog, updateHabit } from '../src/li
 import { activityQuery, decodeChanges, revertActivity } from '../src/lib/activity.ts';
 import { undoState, runUndo } from '../src/lib/undo.svelte.ts';
 import { exportBackup, importBackup } from '../src/lib/backup.ts';
+import { humanDay } from '../src/lib/dates.ts';
 
 let fail = 0;
 function eq(label: string, got: unknown, want: unknown) {
@@ -196,7 +197,10 @@ await tapLog(habit, '2026-08-20', 2);
 eq('three taps made one entry', (await log()).length, before + 1);
 eq('log value climbed', (await db.habitLogs.findOne(`${h.id}:2026-08-20`).exec()).value, 3);
 e = await pending('habitLog', 'log');
-eq('log entry detail shows the total', [e.verb, e.detail], ['log', 'Today · 3 glasses']);
+eq('log entry detail shows the total', [e.verb, e.detail], [
+	'log',
+	`${humanDay('2026-08-20')} · 3 glasses`
+]);
 eq('log run reverted', await revertActivity(e.id), true);
 eq(
 	'undoing the run clears the day entirely',

@@ -10,7 +10,17 @@ export async function getDb(): Promise<Db> {
 	return open();
 }
 
+export async function closeDb(): Promise<void> {
+	const { closeDb: close } = await import('./index.ts');
+	return close();
+}
+
 export async function removeDb(): Promise<void> {
 	const { removeDb: remove } = await import('./index.ts');
 	return remove();
+}
+
+export async function retryDb(): Promise<Db> {
+	const { retryDb: retry } = await import('./index.ts');
+	return retry();
 }

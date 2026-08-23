@@ -121,8 +121,9 @@ complete or delete.
 N× per week), schedule-aware streaks, a 12-week heatmap you can tap to backfill, per-habit
 stats, archiving.
 
-**Platform** — installable PWA that works fully offline, sync status indicator, dark mode,
-JSON export/import, haptics, an activity history you can undo from.
+**Platform** — installable portrait PWA that works fully offline, sync status and recovery,
+dark mode, JSON export/import, haptics, optional Web Push reminders and app badging, and an
+activity history you can undo from.
 
 ### Adding a task
 
@@ -303,24 +304,27 @@ query string.
 Being offline-first, the app cannot ask the server who you are at launch, so a non-secret
 `tohab.session` record in `localStorage` holds the signed-in id and email. That is what
 renders the right screen offline and scopes the local database; the cookie remains the only
-thing the server trusts. If it has expired, sync stops with a `Signed out` badge while the
-local data stays usable and editable.
+thing the server trusts. If it has expired, sync pauses with a visible warning while the
+local data stays usable and editable until the person signs out and in again.
 
-The local RxDB store belongs to one account: signing in as a different id drops it rather
-than pushing its documents up under the new owner.
+Each normalized `sync server URL + account id` selects a separate physical RxDB. Existing
+installations retain their original database, and changing server/account no longer deletes
+unsynchronised data or risks uploading it under another owner.
 
 ## Notes and limits
 
-- **Reminders ride on the calendar feed, not on push.** Alarms are `VALARM` entries the
-  subscribed calendar app fires, which needs no VAPID keys and works on every device — but
-  the lead time is per-feed rather than per-task, only timed tasks get one, and delivery is
-  as prompt as the calendar client's refresh (Google polls a feed roughly hourly).
-- **No in-app notifications.** iOS only delivers Web Push to an installed home-screen PWA
-  and it needs a server with VAPID keys, so it was left out.
-- **No recurring tasks.** Deliberately deferred — recurrence plus timezones is where task
-  apps accumulate their worst bugs.
-- **`navigator.vibrate` is a no-op on iOS Safari,** so haptics land on Android only. The
-  CSS press states carry the feedback everywhere.
+- **Reminders have two delivery paths.** Calendar-feed `VALARM` entries remain the broadly
+  compatible option. Installed secure-context PWAs can additionally enable Web Push from an
+  explicit Settings action; iPhone/iPad require the Home Screen app. The server generates one
+  P-256 VAPID pair atomically in the `secrets` table, stores authenticated per-device
+  subscriptions, scans timed open tasks in each subscription's IANA timezone, and records each
+  delivered occurrence so restarts do not duplicate it. Permanent 404/410 endpoints are
+  removed automatically. Subscription endpoints and keys must never be logged or exposed.
+- **Badging is capability-detected.** Supported installed apps show the current open-task count;
+  unsupported browsers simply ignore it.
+- **iOS haptics are preserved.** Android uses `navigator.vibrate`; iOS receives the existing
+  switch-control overlay workaround plus CSS press states.
+- **Portrait is intentional.** The manifest remains locked to portrait as a product choice.
 - **Habit streaks honour backfilled history.** The streak floor follows the earliest logged
   day, not the habit's creation date, so filling in the heatmap retroactively works.
 - **Mobile only by design** — the layout caps at `max-w-lg` and centres on wider screens

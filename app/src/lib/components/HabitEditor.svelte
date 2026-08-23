@@ -119,7 +119,7 @@
 	{#snippet children()}
 		<div class="flex flex-col gap-4">
 			<div>
-				<p class="dim mb-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">
+				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">
 					I want to track
 				</p>
 				<div class="flex gap-1.5">
@@ -127,7 +127,8 @@
 						type="button"
 						use:hapticTap
 						onclick={() => chooseGoal('build')}
-						class="tap flex-1 rounded-xl py-2.5 text-[0.8rem] font-medium"
+						class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-medium"
+						aria-pressed={draft.goal === 'build'}
 						class:accent-bg={draft.goal === 'build'}
 						class:sunken={draft.goal !== 'build'}
 					>
@@ -137,7 +138,8 @@
 						type="button"
 						use:hapticTap
 						onclick={() => chooseGoal('break')}
-						class="tap flex-1 rounded-xl py-2.5 text-[0.8rem] font-medium"
+						class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-medium"
+						aria-pressed={draft.goal === 'break'}
 						class:accent-bg={draft.goal === 'break'}
 						class:sunken={draft.goal !== 'break'}
 					>
@@ -155,7 +157,7 @@
 				</span>
 				<div class="min-w-0 flex-1">
 					{#if draft.goal === 'break'}
-						<p class="dim mb-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">
+						<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">
 							Goal
 						</p>
 					{/if}
@@ -172,7 +174,9 @@
 					<button
 						type="button"
 						onclick={() => (draft.emoji = e)}
-						class="tap sunken grid size-9 place-items-center rounded-xl text-lg"
+						aria-label={`Emoji ${e}`}
+						aria-pressed={draft.emoji === e}
+						class="tap sunken grid size-11 place-items-center rounded-xl text-lg"
 						class:ring-2={draft.emoji === e}
 						style="--tw-ring-color: var(--accent)"
 					>
@@ -185,9 +189,10 @@
 				{#each HABIT_COLORS as c (c)}
 					<button
 						type="button"
-						aria-label="Colour"
+						aria-label={`Colour ${c}`}
+						aria-pressed={draft.color === c}
 						onclick={() => (draft.color = c)}
-						class="tap size-8 flex-1 rounded-xl"
+						class="tap min-h-11 flex-1 rounded-xl"
 						class:ring-2={draft.color === c}
 						style="background: {c}; --tw-ring-color: var(--text); --tw-ring-offset-width: 2px"
 					></button>
@@ -197,7 +202,7 @@
 			{#if draft.goal === 'break'}
 				<div>
 					<label class="block">
-						<span class="dim mb-1.5 block text-[0.7rem] font-semibold tracking-wide uppercase">
+						<span class="dim mb-1.5 block text-caption font-semibold tracking-wide uppercase">
 							No more than
 						</span>
 						<div class="flex items-center gap-2">
@@ -211,13 +216,13 @@
 							<span class="dim shrink-0 text-sm">per day</span>
 						</div>
 					</label>
-					<p class="dim mt-2 text-[0.7rem]">
+					<p class="dim mt-2 text-caption">
 						Each tap records one slip. Staying at or under this limit counts as a win.
 					</p>
 				</div>
 			{:else}
 				<div>
-					<p class="dim mb-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">Type</p>
+					<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Type</p>
 					<div class="flex gap-1.5">
 						<button
 							type="button"
@@ -225,7 +230,8 @@
 								draft.kind = 'binary';
 								draft.target = 1;
 							}}
-							class="tap flex-1 rounded-xl py-2.5 text-[0.8rem] font-medium"
+							class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-medium"
+							aria-pressed={draft.kind === 'binary'}
 							class:accent-bg={draft.kind === 'binary'}
 							class:sunken={draft.kind !== 'binary'}
 						>
@@ -237,7 +243,8 @@
 								draft.kind = 'quantity';
 								if (draft.target < 2) draft.target = 8;
 							}}
-							class="tap flex-1 rounded-xl py-2.5 text-[0.8rem] font-medium"
+							class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-medium"
+							aria-pressed={draft.kind === 'quantity'}
 							class:accent-bg={draft.kind === 'quantity'}
 							class:sunken={draft.kind !== 'quantity'}
 						>
@@ -249,7 +256,7 @@
 				{#if draft.kind === 'quantity'}
 					<div class="flex gap-2">
 						<label class="flex-1">
-							<span class="dim mb-1.5 block text-[0.7rem] font-semibold tracking-wide uppercase">
+							<span class="dim mb-1.5 block text-caption font-semibold tracking-wide uppercase">
 								Daily goal
 							</span>
 							<input
@@ -261,7 +268,7 @@
 							/>
 						</label>
 						<label class="flex-1">
-							<span class="dim mb-1.5 block text-[0.7rem] font-semibold tracking-wide uppercase">
+							<span class="dim mb-1.5 block text-caption font-semibold tracking-wide uppercase">
 								Unit
 							</span>
 							<input
@@ -274,7 +281,7 @@
 				{/if}
 
 				<div>
-					<p class="dim mb-1.5 text-[0.7rem] font-semibold tracking-wide uppercase">Schedule</p>
+					<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Schedule</p>
 					<div class="flex gap-1.5">
 						{#each [{ id: 'daily', label: 'Every day' }, { id: 'weekdays', label: 'Certain days' }, { id: 'weekly', label: 'X per week' }] as opt (opt.id)}
 							<button
@@ -298,7 +305,7 @@
 								use:hapticTap
 								aria-label={WEEKDAY_NAMES[d]}
 								onclick={() => toggleWeekday(d)}
-								class="tap flex-1 rounded-xl py-2.5 text-[0.8rem] font-semibold"
+								class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-semibold"
 								class:accent-bg={draft.weekdays.includes(d)}
 								class:sunken={!draft.weekdays.includes(d)}
 							>
@@ -315,7 +322,7 @@
 								<button
 									type="button"
 									onclick={() => (draft.timesPerWeek = n)}
-									class="tap flex-1 rounded-xl py-2.5 text-[0.8rem] font-semibold"
+									class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-semibold"
 									class:accent-bg={draft.timesPerWeek === n}
 									class:sunken={draft.timesPerWeek !== n}
 								>
@@ -323,7 +330,7 @@
 								</button>
 							{/each}
 						</div>
-						<p class="dim mt-1.5 text-[0.7rem]">
+						<p class="dim mt-1.5 text-caption">
 							Any {draft.timesPerWeek} {draft.timesPerWeek === 1 ? 'day' : 'days'} a week. Streaks count
 							weeks, not days.
 						</p>

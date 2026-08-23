@@ -2,19 +2,31 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { streamSSE } from 'hono/streaming';
+import webpush from 'web-push';
 import {
 	COLLECTIONS,
+	allPushSubscriptions,
 	clockSkew,
 	createUser,
+	deletePushSubscription,
+	deletePushSubscriptionById,
 	docsSince,
 	ensureSchema,
 	getDocForUpdate,
 	knownUsers,
 	liveDocs,
+	persistedGenerated,
 	persistedSecret,
+	claimPushReminder,
+	prunePushReminders,
+	pushSubscriptionsForUser,
+	recordPushFailure,
+	recordPushSuccess,
+	releasePushReminder,
 	rowToDoc,
 	stats,
 	transaction,
+	upsertPushSubscription,
 	userByEmail,
 	userCount,
 	writeDoc
@@ -28,6 +40,7 @@ import {
 	type AuthedEnv
 } from './auth.ts';
 import { buildCalendar, feedToken, resolveFeedToken, type FeedTask } from './ics.ts';
+import { reminderForTask, validPushEndpoint, validTimeZone, type ReminderTask } from './push.ts';
 
 const PORT = Number(process.env.PORT ?? 5178);
 const DEFAULT_ALARM_MINUTES = 10;
@@ -54,7 +67,7 @@ app.use(
 	cors({
 		origin: (origin) => (ALLOWED_ORIGINS.includes(origin) ? origin : null),
 		allowHeaders: ['content-type'],
-		allowMethods: ['GET', 'POST', 'OPTIONS'],
+		allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
 		credentials: true
 	})
 );
@@ -265,12 +278,139 @@ calendar.get('/:token/tohab.ics', async (c) => {
 	return c.body(body);
 });
 
+const push = new Hono<AuthedEnv>();
+push.use('*', requireAuth);
+
+type VapidPair = { publicKey: string; privateKey: string };
+let cachedVapid: VapidPair | null = null;
+
+async function vapidKeys(): Promise<VapidPair> {
+	if (cachedVapid) return cachedVapid;
+	const fromEnv = process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
+		? { publicKey: process.env.VAPID_PUBLIC_KEY, privateKey: process.env.VAPID_PRIVATE_KEY }
+		: null;
+	const pair = fromEnv ?? JSON.parse(await persistedGenerated('vapid', () => JSON.stringify(webpush.generateVAPIDKeys()))) as VapidPair;
+	if (!pair.publicKey || !pair.privateKey) throw new Error('invalid VAPID key pair');
+	webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:admin@tohab.local', pair.publicKey, pair.privateKey);
+	cachedVapid = pair;
+	return pair;
+}
+
+function pushBody(body: unknown) {
+	const value = (body ?? {}) as {
+		endpoint?: unknown;
+		keys?: { p256dh?: unknown; auth?: unknown };
+		timeZone?: unknown;
+		leadMinutes?: unknown;
+	};
+	if (typeof value.endpoint !== 'string' || !validPushEndpoint(value.endpoint)) return null;
+	if (typeof value.keys?.p256dh !== 'string' || value.keys.p256dh.length < 16) return null;
+	if (typeof value.keys.auth !== 'string' || value.keys.auth.length < 8) return null;
+	if (typeof value.timeZone !== 'string' || !validTimeZone(value.timeZone)) return null;
+	const leadMinutes = Math.max(0, Math.min(1440, Math.round(Number(value.leadMinutes ?? 10))));
+	if (!Number.isFinite(leadMinutes)) return null;
+	return { endpoint: value.endpoint, p256dh: value.keys.p256dh, auth: value.keys.auth, timeZone: value.timeZone, leadMinutes };
+}
+
+async function sendPush(subscription: Awaited<ReturnType<typeof allPushSubscriptions>>[number], payload: Record<string, unknown>) {
+	await vapidKeys();
+	try {
+		await webpush.sendNotification(
+			{ endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
+			JSON.stringify(payload),
+			{ TTL: 3600, urgency: 'high' }
+		);
+		await recordPushSuccess(subscription.id);
+		return true;
+	} catch (error) {
+		const status = Number((error as { statusCode?: number }).statusCode ?? 0);
+		if (status === 404 || status === 410) await deletePushSubscriptionById(subscription.id);
+		else {
+			await recordPushFailure(subscription.id);
+			console.error(`push delivery failed (${status || 'network'})`);
+		}
+		return false;
+	}
+}
+
+push.get('/config', async (c) => c.json({ available: true, publicKey: (await vapidKeys()).publicKey }));
+
+push.post('/subscription', async (c) => {
+	const body = pushBody(await c.req.json().catch(() => null));
+	if (!body) return c.json({ error: 'valid subscription, time zone and lead time required' }, 400);
+	const subscription = await upsertPushSubscription({ userId: c.get('userId'), ...body });
+	if (!subscription) return c.json({ error: 'subscription belongs to another account' }, 409);
+	return c.json({ ok: true });
+});
+
+push.delete('/subscription', async (c) => {
+	const body = (await c.req.json().catch(() => null)) as { endpoint?: unknown } | null;
+	if (typeof body?.endpoint !== 'string') return c.json({ error: 'endpoint required' }, 400);
+	await deletePushSubscription(c.get('userId'), body.endpoint);
+	return c.json({ ok: true });
+});
+
+push.post('/test', async (c) => {
+	const body = (await c.req.json().catch(() => null)) as { endpoint?: unknown } | null;
+	if (typeof body?.endpoint !== 'string') return c.json({ error: 'endpoint required' }, 400);
+	const rows = (await pushSubscriptionsForUser(c.get('userId'))).filter((row) => row.endpoint === body.endpoint);
+	if (!rows.length) return c.json({ error: 'notifications are not enabled on this device' }, 404);
+	const results = await Promise.all(rows.map((row) => sendPush(row, {
+		title: 'Tohab notifications are ready',
+		body: 'Task reminders will appear here.',
+		url: '/tasks',
+		badge: 0,
+		tag: 'tohab-test'
+	})));
+	return c.json({ ok: results.some(Boolean) });
+});
+
+let pushRunActive = false;
+export async function runPushReminders(now = Date.now()) {
+	if (pushRunActive) return;
+	pushRunActive = true;
+	try {
+		const subscriptions = await allPushSubscriptions();
+		const tasksByUser = new Map<string, ReminderTask[]>();
+		for (const subscription of subscriptions) {
+			let tasks = tasksByUser.get(subscription.userId);
+			if (!tasks) {
+				tasks = (await liveDocs(subscription.userId, 'tasks')).map((row) => row.data as unknown as ReminderTask);
+				tasksByUser.set(subscription.userId, tasks);
+			}
+			const openCount = tasks.filter((task) => !task.done && !task._deleted).length;
+			for (const task of tasks) {
+				const reminder = reminderForTask(task, subscription.timeZone, subscription.leadMinutes, now);
+				if (!reminder || !await claimPushReminder(subscription.id, task.id, reminder.key)) continue;
+				const sent = await sendPush(subscription, {
+					title: reminder.title,
+					body: `Due at ${task.dueTime}`,
+					url: '/tasks',
+					badge: openCount,
+					tag: reminder.key
+				});
+				if (!sent) await releasePushReminder(subscription.id, reminder.key);
+			}
+		}
+		await prunePushReminders(now - 90 * 24 * 60 * 60 * 1000);
+	} finally {
+		pushRunActive = false;
+	}
+}
+
 app.route('/auth', auth);
 app.route('/sync', sync);
 app.route('/calendar', calendar);
+app.route('/push', push);
 app.get('/', (c) => c.text('tohab sync server'));
 
 await ensureSchema();
+await vapidKeys();
+void runPushReminders().catch((error) => console.error('push reminder scan failed', error));
+const pushTimer = setInterval(() => {
+	void runPushReminders().catch((error) => console.error('push reminder scan failed', error));
+}, 60_000);
+pushTimer.unref();
 
 serve({ fetch: app.fetch, port: PORT }, (info) => {
 	console.log(`tohab sync server listening on http://localhost:${info.port}/sync`);

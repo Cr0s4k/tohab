@@ -164,8 +164,8 @@
 				] as stat (stat.label)}
 					<div class="raised hairline rounded-2xl border px-2 py-3 text-center">
 						<p class="text-lg font-bold tabular-nums" style="color: {habit.color}">{stat.value}</p>
-						<p class="dim text-[0.62rem] leading-tight">{stat.label}</p>
-						<p class="dim text-[0.58rem] opacity-70">{stat.sub}</p>
+						<p class="dim text-caption leading-tight">{stat.label}</p>
+						<p class="dim text-caption opacity-70">{stat.sub}</p>
 					</div>
 				{/each}
 			</section>
@@ -174,7 +174,7 @@
 		<section class="mb-4">
 			<div class="mb-2 flex items-baseline justify-between">
 				<h2 class="text-sm font-semibold">Last 12 weeks</h2>
-				<p class="dim text-[0.68rem]">Tap a day to backfill</p>
+				<p class="dim text-caption">Tap a day to backfill</p>
 			</div>
 			<Heatmap
 				{habit}

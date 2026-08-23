@@ -36,6 +36,10 @@ export type Db = RxDatabase<Collections>;
 
 let pending: Promise<Db> | null = null;
 
+function currentDatabaseName(): string {
+	return typeof localStorage === 'undefined' ? 'tohab' : localStorage.getItem('tohab.dbName') || 'tohab';
+}
+
 async function create(): Promise<Db> {
 	addRxPlugin(RxDBLeaderElectionPlugin);
 	addRxPlugin(RxDBMigrationPlugin);
@@ -52,7 +56,7 @@ async function create(): Promise<Db> {
 	}
 
 	const db = await createRxDatabase<Collections>({
-		name: 'tohab',
+		name: currentDatabaseName(),
 		storage,
 		multiInstance: true,
 		eventReduce: true,
@@ -74,52 +78,64 @@ async function create(): Promise<Db> {
 	return db;
 }
 
-/** Drops the Dexie databases RxDB keeps for this app, without needing to open them first. */
-async function wipeStorage() {
-	const found = await indexedDB.databases();
-	await Promise.all(
-		found
-			.filter((d) => d.name?.startsWith('rxdb-dexie-tohab'))
-			.map(
-				(d) =>
-					new Promise<void>((resolve) => {
-						const req = indexedDB.deleteDatabase(d.name!);
-						req.onsuccess = req.onerror = req.onblocked = () => resolve();
-					})
-			)
-	);
+/** Delete only after every open connection has been closed. A blocked request is a failure,
+ * not success: pretending otherwise can reload into the same broken store. */
+async function deleteDatabase(name: string): Promise<void> {
+	await new Promise<void>((resolve, reject) => {
+		const req = indexedDB.deleteDatabase(name);
+		req.onsuccess = () => {
+			resolve();
+		};
+		req.onerror = () => {
+			reject(req.error ?? new Error(`Could not delete ${name}`));
+		};
+		// A delete request cannot be cancelled after onblocked. Keep waiting so the UI never
+		// reports failure while the browser may still delete the database after another tab closes.
+		req.onblocked = () => {};
+	});
 }
 
-/**
- * A schema change without a migration leaves the stored database unopenable, which would
- * otherwise mean a permanently blank app. The local store is a cache of what the server
- * holds, so dropping it and starting over is the recoverable choice.
- */
-async function open(): Promise<Db> {
-	try {
-		return await create();
-	} catch (err) {
-		console.warn('local database could not be opened; resetting it', err);
-		await wipeStorage();
-		return create();
+async function wipeStorage(databaseName: string) {
+	if (!indexedDB.databases) throw new Error('This browser cannot enumerate local databases safely.');
+	const found = await indexedDB.databases();
+	for (const db of found.filter((item) => item.name?.startsWith(`rxdb-dexie-${databaseName}`))) {
+		await deleteDatabase(db.name!);
 	}
 }
 
+/** Opening is deliberately non-destructive. The boot UI lets the person retry or explicitly
+ * reset after seeing a classified explanation; no catch-all path may erase local-only data. */
 export function getDb(): Promise<Db> {
-	if (!pending) pending = open();
+	if (!pending) {
+		pending = create().catch((error) => {
+			pending = null;
+			throw error;
+		});
+	}
 	return pending;
 }
 
-/**
- * Deletes the local store outright. Used when the signed-in account changes: RxDB documents
- * carry no owner, so leaving another account's rows behind would push them up as this one's.
- */
-export async function removeDb() {
-	try {
-		const db = await getDb();
-		await db.remove();
-	} catch {
-		await wipeStorage();
-	}
+export function retryDb(): Promise<Db> {
 	pending = null;
+	return getDb();
+}
+
+/** Close and forget the selected singleton before changing database ownership. */
+export async function closeDb(): Promise<void> {
+	const opening = pending;
+	pending = null;
+	if (!opening) return;
+	try {
+		const db = await opening;
+		await db.close();
+	} catch {
+		// A failed open has no usable connection to close.
+	}
+}
+
+/** Explicit destructive recovery for the currently selected server/account database. */
+export async function removeDb() {
+	const databaseName = currentDatabaseName();
+	await closeDb();
+	await wipeStorage(databaseName);
 }

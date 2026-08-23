@@ -7,6 +7,7 @@ import { addRxPlugin, createRxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { RxDBDevModePlugin, disableWarnings } from 'rxdb/plugins/dev-mode';
+import { RxDBMigrationPlugin } from 'rxdb/plugins/migration-schema';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { replicateRxCollection } from 'rxdb/plugins/replication';
 import { Subject } from 'rxjs';
@@ -18,6 +19,7 @@ import {
 	taskSchema,
 	COLLECTION_NAMES
 } from '../src/lib/db/schemas.ts';
+import { migrateTaskV2 } from '../src/lib/db/migrations.ts';
 
 import { cleanup, signIn } from './auth.ts';
 
@@ -25,6 +27,7 @@ const BASE = process.env.BASE ?? 'http://localhost:5178/sync';
 
 disableWarnings();
 addRxPlugin(RxDBDevModePlugin);
+addRxPlugin(RxDBMigrationPlugin);
 addRxPlugin(RxDBUpdatePlugin);
 
 let failures = 0;
@@ -47,7 +50,7 @@ async function makeDb(name: string) {
 		eventReduce: true
 	});
 	await db.addCollections({
-		tasks: { schema: taskSchema },
+		tasks: { schema: taskSchema, migrationStrategies: { 1: (doc) => doc, 2: migrateTaskV2 } },
 		projects: { schema: projectSchema },
 		habits: { schema: habitSchema },
 		habitLogs: { schema: habitLogSchema },

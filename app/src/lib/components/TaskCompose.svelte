@@ -112,6 +112,7 @@
 				<input
 					bind:this={input}
 					bind:value={raw}
+					aria-label="Quick add task"
 					placeholder="What needs doing?"
 					enterkeyhint="done"
 					autocapitalize="sentences"
@@ -122,7 +123,7 @@
 					type="submit"
 					disabled={!title}
 					aria-label="Add task"
-					class="tap accent-bg grid size-9 shrink-0 place-items-center rounded-full disabled:opacity-30"
+					class="tap accent-bg grid size-11 shrink-0 place-items-center rounded-full disabled:opacity-30"
 				>
 					<svg
 						viewBox="0 0 24 24"
@@ -143,9 +144,10 @@
 					type="button"
 					use:hapticTap
 					onclick={() => toggle('date')}
-					class="tap hairline rounded-full border px-3 py-1.5 text-caption font-medium"
+					class="tap hairline min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium"
 					class:accent-fg={Boolean(due)}
 					class:dim={!due}
+					aria-pressed={panel === 'date'}
 					class:sunken={panel === 'date'}
 				>
 					{dateLabel}
@@ -154,9 +156,10 @@
 					type="button"
 					use:hapticTap
 					onclick={() => toggle('repeat')}
-					class="tap hairline rounded-full border px-3 py-1.5 text-caption font-medium"
+					class="tap hairline min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium"
 					class:accent-fg={Boolean(repeat)}
 					class:dim={!repeat}
+					aria-pressed={panel === 'repeat'}
 					class:sunken={panel === 'repeat'}
 				>
 					{repeatLabel}
@@ -165,10 +168,11 @@
 					type="button"
 					use:hapticTap
 					onclick={() => toggle('priority')}
-					class="tap hairline rounded-full border px-3 py-1.5 text-caption font-medium {priority <
+					class="tap hairline min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium {priority <
 					4
 						? priorityClass(priority)
 						: 'dim'}"
+					aria-pressed={panel === 'priority'}
 					class:sunken={panel === 'priority'}
 				>
 					{priority < 4 ? `P${priority}` : 'Priority'}
@@ -177,7 +181,8 @@
 					type="button"
 					use:hapticTap
 					onclick={() => toggle('project')}
-					class="tap hairline dim rounded-full border px-3 py-1.5 text-caption font-medium"
+					class="tap hairline dim min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium"
+					aria-pressed={panel === 'project'}
 					class:sunken={panel === 'project'}
 				>
 					{projectLabel}
@@ -196,7 +201,8 @@
 									picked.due = s.value;
 									if (!s.value) picked.dueTime = '';
 								}}
-								class="tap rounded-full px-3 py-1.5 text-caption font-medium"
+								class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
+								aria-pressed={due === s.value}
 								class:accent-bg={due === s.value}
 								class:sunken={due !== s.value}
 							>
@@ -207,12 +213,14 @@
 					<div class="flex gap-2">
 						<input
 							type="date"
+							aria-label="Due date"
 							value={due}
 							onchange={(e) => (picked.due = e.currentTarget.value)}
 							class="sunken min-w-0 flex-1 rounded-xl px-3 py-2.5 text-copy outline-none"
 						/>
 						<input
 							type="time"
+							aria-label="Due time"
 							value={dueTime}
 							onchange={(e) => (picked.dueTime = e.currentTarget.value)}
 							class="sunken w-28 rounded-xl px-3 py-2.5 text-copy outline-none"
@@ -231,7 +239,7 @@
 								haptic('tap');
 								picked.repeat = r.value;
 							}}
-							class="tap rounded-full px-3 py-1.5 text-caption font-medium"
+							class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
 							class:accent-bg={repeat === r.value}
 							class:sunken={repeat !== r.value}
 						>
@@ -252,6 +260,7 @@
 								picked.priority = p;
 							}}
 							class="tap sunken flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-caption font-medium"
+							aria-pressed={priority === p}
 							class:ring-2={priority === p}
 							style="--tw-ring-color: var(--accent)"
 						>
@@ -271,7 +280,7 @@
 							haptic('tap');
 							picked.projectId = '';
 						}}
-						class="tap rounded-full px-3 py-1.5 text-caption font-medium"
+						class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
 						class:accent-bg={projectId === ''}
 						class:sunken={projectId !== ''}
 					>
@@ -285,7 +294,7 @@
 								haptic('tap');
 								picked.projectId = p.id;
 							}}
-							class="tap flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption font-medium"
+							class="tap flex items-center gap-1.5 min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
 							class:accent-bg={projectId === p.id}
 							class:sunken={projectId !== p.id}
 						>

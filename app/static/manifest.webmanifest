@@ -1,6 +1,7 @@
 {
 	"name": "Tohab — Tasks & Habits",
 	"short_name": "Tohab",
+	"id": "/",
 	"description": "Offline-first tasks and habit tracking",
 	"start_url": "/tasks",
 	"scope": "/",

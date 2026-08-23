@@ -1,16 +1,25 @@
 import { Pool } from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, asc, count, eq, gt, max, or, sql } from 'drizzle-orm';
-import { docs, secrets, users, type DocRow, type UserRow } from './schema.ts';
+import { and, asc, count, eq, gt, lt, max, or, sql } from 'drizzle-orm';
+import {
+	docs,
+	pushReminders,
+	pushSubscriptions,
+	secrets,
+	users,
+	type DocRow,
+	type PushSubscriptionRow,
+	type UserRow
+} from './schema.ts';
 import { randomBytes, randomUUID } from 'node:crypto';
 
 const CONNECTION = process.env.DATABASE_URL ?? 'postgresql://tohab:tohab@localhost:5432/tohab';
 
 const pool = new Pool({ connectionString: CONNECTION, max: 10 });
 
-const schema = { docs, secrets, users };
+const schema = { docs, pushReminders, pushSubscriptions, secrets, users };
 export const db = drizzle(pool, { schema });
-export type { DocRow, UserRow };
+export type { DocRow, PushSubscriptionRow, UserRow };
 
 /**
  * Every query runs either on the pool or inside a transaction. With a pool those are
@@ -28,7 +37,9 @@ export async function ensureSchema() {
 	const { rows } = await pool.query(
 		`SELECT to_regclass('public.docs') IS NOT NULL
 		    AND to_regclass('public.secrets') IS NOT NULL
-		    AND to_regclass('public.users') IS NOT NULL AS ok`
+		    AND to_regclass('public.users') IS NOT NULL
+		    AND to_regclass('public.push_subscriptions') IS NOT NULL
+		    AND to_regclass('public.push_reminders') IS NOT NULL AS ok`
 	);
 	if (!rows[0]?.ok) {
 		console.error(
@@ -42,15 +53,18 @@ export async function ensureSchema() {
  * Reads a persisted secret, minting one on first use. The insert races harmlessly between
  * replicas: whoever loses the conflict re-reads the winner's value rather than its own.
  */
-export async function persistedSecret(key: string): Promise<string> {
+export async function persistedGenerated(key: string, generate: () => string): Promise<string> {
 	const [existing] = await db.select().from(secrets).where(eq(secrets.key, key)).limit(1);
 	if (existing) return existing.value;
 
-	const value = randomBytes(32).toString('hex');
+	const value = generate();
 	await db.insert(secrets).values({ key, value }).onConflictDoNothing();
-
 	const [row] = await db.select().from(secrets).where(eq(secrets.key, key)).limit(1);
 	return row?.value ?? value;
+}
+
+export function persistedSecret(key: string): Promise<string> {
+	return persistedGenerated(key, () => randomBytes(32).toString('hex'));
 }
 
 /** Every account id, for resolving opaque calendar feed tokens back to their owner. */
@@ -223,6 +237,92 @@ export async function clockSkew(userId: string) {
 		collection: row.collection,
 		skewMs: row.lastClientUpdatedAt ? row.lastClientUpdatedAt - now : 0
 	}));
+}
+
+export async function upsertPushSubscription(input: {
+	userId: string;
+	endpoint: string;
+	p256dh: string;
+	auth: string;
+	timeZone: string;
+	leadMinutes: number;
+}): Promise<PushSubscriptionRow | null> {
+	const now = Date.now();
+	const inserted = await db
+		.insert(pushSubscriptions)
+		.values({ id: randomUUID(), ...input, createdAt: now, updatedAt: now })
+		.onConflictDoNothing({ target: pushSubscriptions.endpoint })
+		.returning();
+	if (inserted[0]) return inserted[0];
+
+	const updated = await db
+		.update(pushSubscriptions)
+		.set({
+			p256dh: input.p256dh,
+			auth: input.auth,
+			timeZone: input.timeZone,
+			leadMinutes: input.leadMinutes,
+			updatedAt: now
+		})
+		.where(and(eq(pushSubscriptions.endpoint, input.endpoint), eq(pushSubscriptions.userId, input.userId)))
+		.returning();
+	return updated[0] ?? null;
+}
+
+export async function deletePushSubscription(userId: string, endpoint: string): Promise<void> {
+	const removed = await db
+		.delete(pushSubscriptions)
+		.where(and(eq(pushSubscriptions.userId, userId), eq(pushSubscriptions.endpoint, endpoint)))
+		.returning({ id: pushSubscriptions.id });
+	for (const row of removed) await db.delete(pushReminders).where(eq(pushReminders.subscriptionId, row.id));
+}
+
+export async function deletePushSubscriptionById(id: string): Promise<void> {
+	await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, id));
+	await db.delete(pushReminders).where(eq(pushReminders.subscriptionId, id));
+}
+
+export function allPushSubscriptions(): Promise<PushSubscriptionRow[]> {
+	return db.select().from(pushSubscriptions);
+}
+
+export function pushSubscriptionsForUser(userId: string): Promise<PushSubscriptionRow[]> {
+	return db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+}
+
+export async function recordPushSuccess(id: string): Promise<void> {
+	await db
+		.update(pushSubscriptions)
+		.set({ lastSuccessAt: Date.now(), failureCount: 0 })
+		.where(eq(pushSubscriptions.id, id));
+}
+
+export async function recordPushFailure(id: string): Promise<void> {
+	await db
+		.update(pushSubscriptions)
+		.set({ failureCount: sql`${pushSubscriptions.failureCount} + 1` })
+		.where(eq(pushSubscriptions.id, id));
+}
+
+export async function claimPushReminder(subscriptionId: string, taskId: string, reminderKey: string): Promise<boolean> {
+	// The unique key is claimed before contacting the push service. This coordinates replicas
+	// and intentionally favours at-most-once delivery if the process crashes after claiming.
+	const claimed = await db
+		.insert(pushReminders)
+		.values({ subscriptionId, taskId, reminderKey, sentAt: Date.now() })
+		.onConflictDoNothing()
+		.returning({ subscriptionId: pushReminders.subscriptionId });
+	return claimed.length === 1;
+}
+
+export async function releasePushReminder(subscriptionId: string, reminderKey: string): Promise<void> {
+	await db
+		.delete(pushReminders)
+		.where(and(eq(pushReminders.subscriptionId, subscriptionId), eq(pushReminders.reminderKey, reminderKey)));
+}
+
+export async function prunePushReminders(before: number): Promise<void> {
+	await db.delete(pushReminders).where(lt(pushReminders.sentAt, before));
 }
 
 export function closeDb() {
