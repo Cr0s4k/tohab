@@ -61,6 +61,7 @@ function eq(label: string, got: unknown, want: unknown) {
 // changedFields ignores the bookkeeping timestamps every write touches.
 eq('changedFields none', changedFields(task('t1'), task('t1', { updatedAt: 9_999 })), []);
 eq('changedFields title', changedFields(task('t1'), task('t1', { title: 'other' })), ['title']);
+eq('changedFields names a parent relationship', changedFields(task('t1'), task('t1', { parentId: 'p' })), ['parent']);
 eq(
 	'changedFields collapses done and completedAt',
 	changedFields(task('t1'), task('t1', { done: true, completedAt: 5 })),

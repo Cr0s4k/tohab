@@ -162,6 +162,15 @@ check(
 	1
 );
 
+// 15. The generic document payload preserves subtask relationships unchanged.
+await push([{ newDocumentState: task('sync-parent', 800) }]);
+await push([{ newDocumentState: task('sync-child', 801, { parentId: 'sync-parent' }) }]);
+check(
+	'parentId round-trips through sync',
+	(await pull()).documents.find((d) => d.id === 'sync-child').parentId,
+	'sync-parent'
+);
+
 console.log(failures ? `\n${failures} failing` : '\nall passing');
 await cleanup();
 process.exit(failures ? 1 : 0);

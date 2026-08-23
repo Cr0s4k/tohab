@@ -44,6 +44,11 @@ export function openTasksQuery(db: Db) {
 	return db.tasks.find({ selector: { done: false } });
 }
 
+/** Unfiltered by view/date/project so task details always show every direct child. */
+export function directSubtasksQuery(db: Db, parentId: string) {
+	return db.tasks.find({ selector: { parentId }, sort: [{ createdAt: 'asc' }] });
+}
+
 export async function resolveProject(name: string): Promise<string> {
 	if (!name) return '';
 	const db = await getDb();
@@ -142,12 +147,33 @@ export type NewTask = {
 	priority?: number;
 	projectId?: string;
 	repeat?: string;
+	parentId?: string;
 };
+
+async function assertValidParent(db: Db, taskId: string, parentId: string) {
+	if (!parentId) return;
+	if (parentId === taskId) throw new Error('A task cannot be its own parent');
+	let current = await db.tasks.findOne(parentId).exec();
+	if (!current) throw new Error('Parent task does not exist');
+	const seen = new Set<string>();
+	while (current?.parentId) {
+		if (current.parentId === taskId) throw new Error('A task cannot be its own descendant');
+		if (seen.has(current.id)) throw new Error('Parent hierarchy is invalid');
+		seen.add(current.id);
+		current = await db.tasks.findOne(current.parentId).exec();
+		if (!current) throw new Error('Parent hierarchy is invalid');
+	}
+}
 
 export async function createTask(input: NewTask): Promise<Task | null> {
 	const title = input.title.trim();
 	if (!title) return null;
 	const db = await getDb();
+	try {
+		await assertValidParent(db, '', input.parentId ?? '');
+	} catch {
+		return null;
+	}
 	const ts = now();
 	const repeat = isRepeating(input.repeat) ? input.repeat! : '';
 	const doc: Task = {
@@ -161,6 +187,7 @@ export async function createTask(input: NewTask): Promise<Task | null> {
 		dueTime: input.dueTime ?? '',
 		priority: input.priority ?? 4,
 		projectId: input.projectId ?? '',
+		...(input.parentId ? { parentId: input.parentId } : {}),
 		repeat,
 		createdAt: ts,
 		updatedAt: ts
@@ -236,6 +263,7 @@ export async function updateTask(id: string, patch: Partial<Task>) {
 	const db = await getDb();
 	const doc = await db.tasks.findOne(id).exec();
 	if (!doc) return;
+	if (patch.parentId !== undefined) await assertValidParent(db, id, patch.parentId);
 	const before = doc.toMutableJSON();
 	const next = { ...patch, updatedAt: now() };
 	if (next.repeat && !(next.due ?? doc.due)) next.due = firstDue(next.repeat);
@@ -261,10 +289,28 @@ export async function deleteTask(id: string) {
 	if (!doc) return;
 
 	const snapshot = doc.toMutableJSON();
+	let promotionParentId = snapshot.parentId ?? '';
+	try {
+		await assertValidParent(db, id, promotionParentId);
+	} catch {
+		promotionParentId = '';
+	}
+	const children = (await db.tasks.find({ selector: { parentId: id } }).exec()).filter(
+		(child) => child.id !== id
+	);
+	const promoted: DocChange[] = [];
+	for (const child of children) {
+		const before = child.toMutableJSON();
+		const updated = await child.patch({ parentId: promotionParentId, updatedAt: now() });
+		promoted.push({ collection: 'tasks', id: child.id, before, after: updated.toMutableJSON() });
+	}
 	await doc.remove();
 	markLocalWrite();
 
-	const changes: DocChange[] = [{ collection: 'tasks', id, before: snapshot, after: null }];
+	const changes: DocChange[] = [
+		{ collection: 'tasks', id, before: snapshot, after: null },
+		...promoted
+	];
 	const entryId = await record({
 		entity: 'task',
 		entityId: id,

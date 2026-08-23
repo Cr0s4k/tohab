@@ -10,6 +10,7 @@ import {
 import { createHabit, deleteHabit, setLog, tapLog, updateHabit } from '../src/lib/habits.ts';
 import { activityQuery, decodeChanges, revertActivity } from '../src/lib/activity.ts';
 import { undoState, runUndo } from '../src/lib/undo.svelte.ts';
+import { exportBackup, importBackup } from '../src/lib/backup.ts';
 
 let fail = 0;
 function eq(label: string, got: unknown, want: unknown) {
@@ -33,6 +34,57 @@ const latest = async () => (await log())[0];
  */
 const pending = async (entity: string, verb: string) =>
 	(await log()).find((e: any) => e.entity === entity && e.verb === verb && e.revertedAt === 0);
+
+// --- subtasks reject invalid relationships before writing -----------------------------
+const parent = await createTask({ title: 'Parent' });
+const child = await createTask({ title: 'Child', parentId: parent!.id });
+const grandchild = await createTask({ title: 'Grandchild', parentId: child!.id });
+eq('nested parent ids persist', [child?.parentId, grandchild?.parentId], [parent!.id, child!.id]);
+eq('missing parent is rejected', await createTask({ title: 'Orphan', parentId: 'missing' }), null);
+const brokenParent = await createTask({ title: 'Broken parent' });
+await (await db.tasks.findOne(brokenParent!.id).exec()).patch({ parentId: 'missing-ancestor' });
+eq(
+	'create rejects a parent with a missing ancestor',
+	await createTask({ title: 'Broken child', parentId: brokenParent!.id }),
+	null
+);
+const reparentTarget = await createTask({ title: 'Reparent target' });
+let rejected = '';
+try {
+	await updateTask(reparentTarget!.id, { parentId: brokenParent!.id });
+} catch (error) {
+	rejected = (error as Error).message;
+}
+eq('update rejects a parent with a missing ancestor', rejected, 'Parent hierarchy is invalid');
+eq(
+	'missing-ancestor rejection leaves task unchanged',
+	(await db.tasks.findOne(reparentTarget!.id).exec()).parentId ?? '',
+	''
+);
+rejected = '';
+try {
+	await updateTask(parent!.id, { parentId: grandchild!.id });
+} catch (error) {
+	rejected = (error as Error).message;
+}
+eq('cycle is rejected', rejected, 'A task cannot be its own descendant');
+eq('cycle rejection leaves parent unchanged', (await db.tasks.findOne(parent!.id).exec()).parentId ?? '', '');
+rejected = '';
+try {
+	await updateTask(child!.id, { parentId: child!.id });
+} catch (error) {
+	rejected = (error as Error).message;
+}
+eq('self-parent is rejected', rejected, 'A task cannot be its own parent');
+const backup = await exportBackup();
+eq(
+	'backup exports parentId',
+	(backup.data.tasks.find((row: any) => row.id === child!.id) as any).parentId,
+	parent!.id
+);
+await updateTask(child!.id, { parentId: '' });
+await importBackup(JSON.stringify(backup));
+eq('backup import restores parentId', (await db.tasks.findOne(child!.id).exec()).parentId, parent!.id);
 
 // --- create is recorded ---------------------------------------------------------------
 const t1 = await createTask({ title: 'Buy oat milk', priority: 1 });
@@ -70,6 +122,19 @@ eq('undo toast queued', undoState.current?.label, 'Task completed');
 await runUndo();
 eq('toast undo reopened the task', (await db.tasks.findOne(t2!.id).exec()).done, false);
 eq('toast undo marked the entry', (await log()).find((x: any) => x.id === e.id).revertedAt > 0, true);
+
+// --- completion is independent, and deletion promotes only direct children -------------
+await toggleTask(parent!.id);
+eq('completing parent leaves child open', (await db.tasks.findOne(child!.id).exec()).done, false);
+await toggleTask(parent!.id); // reopen before deletion
+await deleteTask(child!.id);
+eq('deleted child is gone', await db.tasks.findOne(child!.id).exec(), null);
+eq('direct child is promoted to deleted parent', (await db.tasks.findOne(grandchild!.id).exec()).parentId, parent!.id);
+e = await pending('task', 'delete');
+eq('promotion is included in delete activity', decodeChanges(e.changes).length, 2);
+eq('promoting delete can be undone', await revertActivity(e.id), true);
+eq('undo restores deleted child parent', (await db.tasks.findOne(child!.id).exec()).parentId, parent!.id);
+eq('undo restores grandchild chain', (await db.tasks.findOne(grandchild!.id).exec()).parentId, child!.id);
 
 // --- deleting a task, then restoring it from history ---------------------------------
 await deleteTask(t2!.id);

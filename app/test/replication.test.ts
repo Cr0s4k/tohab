@@ -11,6 +11,7 @@ import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { replicateRxCollection } from 'rxdb/plugins/replication';
 import { Subject } from 'rxjs';
 import {
+	activitySchema,
 	habitLogSchema,
 	habitSchema,
 	projectSchema,
@@ -49,7 +50,8 @@ async function makeDb(name: string) {
 		tasks: { schema: taskSchema },
 		projects: { schema: projectSchema },
 		habits: { schema: habitSchema },
-		habitLogs: { schema: habitLogSchema }
+		habitLogs: { schema: habitLogSchema },
+		activity: { schema: activitySchema }
 	});
 	return db;
 }
@@ -142,6 +144,7 @@ await deviceA.habitLogs.insert({
 	updatedAt: Date.now()
 });
 await deviceA.tasks.insert(task('a1', { title: 'From A', priority: 1, due: '2026-08-20' }));
+await deviceA.tasks.insert(task('a1-child', { title: 'Synced subtask', parentId: 'a1' }));
 await deviceA.projects.insert({
 	id: 'p1',
 	name: 'Work',
@@ -149,14 +152,19 @@ await deviceA.projects.insert({
 	createdAt: Date.now(),
 	updatedAt: Date.now()
 });
-check('local writes accepted', await deviceA.tasks.count().exec(), 1);
+check('local writes accepted', await deviceA.tasks.count().exec(), 2);
 
 // --- push everything up ---
 const replA = COLLECTION_NAMES.map((n) => startReplication(deviceA, n));
 await Promise.all(replA.map((r) => r.state.awaitInSync()));
 
 const serverTasks = await (await fetch(`${BASE}/pull?collection=tasks&cursor=0&id=&limit=100`, { headers })).json();
-check('task reached the server', serverTasks.documents.map((d: any) => d.title), ['From A']);
+check('task reached the server', serverTasks.documents.map((d: any) => d.title).sort(), ['From A', 'Synced subtask']);
+check(
+	'parentId reached the server',
+	serverTasks.documents.find((d: any) => d.id === 'a1-child')?.parentId,
+	'a1'
+);
 const serverHabits = await (await fetch(`${BASE}/pull?collection=habits&cursor=0&id=&limit=100`, { headers })).json();
 check('habit reached the server', serverHabits.documents.map((d: any) => d.name), ['Drink water']);
 
@@ -165,7 +173,8 @@ const deviceB = await makeDb('device_b');
 const replB = COLLECTION_NAMES.map((n) => startReplication(deviceB, n));
 await Promise.all(replB.map((r) => r.state.awaitInSync()));
 
-check('B received the task', (await deviceB.tasks.find().exec()).map((d: any) => d.title), ['From A']);
+check('B received the task', (await deviceB.tasks.find().exec()).map((d: any) => d.title).sort(), ['From A', 'Synced subtask']);
+check('B received parentId', (await deviceB.tasks.findOne('a1-child').exec())?.parentId, 'a1');
 check('B received the habit target', (await deviceB.habits.findOne('h1').exec())?.target, 8);
 check('B received the weekdays array', (await deviceB.habits.findOne('h1').exec())?.weekdays, [1, 2, 3, 4, 5]);
 check('B received the log', (await deviceB.habitLogs.findOne('h1:2026-08-19').exec())?.value, 8);

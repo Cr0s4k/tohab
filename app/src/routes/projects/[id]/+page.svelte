@@ -109,7 +109,12 @@
 	onClose={() => (taskCompose.open = false)}
 />
 
-<TaskEditor task={editing} projects={projects.value} onClose={() => (editing = null)} />
+<TaskEditor
+	task={editing}
+	projects={projects.value}
+	onOpenTask={(task) => (editing = task)}
+	onClose={() => (editing = null)}
+/>
 
 <ViewOptionsSheet
 	open={tuning}

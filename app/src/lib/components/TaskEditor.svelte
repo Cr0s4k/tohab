@@ -1,6 +1,16 @@
 <script lang="ts">
 	import type { Project, Task } from '$lib/db/schemas';
-	import { deleteTask, PRIORITY_LABELS, priorityClass, updateTask } from '$lib/tasks';
+	import {
+		createTask,
+		deleteTask,
+		directSubtasksQuery,
+		PRIORITY_LABELS,
+		priorityClass,
+		toggleTask,
+		updateTask
+	} from '$lib/tasks';
+	import { live } from '$lib/db/live.svelte';
+	import { rx } from '$lib/rx.svelte';
 	import { humanDay, shiftKey, today } from '$lib/dates';
 	import { describeRepeat, REPEAT_PRESETS } from '$lib/repeat';
 	import { haptic, hapticTap } from '$lib/haptics';
@@ -9,8 +19,14 @@
 	let {
 		task,
 		projects,
-		onClose
-	}: { task: Task | null; projects: Project[]; onClose: () => void } = $props();
+		onClose,
+		onOpenTask
+	}: {
+		task: Task | null;
+		projects: Project[];
+		onClose: () => void;
+		onOpenTask?: (task: Task) => void;
+	} = $props();
 
 	let draft = $state({
 		title: '',
@@ -22,6 +38,13 @@
 		projectId: ''
 	});
 	let id = $state('');
+	let addingSubtask = $state(false);
+	let subtaskTitle = $state('');
+	let subtaskInput = $state<HTMLInputElement | null>(null);
+	let subtasks = rx<Task[]>(
+		() => (live.db && id ? directSubtasksQuery(live.db, id).$ : null),
+		[]
+	);
 
 	$effect(() => {
 		if (!task) return;
@@ -35,6 +58,8 @@
 			priority: task.priority,
 			projectId: task.projectId
 		};
+		addingSubtask = false;
+		subtaskTitle = '';
 	});
 
 	async function save() {
@@ -46,6 +71,24 @@
 
 	function close() {
 		save().then(onClose);
+	}
+
+	async function beginSubtask() {
+		await save();
+		addingSubtask = true;
+		queueMicrotask(() => subtaskInput?.focus());
+	}
+
+	async function addSubtask() {
+		if (!task || !subtaskTitle.trim()) return;
+		await createTask({ title: subtaskTitle, parentId: id, projectId: draft.projectId });
+		subtaskTitle = '';
+		addingSubtask = false;
+	}
+
+	async function openSubtask(subtask: Task) {
+		await save();
+		onOpenTask?.(subtask);
 	}
 
 	const shortcuts = () => [
@@ -167,6 +210,60 @@
 						<option value={p.id}>{p.name}</option>
 					{/each}
 				</select>
+			</div>
+
+			<div aria-label="Subtasks">
+				<div class="mb-1.5 flex items-center justify-between">
+					<p class="dim text-caption font-semibold tracking-wide uppercase">Subtasks</p>
+					<button
+						type="button"
+						onclick={beginSubtask}
+						class="tap accent-fg rounded-lg px-2 py-1 text-caption font-semibold"
+					>
+						+ Add subtask
+					</button>
+				</div>
+				{#if subtasks.value.length}
+					<ul class="sunken divide-y rounded-xl px-3" style="border-color: var(--hairline)">
+						{#each subtasks.value as subtask (subtask.id)}
+							<li class="flex items-center gap-3 py-2">
+								<button
+									type="button"
+									role="checkbox"
+									aria-checked={subtask.done}
+									aria-label={subtask.done ? `Reopen ${subtask.title}` : `Complete ${subtask.title}`}
+									onclick={() => toggleTask(subtask.id)}
+									class="tap grid size-5 shrink-0 place-items-center rounded-full border text-caption"
+								>
+									{subtask.done ? '✓' : ''}
+								</button>
+								<button
+									type="button"
+									onclick={() => openSubtask(subtask)}
+									class="min-w-0 flex-1 truncate py-1 text-left text-copy"
+									class:line-through={subtask.done}
+									class:dim={subtask.done}
+								>
+									{subtask.title}
+								</button>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+				{#if addingSubtask}
+					<form onsubmit={(event) => { event.preventDefault(); addSubtask(); }} class="mt-2 flex gap-2">
+						<input
+							bind:this={subtaskInput}
+							bind:value={subtaskTitle}
+							aria-label="Subtask title"
+							placeholder="Subtask title"
+							class="sunken min-w-0 flex-1 rounded-lg px-3 py-2 text-copy outline-none"
+						/>
+						<button type="submit" disabled={!subtaskTitle.trim()} class="tap accent-bg rounded-lg px-3 text-copy font-semibold disabled:opacity-40">
+							Add
+						</button>
+					</form>
+				{/if}
 			</div>
 
 			<div class="flex gap-2 pt-1">

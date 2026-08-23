@@ -79,6 +79,7 @@ const FIELD_LABELS: Record<string, string> = {
 	dueTime: 'time',
 	priority: 'priority',
 	projectId: 'project',
+	parentId: 'parent',
 	name: 'name',
 	color: 'colour',
 	emoji: 'emoji',

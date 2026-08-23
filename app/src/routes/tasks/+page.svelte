@@ -184,6 +184,7 @@
 <TaskEditor
 	task={editing}
 	projects={projects.value}
+	onOpenTask={(task) => (editing = task)}
 	onClose={() => (editing = null)}
 />
 

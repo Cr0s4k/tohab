@@ -10,6 +10,7 @@ import { RxDBMigrationPlugin } from 'rxdb/plugins/migration-schema';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { dev } from '$app/environment';
+import { migrateTaskV2 } from './migrations.ts';
 import {
 	activitySchema,
 	habitLogSchema,
@@ -59,8 +60,11 @@ async function create(): Promise<Db> {
 	});
 
 	await db.addCollections({
-		// `repeat` was added optional, so v0 documents need no rewriting to satisfy v1.
-		tasks: { schema: taskSchema, migrationStrategies: { 1: (doc) => doc } },
+		// Both fields are optional so older rows remain valid while migrations advance metadata.
+		tasks: {
+			schema: taskSchema,
+			migrationStrategies: { 1: (doc) => doc, 2: migrateTaskV2 }
+		},
 		projects: { schema: projectSchema },
 		habits: { schema: habitSchema },
 		habitLogs: { schema: habitLogSchema },

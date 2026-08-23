@@ -5,6 +5,7 @@ import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { RxDBDevModePlugin, disableWarnings } from 'rxdb/plugins/dev-mode';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration-schema';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
+import { migrateTaskV2 } from '../src/lib/db/migrations.ts';
 import {
 	activitySchema,
 	habitLogSchema,
@@ -28,7 +29,7 @@ async function create() {
 		eventReduce: true
 	});
 	await db.addCollections({
-		tasks: { schema: taskSchema, migrationStrategies: { 1: (doc) => doc } },
+		tasks: { schema: taskSchema, migrationStrategies: { 1: (doc) => doc, 2: migrateTaskV2 } },
 		projects: { schema: projectSchema },
 		habits: { schema: habitSchema },
 		habitLogs: { schema: habitLogSchema },

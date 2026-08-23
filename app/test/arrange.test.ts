@@ -40,6 +40,7 @@ function eq(label: string, got: unknown, want: unknown) {
 }
 
 const ids = (tasks: Task[]) => tasks.map((t) => t.id);
+const tree = (tasks: (Task & { depth?: number })[]) => tasks.map((t) => [t.id, t.depth]);
 const heads = (groups: { label: string }[]) => groups.map((g) => g.label);
 
 // --- sorting ---
@@ -117,6 +118,38 @@ for (const group of ['none', 'priority', 'date', 'added', 'project'] as const) {
 	);
 	eq(`group ${group} keeps every task`, total, 6);
 }
+
+// --- hierarchy: parents precede descendants without losing the chosen sibling order ---
+const nested = [
+	task('grandchild', { parentId: 'child', createdAt: 1 }),
+	task('sibling', { parentId: 'parent', createdAt: 2 }),
+	task('parent', { createdAt: 3 }),
+	task('child', { parentId: 'parent', createdAt: 4 })
+];
+eq('nested hierarchy is parent-first with stable sibling order', tree(arrangeTasks(nested, opts())[0].tasks), [
+	['parent', 0],
+	['sibling', 1],
+	['child', 1],
+	['grandchild', 2]
+]);
+eq(
+	'child whose parent is filtered out remains visible as a root',
+	tree(arrangeTasks([task('visible-child', { parentId: 'hidden-parent' })], opts())[0].tasks),
+	[['visible-child', 0]]
+);
+const splitGroups = arrangeTasks(
+	[task('parent-p1', { priority: 1 }), task('child-p2', { parentId: 'parent-p1', priority: 2 })],
+	opts({ group: 'priority', sort: 'priority' })
+);
+eq('grouping never moves a child into its parent group', splitGroups.map((g) => [g.label, tree(g.tasks)]), [
+	['Priority 1', [['parent-p1', 0]]],
+	['Priority 2', [['child-p2', 0]]]
+]);
+eq(
+	'corrupt cycles remain visible once and do not recurse forever',
+	tree(arrangeTasks([task('a', { parentId: 'b' }), task('b', { parentId: 'a' })], opts())[0].tasks),
+	[['a', 0], ['b', 0]]
+);
 
 console.log(fail ? `\n${fail} failing` : '\nall passing');
 process.exit(fail ? 1 : 0);
