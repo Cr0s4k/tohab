@@ -35,6 +35,13 @@ export function sortTasks(tasks: Task[], opts: ViewOptions = defaultOptions(''))
 export type ArrangedTask = Task & { depth: number };
 export type TaskGroup = { key: string; label: string; tasks: ArrangedTask[] };
 
+type TaskLike = Task & { toMutableJSON?: () => Task };
+
+function withDepth(task: TaskLike, depth: number): ArrangedTask {
+	const data = typeof task.toMutableJSON === 'function' ? task.toMutableJSON() : task;
+	return { ...data, depth };
+}
+
 /** Parent-first preorder. Missing parents and corrupt cycles become roots, so filtering is safe. */
 export function arrangeHierarchy(tasks: Task[]): ArrangedTask[] {
 	const byId = new Map(tasks.map((task) => [task.id, task]));
@@ -62,7 +69,7 @@ export function arrangeHierarchy(tasks: Task[]): ArrangedTask[] {
 	const visit = (task: Task, depth: number, path: Set<string>) => {
 		if (seen.has(task.id) || path.has(task.id)) return;
 		seen.add(task.id);
-		out.push({ ...task, depth });
+		out.push(withDepth(task, depth));
 		const nextPath = new Set(path).add(task.id);
 		for (const child of children.get(task.id) ?? []) visit(child, depth + 1, nextPath);
 	};
