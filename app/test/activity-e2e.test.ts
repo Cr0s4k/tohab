@@ -224,6 +224,17 @@ eq(
 	2
 );
 
+// Optional task reminders can return to inheriting the automatic default.
+const reminded = await createTask({
+	title: 'Reminder persistence',
+	due: '2026-08-25',
+	dueTime: '09:00',
+	reminderMinutes: 30
+});
+eq('custom reminder persists', (await db.tasks.findOne(reminded!.id).exec()).reminderMinutes, 30);
+await updateTask(reminded!.id, { reminderMinutes: undefined });
+eq('automatic reminder removes the override', (await db.tasks.findOne(reminded!.id).exec()).reminderMinutes, undefined);
+
 // --- the log stays newest-first and capped -------------------------------------------
 const entries = await log();
 eq(

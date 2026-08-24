@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { pushBase, sendTestNotification, urlBase64ToUint8Array } from '../src/lib/notifications.ts';
 import { API_ROUTE_PREFIXES, apiBase, syncBase } from '../src/lib/api.ts';
+import { readFileSync } from 'node:fs';
 
 assert.deepEqual(API_ROUTE_PREFIXES, ['/sync', '/auth', '/calendar', '/push']);
 assert.equal(syncBase('/sync/'), '/sync');
@@ -39,5 +40,12 @@ assert.equal(requestedUrl, '/push/test');
 assert.equal(requestedInit?.method, 'POST');
 assert.equal(requestedInit?.credentials, 'include');
 globalThis.fetch = originalFetch;
+
+const reminderPicker = readFileSync(new URL('../src/lib/components/task/TaskReminderPicker.svelte', import.meta.url), 'utf8');
+assert.match(reminderPicker, /Automatic/);
+assert.match(reminderPicker, /None/);
+assert.match(reminderPicker, /At time/);
+const settingsSource = readFileSync(new URL('../src/lib/settings.svelte.ts', import.meta.url), 'utf8');
+assert.match(settingsSource, /legacy === '0' \? -1/);
 
 console.log('ok notification client contracts');

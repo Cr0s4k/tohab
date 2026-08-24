@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { feedUrl, setCalendarAlarmMinutes } from '$lib/calendar';
+	import { feedUrl } from '$lib/calendar';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import {
 		currentPushSubscription,
@@ -24,7 +24,8 @@
 	let notificationStatus = $state('');
 	const notificationSupport = notificationCapability();
 	const reminderChoices = [
-		{ minutes: 0, label: 'Off' },
+		{ minutes: -1, label: 'Off' },
+		{ minutes: 0, label: 'At time' },
 		{ minutes: 10, label: '10 min' },
 		{ minutes: 30, label: '30 min' },
 		{ minutes: 60, label: '1 hour' }
@@ -106,7 +107,7 @@
 		feedBusy = true;
 		feedError = '';
 		try {
-			feed = await feedUrl(settings.reminderMinutes);
+			feed = await feedUrl();
 		} catch (error) {
 			feed = '';
 			feedError = error instanceof Error ? error.message : 'Could not reach the server.';
@@ -118,18 +119,10 @@
 	async function changeReminderMinutes(minutes: number) {
 		setReminderMinutes(minutes);
 		reminderBusy = true;
-		feedError = '';
 		try {
-			await Promise.all([
-				setCalendarAlarmMinutes(minutes).catch((error) => {
-					feedError = error instanceof Error ? error.message : 'Could not update the calendar feed.';
-				}),
-				notificationsEnabled
-					? reconcileNotifications(settings.serverUrl, minutes).catch((error) => {
-						notificationStatus = error instanceof Error ? error.message : 'Could not update task notifications.';
-					})
-					: Promise.resolve()
-			]);
+			if (notificationsEnabled) await reconcileNotifications(settings.serverUrl, minutes);
+		} catch (error) {
+			notificationStatus = error instanceof Error ? error.message : 'Could not update task notifications.';
 		} finally {
 			reminderBusy = false;
 		}
@@ -158,12 +151,13 @@
 			<p class="px-4 py-3 text-sm">{notificationSupport.reason}</p>
 		{:else}
 			<div class="hairline border-b px-4 py-3">
-				<p class="dim mb-2 text-caption">Remind me before a timed task</p>
-				<div class="flex gap-1.5">
+				<p class="dim mb-2 text-caption">Automatic reminder for timed tasks</p>
+				<div class="flex flex-wrap gap-1.5">
 					{#each reminderChoices as choice (choice.minutes)}
-						<button type="button" aria-pressed={settings.reminderMinutes === choice.minutes} disabled={notificationsBusy || reminderBusy} onclick={() => void changeReminderMinutes(choice.minutes)} class="tap min-h-11 flex-1 rounded-xl px-1 text-sm font-medium disabled:opacity-50" class:accent-bg={settings.reminderMinutes === choice.minutes} class:sunken={settings.reminderMinutes !== choice.minutes}>{choice.label}</button>
+						<button type="button" aria-pressed={settings.reminderMinutes === choice.minutes} disabled={notificationsBusy || reminderBusy} onclick={() => void changeReminderMinutes(choice.minutes)} class="tap min-h-11 min-w-18 flex-1 rounded-xl px-1 text-sm font-medium disabled:opacity-50" class:accent-bg={settings.reminderMinutes === choice.minutes} class:sunken={settings.reminderMinutes !== choice.minutes}>{choice.label}</button>
 					{/each}
 				</div>
+				<p class="dim mt-2 text-caption">Off disables automatic reminders; task-specific reminders still fire.</p>
 			</div>
 			<div class="flex gap-2 p-3">
 				<button type="button" use:hapticTap disabled={notificationsBusy} onclick={notificationsEnabled ? disableTaskNotifications : enableTaskNotifications} class="tap accent-bg min-h-11 flex-1 rounded-xl px-3 text-sm font-semibold disabled:opacity-50">{notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}</button>
@@ -180,14 +174,6 @@
 <section class="mb-6">
 	<h2 class="dim mb-2 text-caption font-semibold tracking-wide uppercase">Calendar feed</h2>
 	<div class="raised hairline rounded-2xl border">
-		<div class="hairline border-b px-4 py-3">
-			<p class="dim mb-1.5 text-caption">Remind me before a timed task</p>
-			<div class="flex gap-1.5">
-				{#each reminderChoices as choice (choice.minutes)}
-					<button type="button" aria-pressed={settings.reminderMinutes === choice.minutes} disabled={feedBusy || reminderBusy} use:hapticTap onclick={() => void changeReminderMinutes(choice.minutes)} class="tap flex-1 rounded-xl py-2 text-[0.75rem] font-medium disabled:opacity-50" class:accent-bg={settings.reminderMinutes === choice.minutes} class:sunken={settings.reminderMinutes !== choice.minutes}>{choice.label}</button>
-				{/each}
-			</div>
-		</div>
 		{#if feed}
 			<div class="hairline border-b px-4 py-3">
 				<p class="sunken rounded-xl px-3 py-2 font-mono text-caption break-all select-all">{feed}</p>
@@ -200,7 +186,7 @@
 			{#if feedError}
 				<p class="danger">{feedError}</p>
 			{:else}
-				<p class="dim">Subscribe to this URL in Google Calendar (Other calendars → From URL) or iOS Calendar. Open tasks with a due date appear as events; timed ones carry the reminder above. This URL stays the same; reminder and task changes appear when the calendar refreshes.</p>
+				<p class="dim">Subscribe to this URL in Google Calendar (Other calendars → From URL) or iOS Calendar. Open tasks with a due date appear as events. Task changes appear when the calendar refreshes; reminders come from Tohab notifications.</p>
 			{/if}
 		</div>
 	</div>

@@ -77,6 +77,7 @@ const FIELD_LABELS: Record<string, string> = {
 	completedAt: 'completion',
 	due: 'due date',
 	dueTime: 'time',
+	reminderMinutes: 'reminder',
 	priority: 'priority',
 	projectId: 'project',
 	parentId: 'parent',

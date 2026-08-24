@@ -147,6 +147,7 @@ export type NewTask = {
 	priority?: number;
 	projectId?: string;
 	repeat?: string;
+	reminderMinutes?: number;
 	parentId?: string;
 };
 
@@ -189,6 +190,7 @@ export async function createTask(input: NewTask): Promise<Task | null> {
 		projectId: input.projectId ?? '',
 		...(input.parentId ? { parentId: input.parentId } : {}),
 		repeat,
+		...(input.reminderMinutes !== undefined ? { reminderMinutes: input.reminderMinutes } : {}),
 		createdAt: ts,
 		updatedAt: ts
 	};
@@ -267,7 +269,14 @@ export async function updateTask(id: string, patch: Partial<Task>) {
 	const before = doc.toMutableJSON();
 	const next = { ...patch, updatedAt: now() };
 	if (next.repeat && !(next.due ?? doc.due)) next.due = firstDue(next.repeat);
-	const updated = await doc.patch(next);
+	const updated = patch.reminderMinutes === undefined && 'reminderMinutes' in patch
+		? await doc.incrementalModify((data) => {
+			const { reminderMinutes: _reminderMinutes, ...defined } = next;
+			Object.assign(data, defined);
+			delete data.reminderMinutes;
+			return data;
+		})
+		: await doc.patch(next);
 	markLocalWrite();
 
 	const after = updated.toMutableJSON();

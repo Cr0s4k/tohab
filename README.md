@@ -206,14 +206,13 @@ a next occurrence (bins, rent, filters), Habits are for things measured as a str
 
 Settings → Calendar feed reveals a subscription URL you can add to Google Calendar (Other
 calendars → From URL) or iOS Calendar. Open tasks with a due date become events: timed tasks
-get a 30-minute block with a `VALARM` reminder, date-only tasks become all-day events.
-Completed tasks are excluded, and a task's project becomes the event's category. A repeating
-task becomes one event with an `RRULE`, so the whole series shows up rather than only its next
-occurrence.
+get a 30-minute block and date-only tasks become all-day events. Completed tasks are excluded,
+and a task's project becomes the event's category. A repeating task becomes one event with an
+`RRULE`, so the whole series shows up rather than only its next occurrence. The feed is
+schedule-only; Tohab Web Push owns reminders so calendar clients do not produce duplicates.
 
 ```
 GET /calendar/token                    → { token, feedUrl? }   (requires a session)
-POST /calendar/settings                ← { alarmMinutes }   (requires a session)
 GET /calendar/<token>/tohab.ics
 ```
 
@@ -224,9 +223,6 @@ GET /calendar/<token>/tohab.ics
 - Set `CALENDAR_PUBLIC_BASE_URL` when the private application origin cannot be reached by a
   hosted calendar service. For example, `https://calendar.example.com/calendar` makes the
   authenticated token endpoint return that public origin while the application stays private.
-- The reminder lead time is stored server-side, so the subscription URL stays unchanged when
-  it is edited. `alarmMinutes: 0` omits alarms. Only timed tasks get one: relative alarms on
-  all-day events fire at midnight in most clients, which is noise rather than a reminder.
 - `every!` rules deliberately get no `RRULE`. They count from whenever the task is actually
   completed, so no fixed schedule describes them and only the current due date is known.
 - Times are emitted as floating local wall-clock — no `TZID`, no `Z`. Tohab stores what the
@@ -317,13 +313,13 @@ unsynchronised data or risks uploading it under another owner.
 
 ## Notes and limits
 
-- **Reminders have two delivery paths.** Calendar-feed `VALARM` entries remain the broadly
-  compatible option. Installed secure-context PWAs can additionally enable Web Push from an
-  explicit Settings action; iPhone/iPad require the Home Screen app. The server generates one
-  P-256 VAPID pair atomically in the `secrets` table, stores authenticated per-device
-  subscriptions, scans timed open tasks in each subscription's IANA timezone, and records each
-  delivered occurrence so restarts do not duplicate it. Permanent 404/410 endpoints are
-  removed automatically. Subscription endpoints and keys must never be logged or exposed.
+- **Reminders use Web Push only.** Each device can enable an automatic default for timed tasks,
+  and a task can inherit it, disable its reminder, fire at the due time, or choose a custom lead.
+  iPhone/iPad require the Home Screen app. The server generates one P-256 VAPID pair atomically
+  in the `secrets` table, stores authenticated per-device subscriptions, scans timed open tasks
+  in each subscription's IANA timezone, and records each delivered occurrence so restarts do
+  not duplicate it. Permanent 404/410 endpoints are removed automatically. Subscription
+  endpoints and keys must never be logged or exposed.
 - **Badging is capability-detected.** Supported installed apps show the current open-task count;
   unsupported browsers simply ignore it.
 - **iOS haptics are preserved.** Android uses `navigator.vibrate`; iOS receives the existing

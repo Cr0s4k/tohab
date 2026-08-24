@@ -38,6 +38,14 @@ try {
 	assert.equal(stored?.failureCount, 0);
 	assert.equal(stored?.lastSuccessAt, 0);
 
+	const disabledAutomatic = await fetch(`${ROOT}/push/subscription`, {
+		method: 'POST', headers,
+		body: JSON.stringify({ endpoint, keys: { p256dh: 'a'.repeat(32), auth: 'b'.repeat(16) }, timeZone: 'Europe/Madrid', leadMinutes: -1 })
+	});
+	assert.equal(disabledAutomatic.status, 200);
+	const [disabledStored] = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+	assert.equal(disabledStored?.leadMinutes, -1);
+
 	const testPush = await fetch(`${ROOT}/push/test`, {
 		method: 'POST', headers, body: JSON.stringify({ endpoint })
 	});
@@ -55,11 +63,11 @@ try {
 	assert.equal(stillOwned?.userId, session.userId);
 
 	const claims = await Promise.all([
-		claimPushReminder(stored!.id, 'task-claim', 'claim-key'),
-		claimPushReminder(stored!.id, 'task-claim', 'claim-key')
+		claimPushReminder(disabledStored!.id, 'task-claim', 'claim-key'),
+		claimPushReminder(disabledStored!.id, 'task-claim', 'claim-key')
 	]);
 	assert.deepEqual(claims.sort(), [false, true], 'only one concurrent reminder worker claims delivery');
-	await releasePushReminder(stored!.id, 'claim-key');
+	await releasePushReminder(disabledStored!.id, 'claim-key');
 
 	const removed = await fetch(`${ROOT}/push/subscription`, {
 		method: 'DELETE', headers, body: JSON.stringify({ endpoint })

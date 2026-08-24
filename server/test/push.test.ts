@@ -34,6 +34,10 @@ assert.ok(reminderForTask(task, 'Europe/Madrid', 10, Date.parse('2026-08-23T14:3
 assert.equal(reminderForTask(task, 'Europe/Madrid', 10, Date.parse('2026-08-23T14:46:00Z')), null, 'stale reminders are not delivered');
 assert.equal(reminderForTask({ ...task, done: true }, 'Europe/Madrid', 10, Date.parse('2026-08-23T14:20:30Z')), null);
 assert.equal(reminderForTask({ ...task, dueTime: '' }, 'Europe/Madrid', 10, Date.parse('2026-08-23T14:20:30Z')), null);
+assert.equal(reminderForTask(task, 'Europe/Madrid', -1, Date.parse('2026-08-23T14:30:00Z')), null, 'automatic reminders can be disabled');
+assert.equal(reminderForTask({ ...task, reminderMinutes: -1 }, 'Europe/Madrid', 10, Date.parse('2026-08-23T14:20:30Z')), null, 'a task can disable its inherited reminder');
+assert.equal(reminderForTask({ ...task, reminderMinutes: 30 }, 'Europe/Madrid', 10, Date.parse('2026-08-23T14:00:30Z'))?.notifyAt, Date.parse('2026-08-23T14:00:00Z'), 'a task can override the automatic lead time');
+assert.equal(reminderForTask({ ...task, reminderMinutes: 0 }, 'Europe/Madrid', -1, Date.parse('2026-08-23T14:30:00Z'))?.notifyAt, Date.parse('2026-08-23T14:30:00Z'), 'a task can remind at its due time even when automatic reminders are off');
 
 const winter: ReminderTask = { ...task, due: '2026-12-23' };
 const winterReminder = reminderForTask(winter, 'Europe/Madrid', 10, Date.parse('2026-12-23T15:20:10Z'));

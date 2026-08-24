@@ -15,6 +15,7 @@
 	import TaskPriorityPicker from './task/TaskPriorityPicker.svelte';
 	import TaskProjectPicker from './task/TaskProjectPicker.svelte';
 	import TaskRepeatPicker from './task/TaskRepeatPicker.svelte';
+	import TaskReminderPicker from './task/TaskReminderPicker.svelte';
 
 	let {
 		task,
@@ -34,6 +35,7 @@
 		due: '',
 		dueTime: '',
 		repeat: '',
+		reminderMinutes: undefined as number | undefined,
 		priority: 4,
 		projectId: ''
 	});
@@ -55,6 +57,7 @@
 			due: task.due,
 			dueTime: task.dueTime,
 			repeat: task.repeat ?? '',
+			reminderMinutes: task.reminderMinutes,
 			priority: task.priority,
 			projectId: task.projectId
 		};
@@ -117,6 +120,11 @@
 			<div>
 				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Repeat</p>
 				<TaskRepeatPicker value={draft.repeat} onSelect={(value) => (draft.repeat = value)} showDescription />
+			</div>
+
+			<div>
+				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Reminder</p>
+				<TaskReminderPicker value={draft.reminderMinutes} dueTime={draft.dueTime} onSelect={(value) => (draft.reminderMinutes = value)} />
 			</div>
 
 			<div>

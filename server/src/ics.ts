@@ -14,8 +14,6 @@ export type FeedTask = {
 };
 
 export type FeedOptions = {
-	/** Minutes before a timed task that its alarm fires. 0 disables alarms entirely. */
-	alarmMinutes?: number;
 	name?: string;
 	projects?: Map<string, string>;
 	now?: number;
@@ -159,7 +157,7 @@ const PRIORITY: Record<number, number> = { 1: 1, 2: 3, 3: 6 };
 const TASK_DURATION_MINUTES = 30;
 
 export function taskToEvent(task: FeedTask, options: FeedOptions = {}): string[] {
-	const { alarmMinutes = 0, projects, now = Date.now() } = options;
+	const { projects, now = Date.now() } = options;
 	const lines: string[] = ['BEGIN:VEVENT', `UID:task-${task.id}@tohab`, `DTSTAMP:${stampUtc(now)}`];
 
 	if (task.dueTime) {
@@ -183,18 +181,6 @@ export function taskToEvent(task: FeedTask, options: FeedOptions = {}): string[]
 	if (priority) lines.push(`PRIORITY:${priority}`);
 
 	if (task.updatedAt) lines.push(`LAST-MODIFIED:${stampUtc(task.updatedAt)}`);
-
-	// An alarm relative to an all-day event fires at midnight in most clients, which is noise
-	// rather than a reminder, so only timed tasks get one.
-	if (alarmMinutes > 0 && task.dueTime) {
-		lines.push(
-			'BEGIN:VALARM',
-			'ACTION:DISPLAY',
-			`DESCRIPTION:${escape(task.title || 'Untitled task')}`,
-			`TRIGGER;RELATED=START:-PT${alarmMinutes}M`,
-			'END:VALARM'
-		);
-	}
 
 	lines.push('END:VEVENT');
 	return lines;

@@ -26,12 +26,12 @@ function task(over: Partial<FeedTask> = {}): FeedTask {
 }
 
 const NOW = 1_755_400_000_000;
-const opts = { now: NOW, alarmMinutes: 10 };
+const opts = { now: NOW };
 
 const allDay = buildCalendar([task()], opts).split('\r\n');
 check('all-day start', allDay.includes('DTSTART;VALUE=DATE:20260820'), true);
 check('all-day end is exclusive next day', allDay.includes('DTEND;VALUE=DATE:20260821'), true);
-check('no alarm on all-day task', allDay.includes('BEGIN:VALARM'), false);
+check('calendar feed does not own reminders', allDay.includes('BEGIN:VALARM'), false);
 check('summary', allDay.includes('SUMMARY:Pay rent'), true);
 check('no priority for p4', allDay.some((l) => l.startsWith('PRIORITY')), false);
 check('wrapped in vcalendar', [allDay[0], allDay.at(-2)], ['BEGIN:VCALENDAR', 'END:VCALENDAR']);
@@ -41,10 +41,7 @@ const timed = buildCalendar([task({ dueTime: '17:30', priority: 1 })], opts).spl
 check('floating local start', timed.includes('DTSTART:20260820T173000'), true);
 check('30 minute block', timed.includes('DTEND:20260820T180000'), true);
 check('p1 maps to icalendar 1', timed.includes('PRIORITY:1'), true);
-check('alarm present', timed.includes('TRIGGER;RELATED=START:-PT10M'), true);
-
-const noAlarm = buildCalendar([task({ dueTime: '17:30' })], { now: NOW, alarmMinutes: 0 });
-check('alarmMinutes 0 disables alarms', noAlarm.includes('VALARM'), false);
+check('timed events do not embed alarms', timed.includes('BEGIN:VALARM'), false);
 
 const rollover = buildCalendar([task({ dueTime: '23:45' })], opts);
 check('duration crosses midnight', rollover.includes('DTEND:20260821T001500'), true);

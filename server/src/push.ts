@@ -3,6 +3,7 @@ export type ReminderTask = {
 	title: string;
 	due: string;
 	dueTime: string;
+	reminderMinutes?: number;
 	done?: boolean;
 	_deleted?: boolean;
 };
@@ -91,7 +92,9 @@ export function reminderForTask(task: ReminderTask, timeZone: string, leadMinute
 	if (task.done || task._deleted || !task.dueTime || !Number.isFinite(leadMinutes)) return null;
 	const dueAt = zonedDateTime(task.due, task.dueTime, timeZone);
 	if (dueAt === null) return null;
-	const lead = Math.max(0, Math.min(1440, Math.round(leadMinutes)));
+	const requestedLead = task.reminderMinutes ?? leadMinutes;
+	if (!Number.isFinite(requestedLead) || requestedLead < 0) return null;
+	const lead = Math.min(1440, Math.round(requestedLead));
 	const notifyAt = dueAt - lead * 60_000;
 	if (now < notifyAt || now >= dueAt + LATE_GRACE_MS) return null;
 	return {

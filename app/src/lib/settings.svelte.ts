@@ -7,13 +7,21 @@ function read(key: string, fallback: string): string {
 	return localStorage.getItem(key) ?? fallback;
 }
 
+function readReminderMinutes(): number {
+	if (!browser) return 10;
+	const current = localStorage.getItem('tohab.automaticReminderMinutes');
+	const legacy = localStorage.getItem('tohab.reminderMinutes');
+	const parsed = current !== null ? Number(current) : legacy === '0' ? -1 : Number(legacy ?? 10);
+	return Number.isInteger(parsed) && parsed >= -1 && parsed <= 1440 ? parsed : 10;
+}
+
 export const settings = $state({
 	theme: read('tohab.theme', 'system') as Theme,
 	serverUrl: read('tohab.serverUrl', '/sync'),
 	syncEnabled: read('tohab.syncEnabled', 'true') === 'true',
 	startOfWeek: Number(read('tohab.startOfWeek', '1')) as 0 | 1,
-	/** Minutes before a timed task that the calendar feed's alarm fires. 0 is off. */
-	reminderMinutes: Number(read('tohab.reminderMinutes', '10')),
+	/** Default Web Push reminder for timed tasks. -1 is off; 0 is at the due time. */
+	reminderMinutes: readReminderMinutes(),
 	sidebarCollapsed: read('tohab.sidebarCollapsed', 'false') === 'true',
 	sound: read('tohab.sound', 'true') === 'true'
 });
@@ -44,7 +52,7 @@ export function setSyncEnabled(on: boolean) {
 
 export function setReminderMinutes(minutes: number) {
 	settings.reminderMinutes = minutes;
-	localStorage.setItem('tohab.reminderMinutes', String(minutes));
+	localStorage.setItem('tohab.automaticReminderMinutes', String(minutes));
 }
 
 export function setStartOfWeek(day: 0 | 1) {

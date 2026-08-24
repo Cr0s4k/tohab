@@ -19,7 +19,7 @@ function pushBody(body: unknown) {
 	if (typeof value.keys?.p256dh !== 'string' || value.keys.p256dh.length < 16) return null;
 	if (typeof value.keys.auth !== 'string' || value.keys.auth.length < 8) return null;
 	if (typeof value.timeZone !== 'string' || !validTimeZone(value.timeZone)) return null;
-	const leadMinutes = Math.max(0, Math.min(1440, Math.round(Number(value.leadMinutes ?? 10))));
+	const leadMinutes = Math.max(-1, Math.min(1440, Math.round(Number(value.leadMinutes ?? 10))));
 	if (!Number.isFinite(leadMinutes)) return null;
 	return {
 		endpoint: value.endpoint,

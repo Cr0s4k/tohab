@@ -13,6 +13,8 @@ export type Task = {
 	parentId?: string;
 	/** Serialised recurrence rule, or absent — see `repeat.ts`. */
 	repeat?: string;
+	/** Undefined inherits the device default; -1 disables; 0 fires at the due time. */
+	reminderMinutes?: number;
 	createdAt: number;
 	updatedAt: number;
 };
@@ -89,7 +91,7 @@ const TS = { type: 'number', minimum: 0, maximum: 1e15, multipleOf: 1 } as const
 
 export const taskSchema: RxJsonSchema<Task> = {
 	title: 'task',
-	version: 2,
+	version: 3,
 	primaryKey: 'id',
 	type: 'object',
 	properties: {
@@ -107,6 +109,7 @@ export const taskSchema: RxJsonSchema<Task> = {
 		// Optional, not required: documents written by an older client arrive over sync without
 		// it, and a required field would make them fail validation on the way in.
 		repeat: { type: 'string', maxLength: 40 },
+		reminderMinutes: { type: 'number', minimum: -1, maximum: 1440, multipleOf: 1 },
 		createdAt: TS,
 		updatedAt: TS
 	},
