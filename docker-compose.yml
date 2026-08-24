@@ -49,6 +49,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-tohab}
       POSTGRES_DB: ${POSTGRES_DB:-tohab}
       CALENDAR_SECRET: ${CALENDAR_SECRET:-}
+      CALENDAR_PUBLIC_BASE_URL: ${CALENDAR_PUBLIC_BASE_URL:-}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
     depends_on:
       db:

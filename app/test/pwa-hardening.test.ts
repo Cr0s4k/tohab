@@ -34,6 +34,8 @@ for (const path of ['/sync/pull', '/auth/me', '/calendar/token', '/calendar/sett
 }
 const calendarClient = read('src/lib/calendar.ts');
 assert.match(calendarClient, /calendarBase\(settings\.serverUrl\).*\/settings/s);
+assert.match(calendarClient, /feedUrl: publicFeedUrl/);
+assert.match(calendarClient, /if \(publicFeedUrl\) return new URL\(publicFeedUrl\)\.toString\(\)/);
 assert.doesNotMatch(calendarClient, /searchParams\.set\(['"]alarm['"]/);
 assert.equal(shouldBypassServiceWorker(new URL('https://example.test/tasks')), false);
 assert.equal(shouldRuntimeCacheRequest(''), false, 'fetch/XHR responses never enter the runtime cache');

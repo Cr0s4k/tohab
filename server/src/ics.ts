@@ -31,6 +31,28 @@ export function feedToken(secret: string, userId: string): string {
 	return createHmac('sha256', secret).update(userId).digest('hex').slice(0, 32);
 }
 
+/** Build the externally reachable subscription URL when a deployment provides one. */
+export function publicCalendarFeedUrl(
+	baseUrl: string | undefined,
+	token: string
+): string | undefined {
+	const configured = baseUrl?.trim();
+	if (!configured) return undefined;
+
+	const url = new URL(configured);
+	if (!['http:', 'https:'].includes(url.protocol)) {
+		throw new Error('CALENDAR_PUBLIC_BASE_URL must use http or https');
+	}
+	if (url.username || url.password) {
+		throw new Error('CALENDAR_PUBLIC_BASE_URL must not contain credentials');
+	}
+
+	url.search = '';
+	url.hash = '';
+	url.pathname = `${url.pathname.replace(/\/+$/, '')}/${encodeURIComponent(token)}/tohab.ics`;
+	return url.toString();
+}
+
 export function resolveFeedToken(
 	secret: string,
 	token: string,

@@ -1,4 +1,10 @@
-import { buildCalendar, feedToken, resolveFeedToken, type FeedTask } from '../src/ics.ts';
+import {
+	buildCalendar,
+	feedToken,
+	publicCalendarFeedUrl,
+	resolveFeedToken,
+	type FeedTask
+} from '../src/ics.ts';
 
 let failures = 0;
 
@@ -124,6 +130,17 @@ check('token is per user', feedToken(secret, 'user-b') === token, false);
 check('token resolves', resolveFeedToken(secret, token, ['user-b', 'user-a']), 'user-a');
 check('unknown token rejected', resolveFeedToken(secret, 'deadbeef', ['user-a']), undefined);
 check('wrong secret rejected', resolveFeedToken('other', token, ['user-a']), undefined);
+check('public feed URL is optional', publicCalendarFeedUrl('', token), undefined);
+check(
+	'public feed URL preserves its calendar path',
+	publicCalendarFeedUrl('https://calendar.example.test/calendar/', token),
+	`https://calendar.example.test/calendar/${token}/tohab.ics`
+);
+check(
+	'public feed URL discards deployment query and fragment',
+	publicCalendarFeedUrl('https://calendar.example.test/calendar?old=1#fragment', token),
+	`https://calendar.example.test/calendar/${token}/tohab.ics`
+);
 
 console.log(failures ? `\n${failures} failing` : '\nall passing');
 process.exit(failures ? 1 : 0);

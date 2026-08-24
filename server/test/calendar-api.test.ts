@@ -18,8 +18,9 @@ try {
 
 	const tokenResponse = await fetch(`${ROOT}/calendar/token`, { headers });
 	assert.equal(tokenResponse.status, 200);
-	const { token } = await tokenResponse.json() as { token: string };
+	const { token, feedUrl } = await tokenResponse.json() as { token: string; feedUrl?: string };
 	assert.ok(token);
+	assert.ok(feedUrl === undefined || feedUrl.endsWith(`/${token}/tohab.ics`));
 	await transaction((tx) => writeDoc(tx, session.userId, 'tasks', {
 		id: 'calendar-task',
 		title: 'Calendar task',

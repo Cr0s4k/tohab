@@ -212,7 +212,7 @@ task becomes one event with an `RRULE`, so the whole series shows up rather than
 occurrence.
 
 ```
-GET /calendar/token                    → { token }   (requires a session)
+GET /calendar/token                    → { token, feedUrl? }   (requires a session)
 POST /calendar/settings                ← { alarmMinutes }   (requires a session)
 GET /calendar/<token>/tohab.ics
 ```
@@ -221,6 +221,9 @@ GET /calendar/<token>/tohab.ics
   Google and live in its history indefinitely, and the sync id is the only credential the
   sync API has — so a leaked feed URL must not become write access to your data. The HMAC
   key comes from `CALENDAR_SECRET`, or is generated once and stored in the `secrets` table.
+- Set `CALENDAR_PUBLIC_BASE_URL` when the private application origin cannot be reached by a
+  hosted calendar service. For example, `https://calendar.example.com/calendar` makes the
+  authenticated token endpoint return that public origin while the application stays private.
 - The reminder lead time is stored server-side, so the subscription URL stays unchanged when
   it is edited. `alarmMinutes: 0` omits alarms. Only timed tasks get one: relative alarms on
   all-day events fire at midnight in most clients, which is noise rather than a reminder.

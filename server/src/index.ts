@@ -41,11 +41,22 @@ import {
 	verifyPassword,
 	type AuthedEnv
 } from './auth.ts';
-import { buildCalendar, feedToken, resolveFeedToken, type FeedTask } from './ics.ts';
+import {
+	buildCalendar,
+	feedToken,
+	publicCalendarFeedUrl,
+	resolveFeedToken,
+	type FeedTask
+} from './ics.ts';
 import { reminderForTask, validPushEndpoint, validTimeZone, type ReminderTask } from './push.ts';
 
 const PORT = Number(process.env.PORT ?? 5178);
 const DEFAULT_ALARM_MINUTES = 10;
+const CALENDAR_PUBLIC_BASE_URL = process.env.CALENDAR_PUBLIC_BASE_URL;
+
+if (CALENDAR_PUBLIC_BASE_URL) {
+	void publicCalendarFeedUrl(CALENDAR_PUBLIC_BASE_URL, 'configuration-check');
+}
 
 type PushRow = {
 	assumedMasterState?: Record<string, unknown>;
@@ -248,7 +259,9 @@ async function calendarSecret(): Promise<string> {
 }
 
 calendar.get('/token', requireAuth, async (c) => {
-	return c.json({ token: feedToken(await calendarSecret(), c.get('userId')) });
+	const token = feedToken(await calendarSecret(), c.get('userId'));
+	const feedUrl = publicCalendarFeedUrl(CALENDAR_PUBLIC_BASE_URL, token);
+	return c.json(feedUrl ? { token, feedUrl } : { token });
 });
 
 calendar.post('/settings', requireAuth, async (c) => {

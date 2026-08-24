@@ -28,8 +28,12 @@ export async function feedUrl(alarmMinutes: number): Promise<string> {
 
 	const res = await fetch(`${base}/token`, { credentials: 'include' });
 	if (!res.ok) throw new Error(`Server returned ${res.status}`);
-	const { token } = (await res.json()) as { token?: string };
+	const { token, feedUrl: publicFeedUrl } = (await res.json()) as {
+		token?: string;
+		feedUrl?: string;
+	};
 	if (!token) throw new Error('Server did not return a feed token');
+	if (publicFeedUrl) return new URL(publicFeedUrl).toString();
 
 	return new URL(`${base}/${token}/tohab.ics`).toString();
 }
