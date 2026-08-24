@@ -49,12 +49,12 @@ assert.equal(isIosLike('Mozilla/5.0 (Macintosh)', 'MacIntel', 0), false);
 
 const replication = read('src/lib/db/replication.svelte.ts');
 const liveDb = read('src/lib/db/live.svelte.ts');
-const layout = read('src/routes/+layout.svelte');
+const dbSession = read('src/lib/db/session.svelte.ts');
 const dbIndex = read('src/lib/db/index.ts');
 assert.doesNotMatch(liveDb, /getDb\(\)/, 'database selection happens before live initialization');
-assert.match(layout, /await closeDb\(\)[\s\S]*?adoptLocalDb/);
-assert.match(layout, /live\.db = db/);
-assert.match(layout, /async function unmountLocalDb\(\)[\s\S]*?const attempt = \+\+bootAttempt[\s\S]*?if \(attempt !== bootAttempt\) return;[\s\S]*?await closeDb\(\)/);
+assert.match(dbSession, /await closeDb\(\)[\s\S]*?adoptLocalDb/);
+assert.match(dbSession, /live\.db = db/);
+assert.match(dbSession, /export async function unmountLocalDb\(\)[\s\S]*?const attempt = \+\+bootAttempt[\s\S]*?if \(attempt !== bootAttempt\) return;[\s\S]*?await closeDb\(\)/);
 assert.match(dbIndex, /export async function closeDb/);
 assert.doesNotMatch(dbIndex, /onblocked\s*=\s*\(\)\s*=>\s*\{[\s\S]{0,200}reject/);
 assert.doesNotMatch(replication, /function unauthorized\(\)[\s\S]*?forget\(\)/);

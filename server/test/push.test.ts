@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { reminderForTask, validPushEndpoint, validTimeZone, type ReminderTask } from '../src/push.ts';
+import { createApp } from '../src/app.ts';
+import { pushReminders, pushSubscriptions } from '../src/schema.ts';
 
 const task: ReminderTask = {
 	id: 'task-1',
@@ -38,13 +39,14 @@ const winter: ReminderTask = { ...task, due: '2026-12-23' };
 const winterReminder = reminderForTask(winter, 'Europe/Madrid', 10, Date.parse('2026-12-23T15:20:10Z'));
 assert.equal(winterReminder?.dueAt, Date.parse('2026-12-23T15:30:00Z'), 'DST offset is derived from the requested date');
 
-const schema = readFileSync(new URL('../src/schema.ts', import.meta.url), 'utf8');
-const server = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8');
-assert.match(schema, /pushSubscriptions/);
-assert.match(schema, /pushReminders/);
-assert.match(server, /app\.route\('\/push'/);
-assert.match(server, /runPushReminders/);
-assert.match(server, /subscription/);
-assert.match(server, /\/test/);
+assert.ok(pushSubscriptions);
+assert.ok(pushReminders);
+const response = await createApp().request('/');
+assert.equal(response.status, 200);
+assert.equal(await response.text(), 'tohab sync server');
+const pushResponse = await createApp().request('/push/config');
+assert.equal(pushResponse.status, 401, 'push routes are mounted and protected');
+const syncResponse = await createApp().request('/sync/status');
+assert.equal(syncResponse.status, 401, 'sync routes are mounted and protected');
 
 console.log('ok push reminder scheduling');

@@ -4,17 +4,16 @@
 		createTask,
 		deleteTask,
 		directSubtasksQuery,
-		PRIORITY_LABELS,
-		priorityClass,
 		toggleTask,
 		updateTask
 	} from '$lib/tasks';
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
-	import { humanDay, shiftKey, today } from '$lib/dates';
-	import { describeRepeat, REPEAT_PRESETS } from '$lib/repeat';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import Sheet from './Sheet.svelte';
+	import TaskDueControls from './task/TaskDueControls.svelte';
+	import TaskPriorityPicker from './task/TaskPriorityPicker.svelte';
+	import TaskRepeatPicker from './task/TaskRepeatPicker.svelte';
 
 	let {
 		task,
@@ -91,12 +90,6 @@
 		onOpenTask?.(subtask);
 	}
 
-	const shortcuts = () => [
-		{ label: 'Today', value: today() },
-		{ label: 'Tomorrow', value: shiftKey(today(), 1) },
-		{ label: 'Next week', value: shiftKey(today(), 7) },
-		{ label: 'None', value: '' }
-	];
 </script>
 
 <Sheet open={Boolean(task)} title="Task" confirmLabel="Save" onClose={close}>
@@ -117,91 +110,17 @@
 
 			<div>
 				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Due</p>
-				<div class="mb-2 flex flex-wrap gap-1.5">
-					{#each shortcuts() as s (s.label)}
-						<button
-							type="button"
-							use:hapticTap
-							onclick={() => {
-								haptic('tap');
-								draft.due = s.value;
-							}}
-							class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
-							aria-pressed={draft.due === s.value}
-							class:accent-bg={draft.due === s.value}
-							class:sunken={draft.due !== s.value}
-						>
-							{s.label}
-						</button>
-					{/each}
-				</div>
-				<div class="flex gap-2">
-					<input
-						type="date"
-						aria-label="Due date"
-						bind:value={draft.due}
-						class="sunken min-w-0 flex-1 rounded-xl px-3 py-2.5 text-copy outline-none"
-					/>
-					<input
-						type="time"
-						aria-label="Due time"
-						bind:value={draft.dueTime}
-						class="sunken w-28 rounded-xl px-3 py-2.5 text-copy outline-none"
-					/>
-				</div>
-				{#if draft.due}
-					<p class="dim mt-1.5 text-caption">{humanDay(draft.due)}</p>
-				{/if}
+				<TaskDueControls due={draft.due} dueTime={draft.dueTime} onDue={(value) => (draft.due = value)} onDueTime={(value) => (draft.dueTime = value)} showSummary />
 			</div>
 
 			<div>
 				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Repeat</p>
-				<div class="flex flex-wrap gap-1.5">
-					{#each REPEAT_PRESETS as r (r.label)}
-						<button
-							type="button"
-							use:hapticTap
-							onclick={() => {
-								haptic('tap');
-								draft.repeat = r.value;
-							}}
-							class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
-							aria-pressed={draft.repeat === r.value}
-							class:accent-bg={draft.repeat === r.value}
-							class:sunken={draft.repeat !== r.value}
-						>
-							{r.label}
-						</button>
-					{/each}
-				</div>
-				{#if draft.repeat}
-					<p class="dim mt-1.5 text-caption">
-						{describeRepeat(draft.repeat)} · completing it moves the due date on
-					</p>
-				{/if}
+				<TaskRepeatPicker value={draft.repeat} onSelect={(value) => (draft.repeat = value)} showDescription />
 			</div>
 
 			<div>
 				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Priority</p>
-				<div class="flex gap-1.5">
-					{#each [1, 2, 3, 4] as p (p)}
-						<button
-							type="button"
-							use:hapticTap
-							onclick={() => {
-								haptic('tap');
-								draft.priority = p;
-							}}
-							class="tap sunken flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-caption font-medium"
-							aria-pressed={draft.priority === p}
-							class:ring-2={draft.priority === p}
-							style="--tw-ring-color: var(--accent)"
-						>
-							<span class="{priorityClass(p)} text-body font-bold">P{p}</span>
-							<span class="dim">{PRIORITY_LABELS[p]}</span>
-						</button>
-					{/each}
-				</div>
+				<TaskPriorityPicker value={draft.priority} onSelect={(value) => (draft.priority = value)} />
 			</div>
 
 			<div>

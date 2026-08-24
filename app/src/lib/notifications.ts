@@ -1,4 +1,5 @@
 import { isIosLike } from './pwa.ts';
+import { apiBase } from './api.ts';
 
 export type NotificationCapability = {
 	supported: boolean;
@@ -8,9 +9,7 @@ export type NotificationCapability = {
 };
 
 export function pushBase(serverUrl: string): string {
-	const trimmed = serverUrl.replace(/\/+$/, '');
-	const root = trimmed.endsWith('/sync') ? trimmed.slice(0, -'/sync'.length) : trimmed;
-	return `${root || ''}/push`;
+	return apiBase(serverUrl, 'push');
 }
 
 export function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {

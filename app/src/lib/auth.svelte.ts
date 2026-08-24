@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { settings } from './settings.svelte.ts';
+import { apiBase } from './api.ts';
 
 /**
  * The session itself is an httpOnly cookie that this code cannot read. What is kept here is
@@ -30,9 +31,7 @@ export const auth = $state({
 
 /** Auth routes sit beside the sync routes, not under them — same shape as the calendar base. */
 export function authBase(serverUrl: string): string {
-	const trimmed = serverUrl.replace(/\/+$/, '');
-	const root = trimmed.endsWith('/sync') ? trimmed.slice(0, -'/sync'.length) : trimmed;
-	return `${root}/auth`;
+	return apiBase(serverUrl, 'auth');
 }
 
 async function post(path: string, body?: unknown) {

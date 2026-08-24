@@ -1,10 +1,9 @@
 import { settings } from './settings.svelte.ts';
+import { apiBase } from './api.ts';
 
 /** The calendar routes sit beside the sync routes, not under them. */
 export function calendarBase(serverUrl: string): string {
-	const trimmed = serverUrl.replace(/\/+$/, '');
-	const root = trimmed.endsWith('/sync') ? trimmed.slice(0, -'/sync'.length) : trimmed;
-	return `${root}/calendar`;
+	return apiBase(serverUrl, 'calendar');
 }
 
 export async function setCalendarAlarmMinutes(alarmMinutes: number): Promise<void> {

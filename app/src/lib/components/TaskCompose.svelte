@@ -1,12 +1,15 @@
 <script lang="ts">
 	import type { Project } from '$lib/db/schemas';
 	import { parseQuickAdd } from '$lib/parse';
-	import { createTask, PRIORITY_LABELS, priorityClass, resolveProject } from '$lib/tasks';
-	import { humanDay, humanTime, shiftKey, today } from '$lib/dates';
-	import { describeRepeat, firstDue, REPEAT_PRESETS } from '$lib/repeat';
+	import { createTask, priorityClass, resolveProject } from '$lib/tasks';
+	import { humanDay, humanTime } from '$lib/dates';
+	import { describeRepeat, firstDue } from '$lib/repeat';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { collapse } from '$lib/motion';
 	import Sheet from './Sheet.svelte';
+	import TaskDueControls from './task/TaskDueControls.svelte';
+	import TaskPriorityPicker from './task/TaskPriorityPicker.svelte';
+	import TaskRepeatPicker from './task/TaskRepeatPicker.svelte';
 
 	let {
 		open = false,
@@ -97,12 +100,6 @@
 		queueMicrotask(() => input?.focus());
 	});
 
-	const dateShortcuts = () => [
-		{ label: 'Today', value: today() },
-		{ label: 'Tomorrow', value: shiftKey(today(), 1) },
-		{ label: 'Next week', value: shiftKey(today(), 7) },
-		{ label: 'None', value: '' }
-	];
 </script>
 
 <Sheet {open} title="New task" confirmLabel="Done" showHeader={false} onClose={onClose}>
@@ -191,83 +188,24 @@
 
 			{#if panel === 'date'}
 				<div transition:collapse={{ duration: 200 }}>
-					<div class="mb-2 flex flex-wrap gap-1.5">
-						{#each dateShortcuts() as s (s.label)}
-							<button
-								type="button"
-								use:hapticTap
-								onclick={() => {
-									haptic('tap');
-									picked.due = s.value;
-									if (!s.value) picked.dueTime = '';
-								}}
-								class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
-								aria-pressed={due === s.value}
-								class:accent-bg={due === s.value}
-								class:sunken={due !== s.value}
-							>
-								{s.label}
-							</button>
-						{/each}
-					</div>
-					<div class="flex gap-2">
-						<input
-							type="date"
-							aria-label="Due date"
-							value={due}
-							onchange={(e) => (picked.due = e.currentTarget.value)}
-							class="sunken min-w-0 flex-1 rounded-xl px-3 py-2.5 text-copy outline-none"
-						/>
-						<input
-							type="time"
-							aria-label="Due time"
-							value={dueTime}
-							onchange={(e) => (picked.dueTime = e.currentTarget.value)}
-							class="sunken w-28 rounded-xl px-3 py-2.5 text-copy outline-none"
-						/>
-					</div>
+					<TaskDueControls
+						{due}
+						{dueTime}
+						onDue={(value) => (picked.due = value)}
+						onDueTime={(value) => (picked.dueTime = value)}
+					/>
 				</div>
 			{/if}
 
 			{#if panel === 'repeat'}
-				<div transition:collapse={{ duration: 200 }} class="flex flex-wrap gap-1.5">
-					{#each REPEAT_PRESETS as r (r.label)}
-						<button
-							type="button"
-							use:hapticTap
-							onclick={() => {
-								haptic('tap');
-								picked.repeat = r.value;
-							}}
-							class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
-							class:accent-bg={repeat === r.value}
-							class:sunken={repeat !== r.value}
-						>
-							{r.label}
-						</button>
-					{/each}
+				<div transition:collapse={{ duration: 200 }}>
+					<TaskRepeatPicker value={repeat} onSelect={(value) => (picked.repeat = value)} />
 				</div>
 			{/if}
 
 			{#if panel === 'priority'}
-				<div transition:collapse={{ duration: 200 }} class="flex gap-1.5">
-					{#each [1, 2, 3, 4] as p (p)}
-						<button
-							type="button"
-							use:hapticTap
-							onclick={() => {
-								haptic('tap');
-								picked.priority = p;
-							}}
-							class="tap sunken flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-caption font-medium"
-							aria-pressed={priority === p}
-							class:ring-2={priority === p}
-							style="--tw-ring-color: var(--accent)"
-						>
-							<span class="{priorityClass(p)} text-body font-bold">P{p}</span>
-							<span class="dim">{PRIORITY_LABELS[p]}</span>
-						</button>
-					{/each}
+				<div transition:collapse={{ duration: 200 }}>
+					<TaskPriorityPicker value={priority} onSelect={(value) => (picked.priority = value)} />
 				</div>
 			{/if}
 

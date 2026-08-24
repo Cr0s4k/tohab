@@ -2,13 +2,12 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
+import { API_ROUTE_PREFIXES } from './src/lib/api.ts';
 
 /** Keeps the API same-origin with the app, which is what lets the session cookie work. */
-const PROXY = {
-	'/sync': { target: 'http://localhost:5178', changeOrigin: true },
-	'/auth': { target: 'http://localhost:5178', changeOrigin: true },
-	'/calendar': { target: 'http://localhost:5178', changeOrigin: true }
-};
+export const PROXY = Object.fromEntries(
+	API_ROUTE_PREFIXES.map((path) => [path, { target: 'http://localhost:5178', changeOrigin: true }])
+);
 
 export default defineConfig({
 	plugins: [
