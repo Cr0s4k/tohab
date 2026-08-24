@@ -17,7 +17,7 @@
 		settings,
 		type Theme
 	} from '$lib/settings.svelte';
-	import { feedUrl } from '$lib/calendar';
+	import { feedUrl, setCalendarAlarmMinutes } from '$lib/calendar';
 	import {
 		currentPushSubscription,
 		disableNotifications,
@@ -37,6 +37,7 @@
 	let feed = $state('');
 	let feedError = $state('');
 	let feedBusy = $state(false);
+	let reminderBusy = $state(false);
 	let storageStatus = $state('Checking storage…');
 	let storagePersistent = $state(false);
 	let notificationsEnabled = $state(false);
@@ -122,6 +123,24 @@
 			feedError = err instanceof Error ? err.message : 'Could not reach the server.';
 		}
 		feedBusy = false;
+	}
+
+	async function changeReminderMinutes(minutes: number) {
+		setReminderMinutes(minutes);
+		reminderBusy = true;
+		feedError = '';
+
+		const calendarUpdate = setCalendarAlarmMinutes(minutes).catch((error) => {
+			feedError = error instanceof Error ? error.message : 'Could not update the calendar feed.';
+		});
+		const notificationUpdate = notificationsEnabled
+			? reconcileNotifications(settings.serverUrl, minutes).catch((error) => {
+				notificationStatus = error instanceof Error ? error.message : 'Could not update task notifications.';
+			})
+			: Promise.resolve();
+
+		await Promise.all([calendarUpdate, notificationUpdate]);
+		reminderBusy = false;
 	}
 
 	async function copyFeed() {
@@ -343,11 +362,8 @@
 						<button
 							type="button"
 							aria-pressed={settings.reminderMinutes === choice.minutes}
-							disabled={notificationsBusy}
-							onclick={() => {
-								setReminderMinutes(choice.minutes);
-								if (notificationsEnabled) void reconcileNotifications(settings.serverUrl, choice.minutes);
-							}}
+							disabled={notificationsBusy || reminderBusy}
+							onclick={() => void changeReminderMinutes(choice.minutes)}
 							class="tap min-h-11 flex-1 rounded-xl px-1 text-sm font-medium disabled:opacity-50"
 							class:accent-bg={settings.reminderMinutes === choice.minutes}
 							class:sunken={settings.reminderMinutes !== choice.minutes}
@@ -387,13 +403,10 @@
 					<button
 						type="button"
 						aria-pressed={settings.reminderMinutes === choice.minutes}
+						disabled={feedBusy || reminderBusy}
 						use:hapticTap
-						onclick={() => {
-							haptic('tap');
-							setReminderMinutes(choice.minutes);
-							if (feed) revealFeed();
-						}}
-						class="tap flex-1 rounded-xl py-2 text-[0.75rem] font-medium"
+						onclick={() => void changeReminderMinutes(choice.minutes)}
+						class="tap flex-1 rounded-xl py-2 text-[0.75rem] font-medium disabled:opacity-50"
 						class:accent-bg={settings.reminderMinutes === choice.minutes}
 						class:sunken={settings.reminderMinutes !== choice.minutes}
 					>
@@ -435,7 +448,7 @@
 				<p class="dim">
 					Subscribe to this URL in Google Calendar (Other calendars → From URL) or iOS
 					Calendar. Open tasks with a due date appear as events; timed ones carry the reminder
-					above. The lead time is baked into the URL, so changing it means re-subscribing.
+					above. This URL stays the same; reminder and task changes appear when the calendar refreshes.
 				</p>
 			{/if}
 		</div>

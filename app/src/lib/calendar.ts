@@ -7,11 +7,23 @@ export function calendarBase(serverUrl: string): string {
 	return `${root}/calendar`;
 }
 
+export async function setCalendarAlarmMinutes(alarmMinutes: number): Promise<void> {
+	const response = await fetch(`${calendarBase(settings.serverUrl)}/settings`, {
+		method: 'POST',
+		credentials: 'include',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ alarmMinutes })
+	});
+	const data = (await response.json().catch(() => ({}))) as { error?: string };
+	if (!response.ok) throw new Error(data.error ?? `Server returned ${response.status}`);
+}
+
 /**
  * Absolute by construction: a calendar client fetches this from its own servers, where a
  * relative path means nothing.
  */
 export async function feedUrl(alarmMinutes: number): Promise<string> {
+	await setCalendarAlarmMinutes(alarmMinutes);
 	const base = new URL(calendarBase(settings.serverUrl), location.origin);
 
 	const res = await fetch(`${base}/token`, { credentials: 'include' });
@@ -19,7 +31,5 @@ export async function feedUrl(alarmMinutes: number): Promise<string> {
 	const { token } = (await res.json()) as { token?: string };
 	if (!token) throw new Error('Server did not return a feed token');
 
-	const url = new URL(`${base}/${token}/tohab.ics`);
-	url.searchParams.set('alarm', String(alarmMinutes));
-	return url.toString();
+	return new URL(`${base}/${token}/tohab.ics`).toString();
 }

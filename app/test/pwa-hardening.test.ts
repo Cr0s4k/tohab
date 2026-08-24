@@ -29,9 +29,12 @@ assert.notEqual(ownerA, ownerB, 'different sync servers keep isolated local data
 assert.equal(databaseNameForOwner('https://one.example/sync::user-1'), ownerA, 'database names are stable');
 assert.equal(databaseMappingKey('https://one.example/sync::user-1'), `tohab.dbName.${ownerA}`);
 
-for (const path of ['/sync/pull', '/auth/me', '/calendar/token', '/push/config']) {
+for (const path of ['/sync/pull', '/auth/me', '/calendar/token', '/calendar/settings', '/push/config']) {
 	assert.equal(shouldBypassServiceWorker(new URL(`https://example.test${path}`)), true, path);
 }
+const calendarClient = read('src/lib/calendar.ts');
+assert.match(calendarClient, /calendarBase\(settings\.serverUrl\).*\/settings/s);
+assert.doesNotMatch(calendarClient, /searchParams\.set\(['"]alarm['"]/);
 assert.equal(shouldBypassServiceWorker(new URL('https://example.test/tasks')), false);
 assert.equal(shouldRuntimeCacheRequest(''), false, 'fetch/XHR responses never enter the runtime cache');
 assert.equal(shouldRuntimeCacheRequest('script'), true);

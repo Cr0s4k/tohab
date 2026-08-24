@@ -11,7 +11,7 @@
 		"dev": "pnpm db:up && pnpm db:push && node --watch src/index.ts",
 		"start": "node src/index.ts",
 		"check": "tsc --noEmit",
-		"test": "node test/sync.test.ts && node test/concurrency.test.ts && node test/push-api.test.ts",
+		"test": "node test/sync.test.ts && node test/concurrency.test.ts && node test/calendar-api.test.ts && node test/push-api.test.ts",
 		"test:unit": "node test/ics.test.ts && node test/push.test.ts"
 	},
 	"dependencies": {

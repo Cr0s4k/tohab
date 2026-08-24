@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { and, asc, count, eq, gt, lt, max, or, sql } from 'drizzle-orm';
 import {
+	calendarPreferences,
 	docs,
 	pushReminders,
 	pushSubscriptions,
@@ -17,7 +18,7 @@ const CONNECTION = process.env.DATABASE_URL ?? 'postgresql://tohab:tohab@localho
 
 const pool = new Pool({ connectionString: CONNECTION, max: 10 });
 
-const schema = { docs, pushReminders, pushSubscriptions, secrets, users };
+const schema = { calendarPreferences, docs, pushReminders, pushSubscriptions, secrets, users };
 export const db = drizzle(pool, { schema });
 export type { DocRow, PushSubscriptionRow, UserRow };
 
@@ -36,6 +37,7 @@ export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitLogs', 
 export async function ensureSchema() {
 	const { rows } = await pool.query(
 		`SELECT to_regclass('public.docs') IS NOT NULL
+		    AND to_regclass('public.calendar_preferences') IS NOT NULL
 		    AND to_regclass('public.secrets') IS NOT NULL
 		    AND to_regclass('public.users') IS NOT NULL
 		    AND to_regclass('public.push_subscriptions') IS NOT NULL
@@ -71,6 +73,26 @@ export function persistedSecret(key: string): Promise<string> {
 export async function knownUsers(): Promise<string[]> {
 	const rows = await db.select({ id: users.id }).from(users);
 	return rows.map((row) => row.id);
+}
+
+export async function calendarAlarmMinutes(userId: string): Promise<number | undefined> {
+	const [row] = await db
+		.select({ alarmMinutes: calendarPreferences.alarmMinutes })
+		.from(calendarPreferences)
+		.where(eq(calendarPreferences.userId, userId))
+		.limit(1);
+	return row?.alarmMinutes;
+}
+
+export async function setCalendarAlarmMinutes(userId: string, alarmMinutes: number): Promise<void> {
+	const updatedAt = Date.now();
+	await db
+		.insert(calendarPreferences)
+		.values({ userId, alarmMinutes, updatedAt })
+		.onConflictDoUpdate({
+			target: calendarPreferences.userId,
+			set: { alarmMinutes, updatedAt }
+		});
 }
 
 export async function userCount(): Promise<number> {

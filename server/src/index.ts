@@ -6,6 +6,7 @@ import webpush from 'web-push';
 import {
 	COLLECTIONS,
 	allPushSubscriptions,
+	calendarAlarmMinutes,
 	clockSkew,
 	createUser,
 	deletePushSubscription,
@@ -24,6 +25,7 @@ import {
 	recordPushSuccess,
 	releasePushReminder,
 	rowToDoc,
+	setCalendarAlarmMinutes,
 	stats,
 	transaction,
 	upsertPushSubscription,
@@ -249,6 +251,17 @@ calendar.get('/token', requireAuth, async (c) => {
 	return c.json({ token: feedToken(await calendarSecret(), c.get('userId')) });
 });
 
+calendar.post('/settings', requireAuth, async (c) => {
+	const value = (await c.req.json().catch(() => null)) as { alarmMinutes?: unknown } | null;
+	if (typeof value?.alarmMinutes !== 'number' || !Number.isFinite(value.alarmMinutes)) {
+		return c.json({ error: 'valid alarmMinutes required' }, 400);
+	}
+
+	const normalized = Math.max(0, Math.min(1440, Math.round(value.alarmMinutes)));
+	await setCalendarAlarmMinutes(c.get('userId'), normalized);
+	return c.json({ alarmMinutes: normalized });
+});
+
 /** The feed itself stays unauthenticated: a calendar client cannot sign in, so the
  *  unguessable token in the URL is the credential. */
 
@@ -256,8 +269,8 @@ calendar.get('/:token/tohab.ics', async (c) => {
 	const userId = resolveFeedToken(await calendarSecret(), c.req.param('token'), await knownUsers());
 	if (!userId) return c.text('unknown calendar', 404);
 
-	const alarm = Number(c.req.query('alarm') ?? DEFAULT_ALARM_MINUTES);
-	const [taskRows, projectRows] = await Promise.all([
+	const [alarmMinutes, taskRows, projectRows] = await Promise.all([
+		calendarAlarmMinutes(userId),
 		liveDocs(userId, 'tasks'),
 		liveDocs(userId, 'projects')
 	]);
@@ -267,7 +280,7 @@ calendar.get('/:token/tohab.ics', async (c) => {
 	);
 
 	const body = buildCalendar(taskRows.map((row) => row.data as unknown as FeedTask), {
-		alarmMinutes: Number.isFinite(alarm) ? Math.max(0, Math.min(1440, alarm)) : DEFAULT_ALARM_MINUTES,
+		alarmMinutes: alarmMinutes ?? DEFAULT_ALARM_MINUTES,
 		name: 'Tohab',
 		projects
 	});

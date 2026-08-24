@@ -66,6 +66,13 @@ export const secrets = pgTable('secrets', {
 	value: text('value').notNull()
 });
 
+/** Per-account options used when rendering the stable calendar subscription URL. */
+export const calendarPreferences = pgTable('calendar_preferences', {
+	userId: text('user_id').primaryKey(),
+	alarmMinutes: integer('alarm_minutes').notNull().default(10),
+	updatedAt: bigint('updated_at', { mode: 'number' }).notNull()
+});
+
 /** Browser push endpoints are server-owned credentials and never enter the replicated store. */
 export const pushSubscriptions = pgTable(
 	'push_subscriptions',

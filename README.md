@@ -213,16 +213,17 @@ occurrence.
 
 ```
 GET /calendar/token                    → { token }   (requires a session)
-GET /calendar/<token>/tohab.ics?alarm=10
+POST /calendar/settings                ← { alarmMinutes }   (requires a session)
+GET /calendar/<token>/tohab.ics
 ```
 
 - The URL carries an HMAC of your sync id, never the id itself. Feed URLs get handed to
   Google and live in its history indefinitely, and the sync id is the only credential the
   sync API has — so a leaked feed URL must not become write access to your data. The HMAC
   key comes from `CALENDAR_SECRET`, or is generated once and stored in the `secrets` table.
-- `alarm` is the reminder lead time in minutes, baked into the URL by the settings screen.
-  `alarm=0` omits alarms. Only timed tasks get one: relative alarms on all-day events fire
-  at midnight in most clients, which is noise rather than a reminder.
+- The reminder lead time is stored server-side, so the subscription URL stays unchanged when
+  it is edited. `alarmMinutes: 0` omits alarms. Only timed tasks get one: relative alarms on
+  all-day events fire at midnight in most clients, which is noise rather than a reminder.
 - `every!` rules deliberately get no `RRULE`. They count from whenever the task is actually
   completed, so no fixed schedule describes them and only the current due date is known.
 - Times are emitted as floating local wall-clock — no `TZID`, no `Z`. Tohab stores what the
