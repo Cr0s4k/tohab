@@ -40,6 +40,7 @@ async function request(serverUrl: string, path: string, init: RequestInit = {}) 
 	});
 	const data = await response.json().catch(() => ({})) as { error?: string; publicKey?: string; available?: boolean; ok?: boolean };
 	if (!response.ok) throw new Error(data.error ?? `Notification request failed (${response.status})`);
+	if (data.ok === false) throw new Error(data.error ?? 'The push service could not deliver the notification.');
 	return data;
 }
 

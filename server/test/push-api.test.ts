@@ -37,6 +37,12 @@ try {
 	assert.equal(stored?.failureCount, 0);
 	assert.equal(stored?.lastSuccessAt, 0);
 
+	const testPush = await fetch(`${ROOT}/push/test`, {
+		method: 'POST', headers, body: JSON.stringify({ endpoint })
+	});
+	assert.equal(testPush.status, 502);
+	assert.match((await testPush.json() as { error: string }).error, /could not deliver/);
+
 	const other = await signIn('push-api-other');
 	const stolen = await fetch(`${ROOT}/push/subscription`, {
 		method: 'POST',

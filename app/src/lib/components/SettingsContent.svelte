@@ -99,7 +99,7 @@
 		notificationsBusy = true;
 		try {
 			await sendTestNotification(settings.serverUrl);
-			notificationStatus = 'Test notification sent.';
+			notificationStatus = 'Test notification sent. If it does not appear, check system notification settings and Focus or Do Not Disturb.';
 		} catch (error) {
 			notificationStatus = error instanceof Error ? error.message : 'Could not send a test notification.';
 		} finally {

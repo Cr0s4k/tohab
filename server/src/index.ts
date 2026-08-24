@@ -362,7 +362,10 @@ push.post('/test', async (c) => {
 		badge: 0,
 		tag: 'tohab-test'
 	})));
-	return c.json({ ok: results.some(Boolean) });
+	if (!results.some(Boolean)) {
+		return c.json({ error: 'The push service could not deliver the test notification. Disable and re-enable notifications, then try again.' }, 502);
+	}
+	return c.json({ ok: true });
 });
 
 let pushRunActive = false;
