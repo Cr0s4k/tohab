@@ -40,7 +40,6 @@ export async function bootLocalDb(userId: string, retry = false) {
 	localDbSession.ready = false;
 	localDbSession.error = '';
 	live.db = null;
-	live.error = '';
 	try {
 		const { stopSync, startSync } = await import('./replication.svelte.ts');
 		await stopSync();
@@ -59,7 +58,6 @@ export async function bootLocalDb(userId: string, retry = false) {
 		if (attempt !== bootAttempt) return;
 		localDbSession.failure = classifyDatabaseError(error);
 		localDbSession.error = (error instanceof Error ? error.message : String(error)) || 'Unknown database error';
-		live.error = localDbSession.error;
 		hideSplash();
 	}
 }

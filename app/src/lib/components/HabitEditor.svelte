@@ -8,9 +8,11 @@
 		updateHabit,
 		type HabitInput
 	} from '$lib/habits';
-	import { WEEKDAY_LABELS, WEEKDAY_NAMES } from '$lib/dates';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import Sheet from './Sheet.svelte';
+	import HabitIdentityControls from './habit/HabitIdentityControls.svelte';
+	import HabitScheduleControls from './habit/HabitScheduleControls.svelte';
+	import HabitTrackingControls from './habit/HabitTrackingControls.svelte';
 
 	let {
 		open = false,
@@ -118,224 +120,26 @@
 >
 	{#snippet children()}
 		<div class="flex flex-col gap-4">
-			<div>
-				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">
-					I want to track
-				</p>
-				<div class="flex gap-1.5">
-					<button
-						type="button"
-						use:hapticTap
-						onclick={() => chooseGoal('build')}
-						class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-medium"
-						aria-pressed={draft.goal === 'build'}
-						class:accent-bg={draft.goal === 'build'}
-						class:sunken={draft.goal !== 'build'}
-					>
-						Build a good habit
-					</button>
-					<button
-						type="button"
-						use:hapticTap
-						onclick={() => chooseGoal('break')}
-						class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-medium"
-						aria-pressed={draft.goal === 'break'}
-						class:accent-bg={draft.goal === 'break'}
-						class:sunken={draft.goal !== 'break'}
-					>
-						Break a bad habit
-					</button>
-				</div>
-			</div>
-
-			<div class="flex gap-2">
-				<span
-					class="grid size-12 shrink-0 place-items-center rounded-2xl text-2xl"
-					style="background: color-mix(in oklch, {draft.color} 20%, transparent)"
-				>
-					{draft.emoji}
-				</span>
-				<div class="min-w-0 flex-1">
-					{#if draft.goal === 'break'}
-						<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">
-							Goal
-						</p>
-					{/if}
-					<input
-						bind:value={draft.name}
-						placeholder={draft.goal === 'break' ? 'e.g. Stop smoking' : 'Habit name'}
-						class="sunken w-full rounded-2xl px-4 text-[0.95rem] outline-none placeholder:opacity-50"
-					/>
-				</div>
-			</div>
-
-			<div class="flex flex-wrap gap-1.5">
-				{#each HABIT_EMOJI as e (e)}
-					<button
-						type="button"
-						onclick={() => (draft.emoji = e)}
-						aria-label={`Emoji ${e}`}
-						aria-pressed={draft.emoji === e}
-						class="tap sunken grid size-11 place-items-center rounded-xl text-lg"
-						class:ring-2={draft.emoji === e}
-						style="--tw-ring-color: var(--accent)"
-					>
-						{e}
-					</button>
-				{/each}
-			</div>
-
-			<div class="flex gap-2">
-				{#each HABIT_COLORS as c (c)}
-					<button
-						type="button"
-						aria-label={`Colour ${c}`}
-						aria-pressed={draft.color === c}
-						onclick={() => (draft.color = c)}
-						class="tap min-h-11 flex-1 rounded-xl"
-						class:ring-2={draft.color === c}
-						style="background: {c}; --tw-ring-color: var(--text); --tw-ring-offset-width: 2px"
-					></button>
-				{/each}
-			</div>
-
-			{#if draft.goal === 'break'}
-				<div>
-					<label class="block">
-						<span class="dim mb-1.5 block text-caption font-semibold tracking-wide uppercase">
-							No more than
-						</span>
-						<div class="flex items-center gap-2">
-							<input
-								type="number"
-								min="0"
-								max="10000"
-								bind:value={draft.target}
-								class="sunken w-full rounded-xl px-3 py-2.5 text-sm outline-none"
-							/>
-							<span class="dim shrink-0 text-sm">per day</span>
-						</div>
-					</label>
-					<p class="dim mt-2 text-caption">
-						Each tap records one slip. Staying at or under this limit counts as a win.
-					</p>
-				</div>
-			{:else}
-				<div>
-					<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Type</p>
-					<div class="flex gap-1.5">
-						<button
-							type="button"
-							onclick={() => {
-								draft.kind = 'binary';
-								draft.target = 1;
-							}}
-							class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-medium"
-							aria-pressed={draft.kind === 'binary'}
-							class:accent-bg={draft.kind === 'binary'}
-							class:sunken={draft.kind !== 'binary'}
-						>
-							Done / not done
-						</button>
-						<button
-							type="button"
-							onclick={() => {
-								draft.kind = 'quantity';
-								if (draft.target < 2) draft.target = 8;
-							}}
-							class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-medium"
-							aria-pressed={draft.kind === 'quantity'}
-							class:accent-bg={draft.kind === 'quantity'}
-							class:sunken={draft.kind !== 'quantity'}
-						>
-							Count a quantity
-						</button>
-					</div>
-				</div>
-
-				{#if draft.kind === 'quantity'}
-					<div class="flex gap-2">
-						<label class="flex-1">
-							<span class="dim mb-1.5 block text-caption font-semibold tracking-wide uppercase">
-								Daily goal
-							</span>
-							<input
-								type="number"
-								min="1"
-								max="10000"
-								bind:value={draft.target}
-								class="sunken w-full rounded-xl px-3 py-2.5 text-sm outline-none"
-							/>
-						</label>
-						<label class="flex-1">
-							<span class="dim mb-1.5 block text-caption font-semibold tracking-wide uppercase">
-								Unit
-							</span>
-							<input
-								bind:value={draft.unit}
-								placeholder="glasses"
-								class="sunken w-full rounded-xl px-3 py-2.5 text-sm outline-none placeholder:opacity-50"
-							/>
-						</label>
-					</div>
-				{/if}
-
-				<div>
-					<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Schedule</p>
-					<div class="flex gap-1.5">
-						{#each [{ id: 'daily', label: 'Every day' }, { id: 'weekdays', label: 'Certain days' }, { id: 'weekly', label: 'X per week' }] as opt (opt.id)}
-							<button
-								type="button"
-								onclick={() => (draft.scheduleKind = opt.id as typeof draft.scheduleKind)}
-								class="tap flex-1 rounded-xl py-2.5 text-[0.75rem] font-medium"
-								class:accent-bg={draft.scheduleKind === opt.id}
-								class:sunken={draft.scheduleKind !== opt.id}
-							>
-								{opt.label}
-							</button>
-						{/each}
-					</div>
-				</div>
-
-				{#if draft.scheduleKind === 'weekdays'}
-					<div class="flex gap-1.5">
-						{#each [1, 2, 3, 4, 5, 6, 0] as d (d)}
-							<button
-								type="button"
-								use:hapticTap
-								aria-label={WEEKDAY_NAMES[d]}
-								onclick={() => toggleWeekday(d)}
-								class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-semibold"
-								class:accent-bg={draft.weekdays.includes(d)}
-								class:sunken={!draft.weekdays.includes(d)}
-							>
-								{WEEKDAY_LABELS[d]}
-							</button>
-						{/each}
-					</div>
-				{/if}
-
-				{#if draft.scheduleKind === 'weekly'}
-					<div>
-						<div class="flex gap-1.5">
-							{#each [1, 2, 3, 4, 5, 6, 7] as n (n)}
-								<button
-									type="button"
-									onclick={() => (draft.timesPerWeek = n)}
-									class="tap min-h-11 flex-1 rounded-xl py-2.5 text-sm font-semibold"
-									class:accent-bg={draft.timesPerWeek === n}
-									class:sunken={draft.timesPerWeek !== n}
-								>
-									{n}
-								</button>
-							{/each}
-						</div>
-						<p class="dim mt-1.5 text-caption">
-							Any {draft.timesPerWeek} {draft.timesPerWeek === 1 ? 'day' : 'days'} a week. Streaks count
-							weeks, not days.
-						</p>
-					</div>
-				{/if}
+			<HabitIdentityControls
+				goal={draft.goal}
+				bind:name={draft.name}
+				bind:emoji={draft.emoji}
+				bind:color={draft.color}
+				onGoal={chooseGoal}
+			/>
+			<HabitTrackingControls
+				goal={draft.goal}
+				bind:kind={draft.kind}
+				bind:target={draft.target}
+				bind:unit={draft.unit}
+			/>
+			{#if draft.goal === 'build'}
+				<HabitScheduleControls
+					bind:scheduleKind={draft.scheduleKind}
+					weekdays={draft.weekdays}
+					bind:timesPerWeek={draft.timesPerWeek}
+					onToggleWeekday={toggleWeekday}
+				/>
 			{/if}
 
 			<div class="flex gap-2 pt-1">
