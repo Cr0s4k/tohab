@@ -359,8 +359,7 @@ push.post('/test', async (c) => {
 		title: 'Tohab notifications are ready',
 		body: 'Task reminders will appear here.',
 		url: '/tasks',
-		badge: 0,
-		tag: 'tohab-test'
+		badge: 0
 	})));
 	if (!results.some(Boolean)) {
 		return c.json({ error: 'The push service could not deliver the test notification. Disable and re-enable notifications, then try again.' }, 502);
