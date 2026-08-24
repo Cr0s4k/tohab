@@ -159,7 +159,12 @@ try {
 	await waitFor(`!${bodyText}.includes('buy oat milk')`, 8000, 'Upcoming hides completed by default');
 	check('Upcoming hides completed tasks by default', await evaluate<boolean>(`${bodyText}.includes('buy oat milk')`), false);
 
-	await evaluate(`document.querySelector('header button[aria-label="Sort and group"]').click()`);
+	await waitFor(
+		`document.querySelector('button[aria-label="Sort and group"]')`,
+		8000,
+		'sort and group button'
+	);
+	await evaluate(`document.querySelector('button[aria-label="Sort and group"]').click()`);
 	await waitFor(`${bodyText}.includes('Sort & group')`, 5000, 'options sheet opened');
 	await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Show completed tasks').click()`);
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'completed task joins Upcoming');
@@ -250,8 +255,10 @@ try {
 	await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Sign out').click()`);
 	await loginThroughUi(second);
 	await goto('/habits');
+	await waitFor(`${title} === 'Journal'`, 8000, 'second account journal');
 	check('second account cannot query first account habits', await evaluate<boolean>(`!${bodyText}.includes('Morning run')`), true);
 	await goto('/tasks?view=inbox');
+	await waitFor(`${title} === 'Inbox' && document.querySelector('button[aria-label="New task"]')`, 8000, 'second account inbox');
 	check('second account cannot query first account tasks', await evaluate<boolean>(`!${bodyText}.includes('file taxes') && !${bodyText}.includes('buy oat milk')`), true);
 	await evaluate(`document.querySelector('button[aria-label="New task"]').click()`);
 	await waitFor(`document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'second account compose');
@@ -263,6 +270,7 @@ try {
 	await evaluate(`document.querySelector('form button[type=submit]').click()`);
 	await waitFor(`${bodyText}.includes('second account only')`, 8000, 'second account task created');
 
+	await waitFor(`document.querySelector('button[aria-label="Settings"]')`, 8000, 'second account settings button');
 	await evaluate(`document.querySelector('button[aria-label="Settings"]').click()`);
 	await waitFor(`${bodyText}.includes('Sync with server')`, 8000, 'second account settings');
 	await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Sign out').click()`);

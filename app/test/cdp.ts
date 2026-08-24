@@ -91,7 +91,11 @@ export async function launchChrome(options: ChromeOptions) {
 
 	async function navigate(url: string, timeout = 15_000) {
 		await send('Page.navigate', { url });
-		await waitFor(`document.readyState === 'complete'`, timeout, `navigation to ${url}`);
+		await waitFor(
+			`location.href === ${JSON.stringify(url)} && document.readyState === 'complete'`,
+			timeout,
+			`navigation to ${url}`
+		);
 	}
 
 	function close() {
