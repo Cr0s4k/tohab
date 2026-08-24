@@ -13,6 +13,7 @@
 	import Sheet from './Sheet.svelte';
 	import TaskDueControls from './task/TaskDueControls.svelte';
 	import TaskPriorityPicker from './task/TaskPriorityPicker.svelte';
+	import TaskProjectPicker from './task/TaskProjectPicker.svelte';
 	import TaskRepeatPicker from './task/TaskRepeatPicker.svelte';
 
 	let {
@@ -125,15 +126,7 @@
 
 			<div>
 				<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Project</p>
-				<select
-					bind:value={draft.projectId}
-					class="sunken w-full rounded-xl px-3 py-2.5 text-copy outline-none"
-				>
-					<option value="">Inbox</option>
-					{#each projects as p (p.id)}
-						<option value={p.id}>{p.name}</option>
-					{/each}
-				</select>
+				<TaskProjectPicker {projects} value={draft.projectId} onSelect={(value) => (draft.projectId = value)} variant="select" />
 			</div>
 
 			<div aria-label="Subtasks">

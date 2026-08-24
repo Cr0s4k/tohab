@@ -2,10 +2,10 @@ import webpush from 'web-push';
 import {
 	allPushSubscriptions,
 	deletePushSubscriptionById,
-	persistedGenerated,
 	recordPushFailure,
 	recordPushSuccess
-} from './db.ts';
+} from './repositories/push.ts';
+import { persistedGenerated } from './repositories/secrets.ts';
 
 type VapidPair = { publicKey: string; privateKey: string };
 type PushSubscription = Awaited<ReturnType<typeof allPushSubscriptions>>[number];

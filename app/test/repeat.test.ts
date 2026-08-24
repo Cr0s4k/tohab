@@ -6,19 +6,10 @@ import {
 	nextDue,
 	parseRule
 } from '../src/lib/repeat.ts';
+import { createReporter } from '../../test/assertions.ts';
 
-let failures = 0;
-
-function check(label: string, got: unknown, want: unknown) {
-	const a = JSON.stringify(got);
-	const b = JSON.stringify(want);
-	if (a !== b) {
-		failures++;
-		console.log(`FAIL  ${label}\n        want ${b}\n        got  ${a}`);
-	} else {
-		console.log(`ok    ${label}`);
-	}
-}
+const reporter = createReporter();
+const check = reporter.check;
 
 // 2026-08-19 is a Wednesday.
 const WED = '2026-08-19';
@@ -93,5 +84,4 @@ check('an out-of-range weekday is rejected', isRepeating('week:1:9'), false);
 check('an out-of-range month day is rejected', isRepeating('month:1:42'), false);
 check('a bad rule advances nowhere', advanceDue('nonsense', WED, WED), '');
 
-console.log(failures ? `\n${failures} failing` : '\nall passing');
-process.exit(failures ? 1 : 0);
+reporter.finish();

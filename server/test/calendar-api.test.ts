@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
-import { db, transaction, writeDoc } from '../src/db.ts';
+import { db, transaction } from '../src/db.ts';
+import { writeDoc } from '../src/repositories/documents.ts';
 import { calendarPreferences } from '../src/schema.ts';
 import { cleanup, signIn } from './helpers.ts';
 

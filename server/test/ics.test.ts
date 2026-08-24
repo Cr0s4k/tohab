@@ -5,19 +5,10 @@ import {
 	resolveFeedToken,
 	type FeedTask
 } from '../src/ics.ts';
+import { createReporter } from '../../test/assertions.ts';
 
-let failures = 0;
-
-function check(label: string, got: unknown, want: unknown) {
-	const a = JSON.stringify(got);
-	const b = JSON.stringify(want);
-	if (a !== b) {
-		failures++;
-		console.log(`FAIL  ${label}\n        want ${b}\n        got  ${a}`);
-	} else {
-		console.log(`ok    ${label}`);
-	}
-}
+const reporter = createReporter();
+const check = reporter.check;
 
 function task(over: Partial<FeedTask> = {}): FeedTask {
 	return {
@@ -142,5 +133,4 @@ check(
 	`https://calendar.example.test/calendar/${token}/tohab.ics`
 );
 
-console.log(failures ? `\n${failures} failing` : '\nall passing');
-process.exit(failures ? 1 : 0);
+reporter.finish();

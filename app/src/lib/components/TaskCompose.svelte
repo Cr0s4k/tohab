@@ -9,6 +9,7 @@
 	import Sheet from './Sheet.svelte';
 	import TaskDueControls from './task/TaskDueControls.svelte';
 	import TaskPriorityPicker from './task/TaskPriorityPicker.svelte';
+	import TaskProjectPicker from './task/TaskProjectPicker.svelte';
 	import TaskRepeatPicker from './task/TaskRepeatPicker.svelte';
 
 	let {
@@ -210,36 +211,8 @@
 			{/if}
 
 			{#if panel === 'project'}
-				<div transition:collapse={{ duration: 200 }} class="flex flex-wrap gap-1.5">
-					<button
-						type="button"
-						use:hapticTap
-						onclick={() => {
-							haptic('tap');
-							picked.projectId = '';
-						}}
-						class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
-						class:accent-bg={projectId === ''}
-						class:sunken={projectId !== ''}
-					>
-						Inbox
-					</button>
-					{#each projects as p (p.id)}
-						<button
-							type="button"
-							use:hapticTap
-							onclick={() => {
-								haptic('tap');
-								picked.projectId = p.id;
-							}}
-							class="tap flex items-center gap-1.5 min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
-							class:accent-bg={projectId === p.id}
-							class:sunken={projectId !== p.id}
-						>
-							<span class="size-2 rounded-full" style="background: {p.color}"></span>
-							{p.name}
-						</button>
-					{/each}
+				<div transition:collapse={{ duration: 200 }}>
+					<TaskProjectPicker {projects} value={projectId} onSelect={(value) => (picked.projectId = value)} />
 				</div>
 			{/if}
 

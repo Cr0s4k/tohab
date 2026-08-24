@@ -1,16 +1,10 @@
 import { getDb } from './activity-e2e-db.ts';
 import { createTask, deleteTask } from '../src/lib/tasks.ts';
 import { activityQuery, decodeChanges, revertActivity } from '../src/lib/activity.ts';
+import { createReporter } from '../../test/assertions.ts';
 
-let failures = 0;
-function eq(label: string, got: unknown, want: unknown) {
-	if (JSON.stringify(got) === JSON.stringify(want)) {
-		console.log(`ok    ${label}`);
-		return;
-	}
-	failures++;
-	console.log(`FAIL  ${label}: want ${JSON.stringify(want)}, got ${JSON.stringify(got)}`);
-}
+const reporter = createReporter();
+const eq = reporter.eq;
 
 const db = await getDb();
 const activity = async () => (await activityQuery(db).exec()).map((entry: any) => entry.toMutableJSON());
@@ -61,5 +55,4 @@ const invalidAncestor = await createTask({ title: 'Invalid ancestor' });
 await (await db.tasks.findOne(invalidAncestor!.id).exec()).patch({ parentId: 'missing-ancestor' });
 await checkDeletePromotion('invalid ancestor chain', () => invalidAncestor!.id, () => '');
 
-console.log(failures ? `\n${failures} failing` : '\nall corrupt delete promotion checks passed');
-process.exit(failures ? 1 : 0);
+reporter.finish('all corrupt delete promotion checks passed');

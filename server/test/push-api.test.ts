@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
-import { claimPushReminder, db, releasePushReminder } from '../src/db.ts';
+import { db } from '../src/db.ts';
+import { claimPushReminder, releasePushReminder } from '../src/repositories/push.ts';
 import { pushSubscriptions } from '../src/schema.ts';
 import { cleanup, signIn } from './helpers.ts';
 

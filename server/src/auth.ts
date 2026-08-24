@@ -2,7 +2,8 @@ import { createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import type { Context, MiddlewareHandler } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
-import { persistedSecret, userById } from './db.ts';
+import { persistedSecret } from './repositories/secrets.ts';
+import { userById } from './repositories/users.ts';
 
 const scryptAsync = promisify(scrypt);
 

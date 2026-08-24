@@ -7,7 +7,7 @@ import {
 	verifyPassword,
 	type AuthedEnv
 } from '../auth.ts';
-import { createUser, userByEmail, userCount } from '../db.ts';
+import { createUser, userByEmail, userCount } from '../repositories/users.ts';
 
 function credentials(body: unknown): { email: string; password: string } | null {
 	const { email, password } = (body ?? {}) as { email?: unknown; password?: unknown };

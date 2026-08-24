@@ -1,16 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { taskSchema } from '../src/lib/db/schemas.ts';
 import { migrateTaskV2 } from '../src/lib/db/migrations.ts';
+import { createReporter } from '../../test/assertions.ts';
 
-let fail = 0;
-function eq(label: string, got: unknown, want: unknown) {
-	const g = JSON.stringify(got);
-	const w = JSON.stringify(want);
-	if (g !== w) {
-		fail++;
-		console.log(`FAIL  ${label}: want ${w}, got ${g}`);
-	} else console.log(`ok    ${label} = ${g}`);
-}
+const reporter = createReporter();
+const eq = reporter.eq;
 
 eq('task schema advances for parentId', taskSchema.version, 2);
 eq('parentId is optional', taskSchema.required?.includes('parentId'), false);
@@ -25,5 +19,4 @@ eq('editor loads subtasks independently of route filters', editor.includes('dire
 const row = readFileSync(new URL('../src/lib/components/TaskRow.svelte', import.meta.url), 'utf8');
 eq('task rows render hierarchy indentation', row.includes('task.depth'), true);
 
-console.log(fail ? `\n${fail} failing` : '\nall subtask persistence assertions passed');
-process.exit(fail ? 1 : 0);
+reporter.finish('all subtask persistence assertions passed');

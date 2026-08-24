@@ -4,7 +4,8 @@
  * HTTP like a browser would, so the session cookie under test is a real one.
  */
 import { and, eq, like } from 'drizzle-orm';
-import { createUser, closeDb, db } from '../src/db.ts';
+import { closeDb, db } from '../src/db.ts';
+import { createUser } from '../src/repositories/users.ts';
 import { calendarPreferences, docs, pushReminders, pushSubscriptions, users } from '../src/schema.ts';
 import { hashPassword } from '../src/auth.ts';
 

@@ -4,7 +4,7 @@ import {
 	deletePushSubscription,
 	pushSubscriptionsForUser,
 	upsertPushSubscription
-} from '../db.ts';
+} from '../repositories/push.ts';
 import { validPushEndpoint, validTimeZone } from '../push.ts';
 import { sendPush, vapidKeys } from '../pushService.ts';
 

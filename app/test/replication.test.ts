@@ -20,6 +20,7 @@ import {
 	COLLECTION_NAMES
 } from '../src/lib/db/schemas.ts';
 import { migrateTaskV2 } from '../src/lib/db/migrations.ts';
+import { createReporter } from '../../test/assertions.ts';
 
 import { cleanup, signIn } from './auth.ts';
 
@@ -30,17 +31,8 @@ addRxPlugin(RxDBDevModePlugin);
 addRxPlugin(RxDBMigrationPlugin);
 addRxPlugin(RxDBUpdatePlugin);
 
-let failures = 0;
-function check(label: string, got: unknown, want: unknown) {
-	const a = JSON.stringify(got);
-	const b = JSON.stringify(want);
-	if (a !== b) {
-		failures++;
-		console.log(`FAIL  ${label}\n        want ${b}\n        got  ${a}`);
-	} else {
-		console.log(`ok    ${label}`);
-	}
-}
+const reporter = createReporter();
+const check = reporter.check;
 
 async function makeDb(name: string) {
 	const db = await createRxDatabase({
@@ -222,5 +214,4 @@ await deviceB.close();
 
 await cleanup();
 
-console.log(failures ? `\n${failures} failing` : '\nall passing');
-process.exit(failures ? 1 : 0);
+reporter.finish();

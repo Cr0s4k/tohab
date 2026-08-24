@@ -1,19 +1,10 @@
 import { cleanup, signIn } from './helpers.ts';
+import { createReporter } from '../../test/assertions.ts';
 
 const BASE = process.env.BASE ?? 'http://localhost:5178/sync';
 
-let failures = 0;
-
-function check(label: string, got: unknown, want: unknown) {
-	const a = JSON.stringify(got);
-	const b = JSON.stringify(want);
-	if (a !== b) {
-		failures++;
-		console.log(`FAIL  ${label}\n        want ${b}\n        got  ${a}`);
-	} else {
-		console.log(`ok    ${label}`);
-	}
-}
+const reporter = createReporter();
+const check = reporter.check;
 
 const headers = { 'content-type': 'application/json', cookie: (await signIn('sync')).cookie };
 
@@ -171,6 +162,5 @@ check(
 	'sync-parent'
 );
 
-console.log(failures ? `\n${failures} failing` : '\nall passing');
 await cleanup();
-process.exit(failures ? 1 : 0);
+reporter.finish();

@@ -2,16 +2,10 @@ import { getDb } from './activity-e2e-db.ts';
 import { createTask } from '../src/lib/tasks.ts';
 import { arrangeTasks } from '../src/lib/arrange.ts';
 import { defaultOptions } from '../src/lib/viewOptions.ts';
+import { createReporter } from '../../test/assertions.ts';
 
-let failures = 0;
-function eq(label: string, got: unknown, want: unknown) {
-	if (JSON.stringify(got) === JSON.stringify(want)) {
-		console.log(`ok    ${label}`);
-		return;
-	}
-	failures++;
-	console.log(`FAIL  ${label}: want ${JSON.stringify(want)}, got ${JSON.stringify(got)}`);
-}
+const reporter = createReporter();
+const eq = reporter.eq;
 
 const db = await getDb();
 const parent = await createTask({ title: 'Parent task' });
@@ -30,5 +24,4 @@ eq(
 eq('arranged child keeps its parentId', arranged[1]?.parentId, parent!.id);
 
 await db.remove();
-console.log(failures ? `\n${failures} failing` : '\nall RxDocument arrangement checks passed');
-process.exit(failures ? 1 : 0);
+reporter.finish('all RxDocument arrangement checks passed');

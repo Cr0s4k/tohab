@@ -12,6 +12,7 @@ import {
 	type DocChange
 } from '../src/lib/activityLog.ts';
 import type { Activity, Task } from '../src/lib/db/schemas.ts';
+import { createReporter } from '../../test/assertions.ts';
 
 function task(id: string, over: Partial<Task> = {}): Task {
 	return {
@@ -46,17 +47,8 @@ function entry(over: Partial<Activity> = {}): Activity {
 	};
 }
 
-let fail = 0;
-function eq(label: string, got: unknown, want: unknown) {
-	const g = JSON.stringify(got);
-	const w = JSON.stringify(want);
-	if (g !== w) {
-		fail++;
-		console.log(`FAIL  ${label}: want ${w}, got ${g}`);
-	} else {
-		console.log(`ok    ${label} = ${g}`);
-	}
-}
+const reporter = createReporter();
+const eq = reporter.eq;
 
 // changedFields ignores the bookkeeping timestamps every write touches.
 eq('changedFields none', changedFields(task('t1'), task('t1', { updatedAt: 9_999 })), []);
@@ -199,5 +191,4 @@ eq(
 	[['b', 'a']]
 );
 
-console.log(fail ? `\n${fail} failing` : '\nall activity assertions passed');
-process.exit(fail ? 1 : 0);
+reporter.finish('all activity assertions passed');

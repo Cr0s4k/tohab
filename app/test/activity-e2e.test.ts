@@ -12,18 +12,10 @@ import { activityQuery, decodeChanges, revertActivity } from '../src/lib/activit
 import { undoState, runUndo } from '../src/lib/undo.svelte.ts';
 import { exportBackup, importBackup } from '../src/lib/backup.ts';
 import { humanDay } from '../src/lib/dates.ts';
+import { createReporter } from '../../test/assertions.ts';
 
-let fail = 0;
-function eq(label: string, got: unknown, want: unknown) {
-	const g = JSON.stringify(got);
-	const w = JSON.stringify(want);
-	if (g !== w) {
-		fail++;
-		console.log(`FAIL  ${label}: want ${w}, got ${g}`);
-	} else {
-		console.log(`ok    ${label} = ${g}`);
-	}
-}
+const reporter = createReporter();
+const eq = reporter.eq;
 
 const db = await getDb();
 const log = async () => (await activityQuery(db).exec()).map((e: any) => e.toMutableJSON());
@@ -241,5 +233,4 @@ eq(
 );
 console.log(`\n(log holds ${entries.length} entries)`);
 
-console.log(fail ? `\n${fail} failing` : '\nall end-to-end activity checks passed');
-process.exit(fail ? 1 : 0);
+reporter.finish('all end-to-end activity checks passed');

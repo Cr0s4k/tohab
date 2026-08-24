@@ -1,10 +1,12 @@
 import {
+	liveDocs
+} from './repositories/documents.ts';
+import {
 	allPushSubscriptions,
 	claimPushReminder,
-	liveDocs,
 	prunePushReminders,
 	releasePushReminder
-} from './db.ts';
+} from './repositories/push.ts';
 import { reminderForTask, type ReminderTask } from './push.ts';
 import { sendPush } from './pushService.ts';
 

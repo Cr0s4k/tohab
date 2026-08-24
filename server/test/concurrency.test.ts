@@ -4,20 +4,12 @@
  * same time. A lost update here is silent — the losing client believes its write landed.
  */
 import { cleanup, signIn } from './helpers.ts';
+import { createReporter } from '../../test/assertions.ts';
 
 const BASE = process.env.BASE ?? 'http://localhost:5178/sync';
 
-let failures = 0;
-function check(label: string, got: unknown, want: unknown) {
-	const a = JSON.stringify(got);
-	const b = JSON.stringify(want);
-	if (a !== b) {
-		failures++;
-		console.log(`FAIL  ${label}\n        want ${b}\n        got  ${a}`);
-	} else {
-		console.log(`ok    ${label}`);
-	}
-}
+const reporter = createReporter();
+const check = reporter.check;
 
 /** Each "user" here is a real account with its own session cookie. */
 const cookies = new Map<string, string>();
@@ -128,6 +120,5 @@ check(
 );
 void sortedRevs;
 
-console.log(failures ? `\n${failures} failing` : '\nall passing');
 await cleanup();
-process.exit(failures ? 1 : 0);
+reporter.finish();

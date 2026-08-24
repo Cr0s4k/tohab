@@ -2,131 +2,37 @@
  * Browser smoke test: drives headless Chrome over CDP against a running dev/preview server.
  * Verifies the app boots, RxDB persists across reloads, and the core flows work.
  */
-import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { createReporter } from '../../test/assertions.ts';
 import { cleanup, signIn, type TestSession } from './auth.ts';
+import { launchChrome } from './cdp.ts';
 
 const APP = process.env.APP ?? 'http://localhost:5177';
-const CHROME =
-	process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const PORT = 9333;
-
-let failures = 0;
-function check(label: string, got: unknown, want: unknown) {
-	const a = JSON.stringify(got);
-	const b = JSON.stringify(want);
-	if (a !== b) {
-		failures++;
-		console.log(`FAIL  ${label}\n        want ${b}\n        got  ${a}`);
-	} else {
-		console.log(`ok    ${label}`);
-	}
-}
-
-const profile = mkdtempSync(join(tmpdir(), 'tohab-chrome-'));
-const chrome = spawn(
-	CHROME,
-	[
-		'--headless=new',
-		`--remote-debugging-port=${PORT}`,
-		`--user-data-dir=${profile}`,
-		'--no-first-run',
-		'--no-default-browser-check',
-		'--disable-gpu',
-		'--window-size=390,844',
-		'about:blank'
-	],
-	{ stdio: 'ignore' }
-);
-
-async function wsUrl(): Promise<string> {
-	for (let i = 0; i < 60; i++) {
-		try {
-			const res = await fetch(`http://127.0.0.1:${PORT}/json/version`);
-			const json = (await res.json()) as { webSocketDebuggerUrl: string };
-			if (json.webSocketDebuggerUrl) return json.webSocketDebuggerUrl;
-		} catch {
-			/* not up yet */
-		}
-		await new Promise((r) => setTimeout(r, 250));
-	}
-	throw new Error('Chrome did not expose a debugging endpoint');
-}
-
-const ws = new WebSocket(await wsUrl());
-await new Promise((resolve, reject) => {
-	ws.addEventListener('open', resolve, { once: true });
-	ws.addEventListener('error', reject, { once: true });
-});
-
-let nextId = 1;
-const waiting = new Map<number, (v: any) => void>();
+const reporter = createReporter();
+const check = reporter.check;
 const consoleErrors: string[] = [];
-let sessionId: string | undefined;
 
-ws.addEventListener('message', (ev) => {
-	const msg = JSON.parse(String(ev.data));
-	if (msg.id && waiting.has(msg.id)) {
-		waiting.get(msg.id)!(msg);
-		waiting.delete(msg.id);
-		return;
-	}
-	if (msg.method === 'Runtime.exceptionThrown') {
-		const d = msg.params?.exceptionDetails;
-		consoleErrors.push(`uncaught: ${d?.exception?.description ?? d?.text}`);
-	}
-	if (msg.method === 'Runtime.consoleAPICalled' && msg.params?.type === 'error') {
-		consoleErrors.push(
-			`console.error: ${msg.params.args.map((a: any) => a.value ?? a.description ?? a.type).join(' ')}`
-		);
+const browser = await launchChrome({
+	port: PORT,
+	profilePrefix: 'tohab-chrome-',
+	windowSize: '390,844',
+	onEvent(message) {
+		if (message.method === 'Runtime.exceptionThrown') {
+			const d = message.params?.exceptionDetails;
+			consoleErrors.push(`uncaught: ${d?.exception?.description ?? d?.text}`);
+		}
+		if (message.method === 'Runtime.consoleAPICalled' && message.params?.type === 'error') {
+			consoleErrors.push(
+				`console.error: ${message.params.args.map((arg: any) => arg.value ?? arg.description ?? arg.type).join(' ')}`
+			);
+		}
 	}
 });
-
-function send(method: string, params: Record<string, unknown> = {}, useSession = true): Promise<any> {
-	const id = nextId++;
-	return new Promise((resolve, reject) => {
-		waiting.set(id, (msg) => (msg.error ? reject(new Error(`${method}: ${msg.error.message}`)) : resolve(msg.result)));
-		ws.send(JSON.stringify({ id, method, params, ...(useSession && sessionId ? { sessionId } : {}) }));
-	});
-}
-
-const { targetId } = await send('Target.createTarget', { url: 'about:blank' }, false);
-({ sessionId } = await send('Target.attachToTarget', { targetId, flatten: true }, false));
-await send('Page.enable');
-await send('Runtime.enable');
-await send('Network.enable');
-
-async function evaluate<T>(expression: string): Promise<T> {
-	const res = await send('Runtime.evaluate', {
-		expression,
-		awaitPromise: true,
-		returnByValue: true
-	});
-	if (res.exceptionDetails) {
-		throw new Error(`eval failed: ${res.exceptionDetails.exception?.description ?? res.exceptionDetails.text}`);
-	}
-	return res.result.value as T;
-}
+const { attachPage, close, evaluate, navigate, send, waitFor } = browser;
+await attachPage();
 
 async function goto(path: string) {
-	await send('Page.navigate', { url: `${APP}${path}` });
-	await waitFor(`document.readyState === 'complete'`, 15000);
-}
-
-async function waitFor(expression: string, timeout = 8000, label = expression) {
-	const deadline = Date.now() + timeout;
-	while (Date.now() < deadline) {
-		try {
-			if (await evaluate<boolean>(`Boolean(${expression})`)) return true;
-		} catch {
-			/* page mid-navigation */
-		}
-		await new Promise((r) => setTimeout(r, 150));
-	}
-	const seen = await evaluate<string>(`document.body.innerText`).catch(() => '<unavailable>');
-	throw new Error(`timed out waiting for: ${label}\n        page showed: ${JSON.stringify(seen)}`);
+	await navigate(`${APP}${path}`);
 }
 
 const text = (sel: string) => `document.querySelector(${JSON.stringify(sel)})?.textContent?.trim()`;
@@ -368,19 +274,11 @@ try {
 	// --- 10. no console errors along the way ---
 	check('no console errors', consoleErrors, []);
 } catch (err) {
-	failures++;
-	console.log(`FAIL  ${err instanceof Error ? err.message : err}`);
+	reporter.fail(err);
 	if (consoleErrors.length) console.log('  console output:\n   ' + consoleErrors.join('\n   '));
 } finally {
 	await cleanup();
-	ws.close();
-	chrome.kill();
-	try {
-		rmSync(profile, { recursive: true, force: true, maxRetries: 3 });
-	} catch {
-		/* Chrome may still be releasing the profile */
-	}
+	close();
 }
 
-console.log(failures ? `\n${failures} failing` : '\nall passing');
-process.exit(failures ? 1 : 0);
+reporter.finish();

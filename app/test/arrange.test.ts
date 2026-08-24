@@ -1,6 +1,7 @@
 import { arrangeTasks, sortTasks } from '../src/lib/arrange.ts';
 import { defaultOptions, type ViewOptions } from '../src/lib/viewOptions.ts';
 import type { Project, Task } from '../src/lib/db/schemas.ts';
+import { createReporter } from '../../test/assertions.ts';
 
 function task(id: string, over: Partial<Task> = {}): Task {
 	return {
@@ -27,17 +28,8 @@ function opts(over: Partial<ViewOptions> = {}): ViewOptions {
 	return { ...defaultOptions(''), ...over };
 }
 
-let fail = 0;
-function eq(label: string, got: unknown, want: unknown) {
-	const g = JSON.stringify(got);
-	const w = JSON.stringify(want);
-	if (g !== w) {
-		fail++;
-		console.log(`FAIL  ${label}: want ${w}, got ${g}`);
-	} else {
-		console.log(`ok    ${label} = ${g}`);
-	}
-}
+const reporter = createReporter();
+const eq = reporter.eq;
 
 const ids = (tasks: Task[]) => tasks.map((t) => t.id);
 const tree = (tasks: (Task & { depth?: number })[]) => tasks.map((t) => [t.id, t.depth]);
@@ -151,5 +143,4 @@ eq(
 	[['a', 0], ['b', 0]]
 );
 
-console.log(fail ? `\n${fail} failing` : '\nall passing');
-process.exit(fail ? 1 : 0);
+reporter.finish();

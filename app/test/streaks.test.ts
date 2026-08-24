@@ -7,6 +7,7 @@ import {
 	type LogMap
 } from '../src/lib/streaks.ts';
 import type { Habit } from '../src/lib/db/schemas.ts';
+import { createReporter } from '../../test/assertions.ts';
 
 const TODAY = '2026-08-19'; // a Wednesday
 
@@ -34,15 +35,8 @@ function logs(days: string[], value = 1): LogMap {
 	return new Map(days.map((d) => [d, value]));
 }
 
-let fail = 0;
-function eq(label: string, got: unknown, want: unknown) {
-	if (got !== want) {
-		fail++;
-		console.log(`FAIL  ${label}: want ${want}, got ${got}`);
-	} else {
-		console.log(`ok    ${label} = ${got}`);
-	}
-}
+const reporter = createReporter();
+const eq = reporter.eq;
 
 // --- daily ---
 const daily = habit();
@@ -190,4 +184,4 @@ eq(
 	0
 );
 
-console.log(fail ? `\n${fail} failing` : `\nall passing`);
+reporter.finish();

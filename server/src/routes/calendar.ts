@@ -1,12 +1,9 @@
 import { Hono } from 'hono';
 import { requireAuth, type AuthedEnv } from '../auth.ts';
-import {
-	calendarAlarmMinutes,
-	knownUsers,
-	liveDocs,
-	persistedSecret,
-	setCalendarAlarmMinutes
-} from '../db.ts';
+import { calendarAlarmMinutes, setCalendarAlarmMinutes } from '../repositories/calendar.ts';
+import { liveDocs } from '../repositories/documents.ts';
+import { persistedSecret } from '../repositories/secrets.ts';
+import { knownUsers } from '../repositories/users.ts';
 import {
 	buildCalendar,
 	feedToken,

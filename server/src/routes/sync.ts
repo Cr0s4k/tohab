@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { requireAuth, type AuthedEnv } from '../auth.ts';
+import { transaction } from '../db.ts';
 import {
 	COLLECTIONS,
 	clockSkew,
@@ -8,9 +9,8 @@ import {
 	getDocForUpdate,
 	rowToDoc,
 	stats,
-	transaction,
 	writeDoc
-} from '../db.ts';
+} from '../repositories/documents.ts';
 
 type PushRow = {
 	assumedMasterState?: Record<string, unknown>;
