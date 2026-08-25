@@ -36,10 +36,15 @@ export function hapticTap(node: HTMLElement) {
 	label.style.cssText = 'position:absolute;inset:0;touch-action:manipulation';
 	label.append(input);
 
+	input.addEventListener('click', (event) => {
+		event.stopPropagation();
+		node.click();
+	});
+
 	/**
-	 * A tap on the label activates the input, which dispatches a second click — so the host would
-	 * see two. The input covers the label, so the tap normally lands there and bubbles once; only
-	 * the label's own click has to be dropped.
+	 * A tap on the label activates the input, which dispatches a second click. The input forwards
+	 * that activation to the host so native button submission and link navigation still happen.
+	 * The input covers the label, so only the label's own click has to be dropped.
 	 */
 	label.addEventListener('click', (e) => {
 		if (e.target === label) e.stopPropagation();

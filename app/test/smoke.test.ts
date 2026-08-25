@@ -145,6 +145,26 @@ try {
 	await waitFor(`${bodyText}.includes('file taxes')`, 8000, 'project lists its task');
 	check('projected task appears in its project', await evaluate<boolean>(`${bodyText}.includes('file taxes')`), true);
 
+	// iOS uses the haptic checkbox overlay because navigator.vibrate is unavailable. A tap on that
+	// overlay must still perform the submit button's native form activation.
+	await send('Page.addScriptToEvaluateOnNewDocument', {
+		source: `delete Navigator.prototype.vibrate;`
+	});
+	await goto('/browse');
+	await waitFor(`!('vibrate' in navigator)`, 5000, 'iOS haptic mode enabled');
+	await waitFor(`document.querySelector('button[aria-label="Add project"]')`, 20000, 'Browse rendered in iOS haptic mode');
+	await evaluate(`document.querySelector('button[aria-label="Add project"]').click()`);
+	await waitFor(`document.querySelector('input[placeholder="New project…"]')`, 5000, 'project form opened');
+	await evaluate(`(() => {
+		const input = document.querySelector('input[placeholder="New project…"]');
+		input.value = 'House';
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+	})()`);
+	await waitFor(`document.querySelector('form button[type="submit"] input[type="checkbox"]')`, 5000, 'iOS haptic overlay mounted');
+	await evaluate(`document.querySelector('form button[type="submit"] input[type="checkbox"]').click()`);
+	await waitFor(`${bodyText}.includes('House') && !document.querySelector('input[placeholder="New project…"]')`, 8000, 'project added through iOS haptic overlay');
+	check('Add project submits in iOS haptic mode', await evaluate<boolean>(`${bodyText}.includes('House')`), true);
+
 	// Back to Upcoming, where only the dated task lives, for the completion step.
 	await goto('/tasks?view=upcoming');
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'back on Upcoming');
