@@ -16,10 +16,13 @@ eq('v3 migration preserves inherited reminder behavior', migrateTaskV3(legacy), 
 const editor = readFileSync(new URL('../src/lib/components/TaskEditor.svelte', import.meta.url), 'utf8');
 eq('editor has an obvious Add subtask action', editor.includes('Add subtask'), true);
 eq('editor labels the direct-subtask list', editor.includes('aria-label="Subtasks"'), true);
-eq('editor opens subtasks by default', editor.includes('<details open aria-label="Subtasks"'), true);
+eq('editor expands tasks that already have subtasks', editor.includes('subtasksOpen = true'), true);
+eq('editor collapses empty subtasks initially', editor.includes('subtasksOpen = false'), true);
 eq('editor places subtasks immediately after notes', editor.indexOf('aria-label="Subtasks"') > editor.indexOf('bind:value={draft.notes}'), true);
 eq('editor groups scheduling controls', editor.includes('>Schedule</span>'), true);
 eq('editor groups organization controls', editor.includes('>Organization</span>'), true);
+eq('editor expands non-default scheduling', editor.includes('scheduleOpen = Boolean(task.due || task.dueTime || task.repeat || task.reminderMinutes !== undefined)'), true);
+eq('editor expands non-default organization', editor.includes("organizationOpen = task.priority !== 4 || Boolean(task.projectId)"), true);
 eq('editor loads subtasks independently of route filters', editor.includes('directSubtasksQuery'), true);
 eq('editor dismisses without saving accidental changes', editor.includes('onClose={onClose}'), true);
 eq('editor saves only through its confirm action', editor.includes('onConfirm={saveAndClose}'), true);

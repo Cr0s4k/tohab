@@ -40,6 +40,11 @@
 		projectId: ''
 	});
 	let id = $state('');
+	let loadedTaskId = $state('');
+	let subtasksExpandedForId = $state('');
+	let subtasksOpen = $state(false);
+	let scheduleOpen = $state(false);
+	let organizationOpen = $state(false);
 	let addingSubtask = $state(false);
 	let subtaskTitle = $state('');
 	let subtaskInput = $state<HTMLInputElement | null>(null);
@@ -49,7 +54,17 @@
 	);
 
 	$effect(() => {
-		if (!task) return;
+		if (!task) {
+			loadedTaskId = '';
+			return;
+		}
+		if (loadedTaskId !== task.id) {
+			loadedTaskId = task.id;
+			subtasksExpandedForId = '';
+			subtasksOpen = false;
+			scheduleOpen = Boolean(task.due || task.dueTime || task.repeat || task.reminderMinutes !== undefined);
+			organizationOpen = task.priority !== 4 || Boolean(task.projectId);
+		}
 		id = task.id;
 		draft = {
 			title: task.title,
@@ -63,6 +78,12 @@
 		};
 		addingSubtask = false;
 		subtaskTitle = '';
+	});
+
+	$effect(() => {
+		if (!id || !subtasks.value.some((subtask) => subtask.parentId === id) || subtasksExpandedForId === id) return;
+		subtasksExpandedForId = id;
+		subtasksOpen = true;
 	});
 
 	async function save() {
@@ -118,7 +139,7 @@
 				class="sunken w-full resize-none rounded-lg px-3 py-2.5 text-copy outline-none placeholder:opacity-50"
 			></textarea>
 
-			<details open aria-label="Subtasks" class="task-editor-section hairline overflow-hidden rounded-xl border">
+			<details bind:open={subtasksOpen} aria-label="Subtasks" class="task-editor-section hairline overflow-hidden rounded-xl border">
 				<summary class="tap flex min-h-12 cursor-pointer items-center justify-between gap-3 px-3 py-2.5">
 					<span class="text-copy font-semibold">Subtasks</span>
 					<span class="flex items-center gap-2">
@@ -184,7 +205,7 @@
 				</div>
 			</details>
 
-			<details class="task-editor-section hairline overflow-hidden rounded-xl border">
+			<details bind:open={scheduleOpen} class="task-editor-section hairline overflow-hidden rounded-xl border">
 				<summary class="tap flex min-h-12 cursor-pointer items-center justify-between gap-3 px-3 py-2.5">
 					<span class="text-copy font-semibold">Schedule</span>
 					<svg viewBox="0 0 24 24" class="task-editor-section__chevron size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -209,7 +230,7 @@
 				</div>
 			</details>
 
-			<details class="task-editor-section hairline overflow-hidden rounded-xl border">
+			<details bind:open={organizationOpen} class="task-editor-section hairline overflow-hidden rounded-xl border">
 				<summary class="tap flex min-h-12 cursor-pointer items-center justify-between gap-3 px-3 py-2.5">
 					<span class="text-copy font-semibold">Organization</span>
 					<svg viewBox="0 0 24 24" class="task-editor-section__chevron size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
