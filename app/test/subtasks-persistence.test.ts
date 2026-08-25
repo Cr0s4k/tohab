@@ -17,6 +17,8 @@ const editor = readFileSync(new URL('../src/lib/components/TaskEditor.svelte', i
 eq('editor has an obvious Add subtask action', editor.includes('Add subtask'), true);
 eq('editor labels the direct-subtask list', editor.includes('aria-label="Subtasks"'), true);
 eq('editor loads subtasks independently of route filters', editor.includes('directSubtasksQuery'), true);
+eq('editor dismisses without saving accidental changes', editor.includes('onClose={onClose}'), true);
+eq('editor saves only through its confirm action', editor.includes('onConfirm={saveAndClose}'), true);
 const row = readFileSync(new URL('../src/lib/components/TaskRow.svelte', import.meta.url), 'utf8');
 eq('task rows render hierarchy indentation', row.includes('task.depth'), true);
 

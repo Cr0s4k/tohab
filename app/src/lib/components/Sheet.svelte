@@ -10,6 +10,7 @@
 		confirmLabel = 'Done',
 		showHeader = true,
 		onClose,
+		onConfirm = onClose,
 		children
 	}: {
 		open?: boolean;
@@ -17,6 +18,7 @@
 		confirmLabel?: string;
 		showHeader?: boolean;
 		onClose: () => void;
+		onConfirm?: () => void;
 		children: Snippet;
 	} = $props();
 
@@ -75,7 +77,7 @@
 			{#if showHeader}
 				<div class="hairline raised sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3">
 					<h2 id={titleId} class="text-subtitle font-semibold">{title || 'Dialog'}</h2>
-					<button type="button" onclick={onClose} class="tap accent-fg min-h-11 min-w-11 px-2 text-copy font-medium">{confirmLabel}</button>
+					<button type="button" onclick={onConfirm} class="tap accent-fg min-h-11 min-w-11 px-2 text-copy font-medium">{confirmLabel}</button>
 				</div>
 			{:else}
 				<h2 id={titleId} class="sr-only">{title || 'Dialog'}</h2>

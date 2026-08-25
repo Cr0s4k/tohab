@@ -87,6 +87,8 @@ assert.match(sheet, /role="dialog"/);
 assert.match(sheet, /aria-modal="true"/);
 assert.match(sheet, /aria-labelledby/);
 assert.match(sheet, /focusable/);
+assert.match(sheet, /onConfirm = onClose/);
+assert.match(sheet, /onclick=\{onConfirm\}/);
 
 const nginx = read('../docker/nginx.conf');
 assert.match(nginx, /gzip on;/);

@@ -72,7 +72,7 @@
 		await updateTask(id, { ...$state.snapshot(draft), title });
 	}
 
-	function close() {
+	function saveAndClose() {
 		save().then(onClose);
 	}
 
@@ -96,7 +96,13 @@
 
 </script>
 
-<Sheet open={Boolean(task)} title="Task" confirmLabel="Save" onClose={close}>
+<Sheet
+	open={Boolean(task)}
+	title="Task"
+	confirmLabel="Save"
+	onClose={onClose}
+	onConfirm={saveAndClose}
+>
 	{#snippet children()}
 		<div class="flex flex-col gap-4">
 			<input
@@ -194,7 +200,7 @@
 			<div class="flex gap-2 pt-1">
 				<button
 					type="button"
-					onclick={close}
+					onclick={saveAndClose}
 					class="tap accent-bg flex-1 rounded-lg py-2.5 text-body font-semibold"
 				>
 					Save
