@@ -16,6 +16,10 @@ eq('v3 migration preserves inherited reminder behavior', migrateTaskV3(legacy), 
 const editor = readFileSync(new URL('../src/lib/components/TaskEditor.svelte', import.meta.url), 'utf8');
 eq('editor has an obvious Add subtask action', editor.includes('Add subtask'), true);
 eq('editor labels the direct-subtask list', editor.includes('aria-label="Subtasks"'), true);
+eq('editor opens subtasks by default', editor.includes('<details open aria-label="Subtasks"'), true);
+eq('editor places subtasks immediately after notes', editor.indexOf('aria-label="Subtasks"') > editor.indexOf('bind:value={draft.notes}'), true);
+eq('editor groups scheduling controls', editor.includes('>Schedule</span>'), true);
+eq('editor groups organization controls', editor.includes('>Organization</span>'), true);
 eq('editor loads subtasks independently of route filters', editor.includes('directSubtasksQuery'), true);
 eq('editor dismisses without saving accidental changes', editor.includes('onClose={onClose}'), true);
 eq('editor saves only through its confirm action', editor.includes('onConfirm={saveAndClose}'), true);
