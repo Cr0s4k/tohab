@@ -33,7 +33,8 @@
 
 	let overdue = $derived(!task.done && !!task.due && daysFromToday(task.due) < 0);
 	let repeats = $derived(isRepeating(task.repeat));
-	let hasMeta = $derived(Boolean(task.due || project || task.notes || repeats));
+	let hasDetails = $derived(Boolean(task.due || project || repeats));
+	let hasMeta = $derived(Boolean(task.notes || hasDetails));
 
 	function complete() {
 		if (!task.done) playComplete();
@@ -150,7 +151,12 @@
 				<div class="truncate text-body leading-snug" class:line-through={task.done} class:dim={task.done}>
 					{task.title}
 				</div>
-				{#if hasMeta}
+				{#if task.notes}
+					<div class="dim mt-1 truncate text-caption">
+						{task.notes}
+					</div>
+				{/if}
+				{#if hasDetails}
 					<div class="mt-1 flex items-center gap-2 text-caption">
 						{#if task.due}
 							<span class:dim={!overdue} style={overdue ? 'color: var(--danger)' : ''}>
@@ -165,9 +171,6 @@
 						{/if}
 						{#if repeats}
 							<span class="dim" title={describeRepeat(task.repeat!)}>↻</span>
-						{/if}
-						{#if task.notes}
-							<span class="dim">📝</span>
 						{/if}
 					</div>
 				{/if}
