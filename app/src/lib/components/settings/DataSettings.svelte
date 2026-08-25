@@ -68,7 +68,7 @@
 		<input bind:this={fileInput} type="file" accept="application/json,.json" onchange={onFile} class="hidden" />
 		<input bind:this={todoistInput} type="file" accept=".csv,text/csv" onchange={onTodoistFile} class="hidden" />
 	</div>
-	<p class="dim mt-2 text-caption">JSON import merges by record id. Todoist import adds tasks to your inbox, keeps their recurring-date rules, and skips projects and sections.</p>
+	<p class="dim mt-2 text-caption">JSON import merges by record id. Todoist import adds tasks to your inbox, preserves subtasks and comments, keeps recurring-date rules, and skips projects and sections.</p>
 </section>
 
 <section>

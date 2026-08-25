@@ -5,13 +5,26 @@ import { createTask } from './tasks.ts';
 export type ImportResult = { imported: number; skipped: number };
 
 type TodoistRow = {
-	type: string;
 	content: string;
 	description: string;
+	comments: string[];
 	priority: number;
+	indent: number;
 	date: string;
 	deadline: string;
 };
+
+type ImportedTaskInput = {
+	title: string;
+	notes?: string;
+	due?: string;
+	dueTime?: string;
+	priority?: number;
+	repeat?: string;
+	parentId?: string;
+};
+
+type CreateImportedTask = (input: ImportedTaskInput) => Promise<{ id: string } | null>;
 
 function parseCsv(text: string): string[][] {
 	const rows: string[][] = [];
@@ -121,53 +134,81 @@ export function parseTodoistRows(raw: string): TodoistRow[] {
 
 	const descriptionIndex = index('description');
 	const priorityIndex = index('priority');
+	const indentIndex = index('indent');
 	const dateIndex = index('date');
 	const deadlineIndex = index('deadline');
 
 	const out: TodoistRow[] = [];
+	let previousTask: TodoistRow | undefined;
 	for (const row of rows.slice(1)) {
 		const type = (row[typeIndex] ?? '').trim().toLowerCase();
-		if (type !== 'task' && type !== 'note') continue;
 		const content = (row[contentIndex] ?? '').trim();
+		const description = (row[descriptionIndex] ?? '').trim();
+
+		if (type === 'note') {
+			const comment = [content, description].filter(Boolean).join('\n\n');
+			if (previousTask && comment) previousTask.comments.push(comment);
+			continue;
+		}
+		if (type !== 'task') {
+			if (type) previousTask = undefined;
+			continue;
+		}
 		if (!content) continue;
 
 		const rawPriority = Number(row[priorityIndex] ?? 4);
-		out.push({
-			type,
+		const rawIndent = Number(row[indentIndex] ?? 1);
+		const task = {
 			content,
-			description: (row[descriptionIndex] ?? '').trim(),
+			description,
+			comments: [],
 			priority: rawPriority >= 1 && rawPriority <= 4 ? rawPriority : 4,
+			indent: Number.isInteger(rawIndent) && rawIndent > 0 ? rawIndent : 1,
 			date: row[dateIndex] ?? '',
 			deadline: row[deadlineIndex] ?? ''
-		});
+		};
+		out.push(task);
+		previousTask = task;
 	}
 
 	return out;
 }
 
-export async function importTodoistCsv(raw: string): Promise<ImportResult> {
+export async function importTodoistCsv(
+	raw: string,
+	createImportedTask: CreateImportedTask = createTask
+): Promise<ImportResult> {
 	const rows = parseTodoistRows(raw);
 	let imported = 0;
 	let skipped = 0;
+	const taskIdsByIndent: string[] = [];
 
 	for (const row of rows) {
 		const { due, dueTime, repeat } = parseTodoistDate(row.date || row.deadline);
-		const notes =
-			row.description ||
-			(row.type === 'note' ? 'Imported Todoist note' : '');
+		const notes = [row.description, ...row.comments].filter(Boolean).join('\n\n');
+		const parentId = row.indent > 1 ? taskIdsByIndent[row.indent - 2] : undefined;
 
 		try {
-			await createTask({
+			const task = await createImportedTask({
 				title: row.content,
 				notes,
 				due,
 				dueTime,
 				repeat,
-				priority: row.priority
+				priority: row.priority,
+				...(parentId ? { parentId } : {})
 			});
+			if (!task) {
+				skipped++;
+				taskIdsByIndent.length = Math.min(taskIdsByIndent.length, row.indent - 1);
+				continue;
+			}
+			taskIdsByIndent[row.indent - 1] = task.id;
+			taskIdsByIndent.length = row.indent;
 			imported++;
 		} catch {
 			skipped++;
+			taskIdsByIndent.length = Math.min(taskIdsByIndent.length, row.indent - 1);
 		}
 	}
 
