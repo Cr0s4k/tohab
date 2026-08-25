@@ -2,13 +2,11 @@ import { getDb } from './db/lazy.ts';
 import type { Db } from './db/index.ts';
 import type { Project, Task } from './db/schemas.ts';
 import { markLocalWrite } from './db/syncState.svelte.ts';
-import { humanDay, today } from './dates.ts';
+import { humanDay } from './dates.ts';
 import { advanceDue, firstDue, isRepeating } from './repeat.ts';
 import { now, uid } from './ids.ts';
 import { queueUndo } from './undo.svelte.ts';
 import { applyRevert, changeSummary, record, revertActivity, type DocChange } from './activity.ts';
-
-export type View = 'inbox' | 'today' | 'upcoming' | 'all';
 
 export const PRIORITY_LABELS = ['', 'Urgent', 'High', 'Medium', 'None'];
 
@@ -16,20 +14,8 @@ export function priorityClass(p: number): string {
 	return ['', 'text-p1', 'text-p2', 'text-p3', 'text-p4'][p] ?? 'text-p4';
 }
 
-export function tasksQuery(db: Db, view: View, showDone = false) {
-	const open = showDone ? {} : { done: false };
-	// The Inbox is the absence of a project, the same set the Projects screen shows.
-	if (view === 'inbox') {
-		return db.tasks.find({ selector: { ...open, projectId: '' } });
-	}
-	if (view === 'today') {
-		// Overdue rolls into Today, matching how Todoist surfaces missed work.
-		return db.tasks.find({ selector: { ...open, due: { $gt: '', $lte: today() } } });
-	}
-	if (view === 'upcoming') {
-		return db.tasks.find({ selector: { ...open, due: { $gt: today() } } });
-	}
-	return db.tasks.find({ selector: open });
+export function tasksQuery(db: Db, showDone = false) {
+	return db.tasks.find({ selector: showDone ? {} : { done: false } });
 }
 
 export function projectTasksQuery(db: Db, projectId: string, showDone = false) {

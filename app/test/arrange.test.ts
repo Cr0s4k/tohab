@@ -1,4 +1,5 @@
 import { arrangeTasks, sortTasks } from '../src/lib/arrange.ts';
+import { tasksInView } from '../src/lib/taskViews.ts';
 import { defaultOptions, type ViewOptions } from '../src/lib/viewOptions.ts';
 import type { Project, Task } from '../src/lib/db/schemas.ts';
 import { createReporter } from '../../test/assertions.ts';
@@ -34,6 +35,27 @@ const eq = reporter.eq;
 const ids = (tasks: Task[]) => tasks.map((t) => t.id);
 const tree = (tasks: (Task & { depth?: number })[]) => tasks.map((t) => [t.id, t.depth]);
 const heads = (groups: { label: string }[]) => groups.map((g) => g.label);
+
+// --- view filtering keeps the hierarchy visible ---
+const scheduledHierarchy = [
+	task('today-parent', { due: '2026-08-25' }),
+	task('undated-child', { parentId: 'today-parent' }),
+	task('undated-grandchild', { parentId: 'undated-child' }),
+	task('unrelated-undated')
+];
+eq(
+	'today includes undated descendants of a matching parent',
+	ids(tasksInView(scheduledHierarchy, 'today', '2026-08-25')),
+	['today-parent', 'undated-child', 'undated-grandchild']
+);
+eq(
+	'inbox still uses each task project independently',
+	ids(tasksInView([
+		task('inbox-parent'),
+		task('project-child', { parentId: 'inbox-parent', projectId: 'work' })
+	], 'inbox', '2026-08-25')),
+	['inbox-parent']
+);
 
 // --- sorting ---
 const byDate = [
