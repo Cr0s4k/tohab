@@ -20,6 +20,13 @@ eq('editor loads subtasks independently of route filters', editor.includes('dire
 eq('editor dismisses without saving accidental changes', editor.includes('onClose={onClose}'), true);
 eq('editor saves only through its confirm action', editor.includes('onConfirm={saveAndClose}'), true);
 const row = readFileSync(new URL('../src/lib/components/TaskRow.svelte', import.meta.url), 'utf8');
-eq('task rows render hierarchy indentation', row.includes('task.depth'), true);
+eq('task rows render subtask progress', row.includes('subtaskProgress.completed'), true);
+eq('task rows render a branch icon', row.includes('M6 3v12a3 3 0 0 0 3 3h9'), true);
+
+const tasksPage = readFileSync(new URL('../src/routes/tasks/+page.svelte', import.meta.url), 'utf8');
+eq('task list hides subtasks', tasksPage.includes('filter((task) => !task.parentId)'), true);
+
+const projectPage = readFileSync(new URL('../src/routes/projects/[id]/+page.svelte', import.meta.url), 'utf8');
+eq('project task list hides subtasks', projectPage.includes('!task.parentId'), true);
 
 reporter.finish('all subtask persistence assertions passed');

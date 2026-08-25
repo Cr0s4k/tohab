@@ -3,6 +3,24 @@ import { today } from './dates.ts';
 
 export type View = 'inbox' | 'today' | 'upcoming' | 'all';
 
+export type SubtaskProgress = {
+	completed: number;
+	total: number;
+};
+
+export function subtaskProgressByParent(tasks: Task[]): Map<string, SubtaskProgress> {
+	const progress = new Map<string, SubtaskProgress>();
+	for (const task of tasks) {
+		if (!task.parentId) continue;
+		const current = progress.get(task.parentId) ?? { completed: 0, total: 0 };
+		progress.set(task.parentId, {
+			completed: current.completed + (task.done ? 1 : 0),
+			total: current.total + 1
+		});
+	}
+	return progress;
+}
+
 function matchesView(task: Task, view: View, todayKey: string): boolean {
 	if (view === 'inbox') return task.projectId === '';
 	if (view === 'today') return task.due > '' && task.due <= todayKey;

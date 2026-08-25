@@ -7,16 +7,19 @@
 	import { describeRepeat, isRepeating } from '$lib/repeat';
 	import { pop } from '$lib/motion';
 	import { isDesktop } from '$lib/viewport';
+	import type { SubtaskProgress } from '$lib/taskViews';
 
 	let {
 		task,
 		project,
+		subtaskProgress,
 		onToggle,
 		onDelete,
 		onOpen
 	}: {
 		task: Task & { depth?: number };
 		project?: Project;
+		subtaskProgress?: SubtaskProgress;
 		onToggle: () => void;
 		onDelete: () => void;
 		onOpen: () => void;
@@ -33,7 +36,7 @@
 
 	let overdue = $derived(!task.done && !!task.due && daysFromToday(task.due) < 0);
 	let repeats = $derived(isRepeating(task.repeat));
-	let hasDetails = $derived(Boolean(task.due || project || repeats));
+	let hasDetails = $derived(Boolean(subtaskProgress || task.due || project || repeats));
 	let hasMeta = $derived(Boolean(task.notes || hasDetails));
 
 	function complete() {
@@ -111,7 +114,7 @@
 		role="group"
 		bind:this={swipeEl}
 		class="surface pressable group relative pr-4 pt-2.5 pb-0"
-		style:padding-left={`${1 + Math.min(task.depth ?? 0, 6) * 1.25}rem`}
+		style:padding-left="1rem"
 		style="transform: translateX({dx}px); transition: {dragging
 			? 'none'
 			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: {axis === 'x'
@@ -158,6 +161,21 @@
 				{/if}
 				{#if hasDetails}
 					<div class="mt-1 flex items-center gap-2 text-caption">
+						{#if subtaskProgress}
+							<span
+								class="dim flex items-center gap-1 whitespace-nowrap"
+								aria-label={`${subtaskProgress.completed} of ${subtaskProgress.total} subtasks complete`}
+								title={`${subtaskProgress.completed} of ${subtaskProgress.total} subtasks complete`}
+							>
+								<svg viewBox="0 0 24 24" class="size-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M6 3v12a3 3 0 0 0 3 3h9" />
+									<path d="m15 15 3 3-3 3" />
+									<path d="M6 9h9" />
+									<path d="m12 6 3 3-3 3" />
+								</svg>
+								{subtaskProgress.completed}/{subtaskProgress.total}
+							</span>
+						{/if}
 						{#if task.due}
 							<span class:dim={!overdue} style={overdue ? 'color: var(--danger)' : ''}>
 								{humanDay(task.due)}{task.dueTime ? ` · ${humanTime(task.dueTime)}` : ''}

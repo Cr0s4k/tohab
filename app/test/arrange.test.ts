@@ -1,5 +1,5 @@
 import { arrangeTasks, sortTasks } from '../src/lib/arrange.ts';
-import { tasksInView } from '../src/lib/taskViews.ts';
+import { subtaskProgressByParent, tasksInView } from '../src/lib/taskViews.ts';
 import { defaultOptions, type ViewOptions } from '../src/lib/viewOptions.ts';
 import type { Project, Task } from '../src/lib/db/schemas.ts';
 import { createReporter } from '../../test/assertions.ts';
@@ -56,6 +56,15 @@ eq(
 	], 'inbox', '2026-08-25')),
 	['inbox-parent']
 );
+
+const progress = subtaskProgressByParent([
+	task('parent'),
+	task('open-child', { parentId: 'parent' }),
+	task('done-child', { parentId: 'parent', done: true }),
+	task('grandchild', { parentId: 'open-child', done: true })
+]);
+eq('subtask progress counts direct children', progress.get('parent'), { completed: 1, total: 2 });
+eq('nested tasks track their own direct children', progress.get('open-child'), { completed: 1, total: 1 });
 
 // --- sorting ---
 const byDate = [

@@ -5,7 +5,7 @@
 	import { rx } from '$lib/rx.svelte';
 	import type { Task } from '$lib/db/schemas';
 	import { deleteTask, projectsQuery, tasksQuery, toggleTask } from '$lib/tasks';
-	import { tasksInView, type View } from '$lib/taskViews';
+	import { subtaskProgressByParent, tasksInView, type View } from '$lib/taskViews';
 	import { arrangeTasks } from '$lib/arrange';
 	import { isCustomised, viewOptions } from '$lib/viewOptions.svelte';
 	import { daysFromToday, today } from '$lib/dates';
@@ -42,12 +42,14 @@
 	let opts = $derived(viewOptions(view));
 
 	let tasks = rx<Task[]>(
-		() => (live.db ? tasksQuery(live.db, opts.showDone).$ : null),
+		() => (live.db ? tasksQuery(live.db, true).$ : null),
 		[]
 	);
 	let projects = rx(() => (live.db ? projectsQuery(live.db).$ : null), []);
 
-	let visibleTasks = $derived(tasksInView(tasks.value, view));
+	let listTasks = $derived(tasks.value.filter((task) => opts.showDone || !task.done));
+	let visibleTasks = $derived(tasksInView(listTasks, view).filter((task) => !task.parentId));
+	let subtaskProgress = $derived(subtaskProgressByParent(tasks.value));
 	let projectById = $derived(new Map(projects.value.map((p) => [p.id, p])));
 	let groups = $derived(arrangeTasks(visibleTasks, opts, projects.value));
 	let count = $derived(groups.reduce((n, g) => n + g.tasks.length, 0));
@@ -165,6 +167,7 @@
 					<TaskRow
 						{task}
 						project={projectById.get(task.projectId)}
+						subtaskProgress={subtaskProgress.get(task.id)}
 						onToggle={() => toggleTask(task.id)}
 						onDelete={() => deleteTask(task.id)}
 						onOpen={() => (editing = task)}
