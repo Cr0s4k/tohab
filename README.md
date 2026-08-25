@@ -59,6 +59,12 @@ The optional GitHub Actions deployment workflow reads `KOMODO_WEBHOOK_URL` and
 if either is missing, the workflow skips deployment. Keep deployment URLs and
 signing keys out of tracked files.
 
+For Web Push, set `VAPID_SUBJECT` to a real contact identity such as
+`https://tohab.example.com` or `mailto:admin@example.com`. Apple Push rejects `localhost`
+and `.local` identities with `403 BadJwtToken`, even though the same subscription flow can
+work on desktop push services. Compose forwards this value to the server; changing it does
+not rotate the persisted VAPID key pair or require clients to re-subscribe.
+
 ### Database
 
 Postgres 18, defined in `docker-compose.yml` for local work. Tables live in

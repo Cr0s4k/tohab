@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { reminderForTask, validPushEndpoint, validTimeZone, type ReminderTask } from '../src/push.ts';
 import { createApp } from '../src/app.ts';
 import { pushReminders, pushSubscriptions } from '../src/schema.ts';
@@ -52,5 +53,12 @@ const pushResponse = await createApp().request('/push/config');
 assert.equal(pushResponse.status, 401, 'push routes are mounted and protected');
 const syncResponse = await createApp().request('/sync/status');
 assert.equal(syncResponse.status, 401, 'sync routes are mounted and protected');
+
+const compose = readFileSync(new URL('../../docker-compose.yml', import.meta.url), 'utf8');
+const envExample = readFileSync(new URL('../../.env.example', import.meta.url), 'utf8');
+const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
+assert.match(compose, /VAPID_SUBJECT:\s*\$\{VAPID_SUBJECT:-\}/, 'Compose forwards the configured VAPID contact identity');
+assert.match(envExample, /^VAPID_SUBJECT=/m, 'the example environment documents the VAPID subject');
+assert.match(readme, /Apple.*\.local|\.local.*Apple/is, 'deployment docs warn that Apple rejects local VAPID identities');
 
 console.log('ok push reminder scheduling');
