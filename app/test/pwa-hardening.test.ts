@@ -70,6 +70,17 @@ assert.match(sw, /addEventListener\('notificationclick'/);
 assert.match(sw, /addEventListener\('pushsubscriptionchange'/);
 assert.doesNotMatch(sw, /\.then\(\(\) => sw\.skipWaiting\(\)\)/);
 assert.match(sw, /request\.mode === 'navigate'/);
+assert.match(
+	sw,
+	/request\.mode === 'navigate'\)\s*\{[\s\S]*?caches\.open\(PRECACHE_NAME\)[\s\S]*?cache\.match\('\/'\)\)\s*\?\?\s*fetch\(request\)/,
+	'a cold launch answers the document from cache before it ever considers the network'
+);
+assert.doesNotMatch(sw, /fetch\(request\)\.catch\(async \(\) => \{/, 'no handler makes the network the primary path for the shell');
+assert.match(
+	sw,
+	/const cached = await cache\.match\(request\);\s*if \(cached\) \{\s*event\.waitUntil\(store\(cache, request\)\);\s*return cached;/,
+	'cached assets are served immediately and revalidated in the background'
+);
 assert.match(sw, /\.\.\.files, '\/'/);
 assert.doesNotMatch(sw, /index\.html/);
 assert.match(read('src/lib/pwa.ts'), /\/auth/);

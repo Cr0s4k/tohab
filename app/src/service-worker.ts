@@ -15,6 +15,17 @@ async function trimRuntimeCache(cache: Cache) {
 	await Promise.all(keys.slice(0, Math.max(0, keys.length - MAX_RUNTIME_ENTRIES)).map((key) => cache.delete(key)));
 }
 
+async function store(cache: Cache, request: Request) {
+	try {
+		const response = await fetch(request);
+		if (!response.ok || response.type !== 'basic') return;
+		await cache.put(request, response);
+		await trimRuntimeCache(cache);
+	} catch {
+		// The stale copy was already served; the next launch revalidates again.
+	}
+}
+
 sw.addEventListener('install', (event) => {
 	event.waitUntil(caches.open(PRECACHE_NAME).then((cache) => cache.addAll(PRECACHE)));
 });
@@ -38,12 +49,12 @@ sw.addEventListener('fetch', (event) => {
 	const url = new URL(request.url);
 	if (url.origin !== location.origin || shouldBypassServiceWorker(url)) return;
 
+	// The app renders entirely on the client, so the shell is the same for every route and is
+	// answered from the cache without touching the network. Going to the network first would
+	// hand the whole boot to a half-open connection, which stalls far longer than it fails.
 	if (request.mode === 'navigate') {
 		event.respondWith(
-			fetch(request).catch(async () => {
-				const cache = await caches.open(PRECACHE_NAME);
-				return (await cache.match('/')) ?? Response.error();
-			})
+			caches.open(PRECACHE_NAME).then(async (cache) => (await cache.match('/')) ?? fetch(request).catch(() => Response.error()))
 		);
 		return;
 	}
@@ -59,18 +70,17 @@ sw.addEventListener('fetch', (event) => {
 	// never enters it, regardless of a custom sync-server path.
 	event.respondWith(
 		caches.open(RUNTIME_NAME).then(async (cache) => {
-			try {
-				const response = await fetch(request);
-				if (response.ok && response.type === 'basic') {
-					await cache.put(request, response.clone());
-					await trimRuntimeCache(cache);
-				}
-				return response;
-			} catch (error) {
-				const cached = await cache.match(request);
-				if (cached) return cached;
-				throw error;
+			const cached = await cache.match(request);
+			if (cached) {
+				event.waitUntil(store(cache, request));
+				return cached;
 			}
+			const response = await fetch(request);
+			if (response.ok && response.type === 'basic') {
+				await cache.put(request, response.clone());
+				await trimRuntimeCache(cache);
+			}
+			return response;
 		})
 	);
 });
