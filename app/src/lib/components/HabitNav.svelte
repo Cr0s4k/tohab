@@ -5,8 +5,8 @@
 </script>
 
 <nav
-	class="hairline z-30 grid shrink-0 grid-cols-2 border-t pb-safe backdrop-blur-xl md:hidden"
-	style="background: color-mix(in oklch, var(--surface-raised) 88%, transparent); view-transition-name: habitnav"
+	class="raised hairline z-30 grid shrink-0 grid-cols-2 border-t pb-safe md:hidden"
+	style="view-transition-name: habitnav"
 >
 	{#each HABIT_NAV_ITEMS as tab (tab.href)}
 		{@const active = isNavItemActive(page.url, tab.href)}
