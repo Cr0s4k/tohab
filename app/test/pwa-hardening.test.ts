@@ -89,6 +89,19 @@ assert.match(read('src/lib/pwa.ts'), /\/calendar/);
 const manifest = JSON.parse(read('static/manifest.webmanifest'));
 assert.equal(manifest.id, '/');
 assert.equal(manifest.orientation, 'portrait');
+const tabBar = read('src/lib/components/TabBar.svelte');
+const habitNav = read('src/lib/components/HabitNav.svelte');
+const layout = read('src/routes/+layout.svelte');
+const css = read('src/app.css');
+assert.match(layout, /class="[^\"]*\bapp-shell\b[^\"]*"/, 'the app uses the standalone-safe shell utility');
+assert.match(
+	css,
+	/@utility app-shell\s*\{\s*height:\s*100%;\s*\}/,
+	'the shell fills the fixed body without adding the safe-area inset twice'
+);
+assert.match(tabBar, /\bpb-safe\b/, 'the task tab bar keeps home-indicator padding');
+assert.match(habitNav, /\bpb-safe\b/, 'the habit tab bar keeps home-indicator padding');
+assert.match(pwaStatus, /Safari or Firefox/, 'iOS install guidance covers Firefox');
 const html = read('src/app.html');
 assert.doesNotMatch(html, /maximum-scale/);
 assert.match(html, /apple-mobile-web-app-status-bar-style/);

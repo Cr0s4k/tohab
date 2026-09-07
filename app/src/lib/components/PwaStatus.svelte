@@ -57,7 +57,7 @@
 {#if iosInstall}
 	<div class="raised hairline fixed right-3 bottom-24 left-3 z-40 mx-auto max-w-md rounded-2xl border p-3 shadow-lg" role="status">
 		<p class="text-sm font-medium">Install Tohab for the best offline experience</p>
-		<p class="dim mt-1 text-caption">In Safari, tap Share, then “Add to Home Screen”.</p>
+		<p class="dim mt-1 text-caption">In Safari or Firefox, tap Share, then “Add to Home Screen”.</p>
 		<button type="button" class="tap mt-2 min-h-11 text-sm underline" onclick={() => { localStorage.setItem('tohab.installDismissed', '1'); iosInstall = false; }}>Don’t show again</button>
 	</div>
 {/if}

@@ -281,6 +281,14 @@
 	padding-top: max(0.5rem, env(safe-area-inset-top));
 }
 
+/*
+	Fill the fixed body so the shell and bottom navigation share its viewport
+	edge. Navigation owns the home-indicator padding inside that height.
+*/
+@utility app-shell {
+	height: 100%;
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
 	animation-duration: 220ms;
