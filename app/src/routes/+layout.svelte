@@ -74,7 +74,7 @@
 </svelte:head>
 
 <PwaStatus />
-<div class="flex h-dvh w-full overflow-hidden">
+<div class="app-shell flex w-full overflow-hidden">
 	{#if !auth.session}
 		<div class="mx-auto flex w-full max-w-lg flex-col">
 			<AuthGate />

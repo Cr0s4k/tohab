@@ -281,6 +281,19 @@
 	padding-top: max(0.5rem, env(safe-area-inset-top));
 }
 
+/*
+	Standalone iOS PWAs can report a dynamic viewport that ends above the
+	home-indicator inset. Extend the fixed shell so bottom navigation can paint
+	through that final inset without removing its safe-area padding.
+*/
+@utility app-shell {
+	height: 100dvh;
+
+	@media (display-mode: standalone) {
+		height: calc(100dvh + env(safe-area-inset-bottom, 0px));
+	}
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
 	animation-duration: 220ms;
