@@ -53,8 +53,6 @@
 
 	onMount(() => {
 		applyTheme();
-		// Nothing below should be able to strand the boot splash over the app.
-		const failsafe = setTimeout(hideSplash, 10_000);
 
 		const media = matchMedia('(prefers-color-scheme: dark)');
 		const onSystemChange = () => {
@@ -62,7 +60,6 @@
 		};
 		media.addEventListener('change', onSystemChange);
 		return () => {
-			clearTimeout(failsafe);
 			media.removeEventListener('change', onSystemChange);
 		};
 	});

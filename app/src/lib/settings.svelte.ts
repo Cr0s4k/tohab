@@ -4,14 +4,18 @@ export type Theme = 'system' | 'light' | 'dark';
 
 function read(key: string, fallback: string): string {
 	if (!browser) return fallback;
-	return localStorage.getItem(key) ?? fallback;
+	try {
+		return localStorage.getItem(key) ?? fallback;
+	} catch {
+		return fallback;
+	}
 }
 
 function readReminderMinutes(): number {
 	if (!browser) return 10;
-	const current = localStorage.getItem('tohab.automaticReminderMinutes');
-	const legacy = localStorage.getItem('tohab.reminderMinutes');
-	const parsed = current !== null ? Number(current) : legacy === '0' ? -1 : Number(legacy ?? 10);
+	const current = read('tohab.automaticReminderMinutes', '');
+	const legacy = read('tohab.reminderMinutes', '10');
+	const parsed = current !== '' ? Number(current) : legacy === '0' ? -1 : Number(legacy);
 	return Number.isInteger(parsed) && parsed >= -1 && parsed <= 1440 ? parsed : 10;
 }
 

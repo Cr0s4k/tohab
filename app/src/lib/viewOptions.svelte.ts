@@ -6,15 +6,19 @@ export * from './viewOptions.ts';
 function loadAll(): Record<string, ViewOptions> {
 	const all: Record<string, ViewOptions> = {};
 	if (!browser) return all;
-	for (let i = 0; i < localStorage.length; i++) {
-		const key = localStorage.key(i);
-		if (!key?.startsWith(STORAGE_PREFIX)) continue;
-		const scope = key.slice(STORAGE_PREFIX.length);
-		try {
-			all[scope] = { ...defaultOptions(scope), ...JSON.parse(localStorage.getItem(key) ?? '') };
-		} catch {
-			/* corrupt entry falls back to defaults */
+	try {
+		for (let i = 0; i < localStorage.length; i++) {
+			const key = localStorage.key(i);
+			if (!key?.startsWith(STORAGE_PREFIX)) continue;
+			const scope = key.slice(STORAGE_PREFIX.length);
+			try {
+				all[scope] = { ...defaultOptions(scope), ...JSON.parse(localStorage.getItem(key) ?? '') };
+			} catch {
+				/* corrupt entry falls back to defaults */
+			}
 		}
+	} catch {
+		// Storage access itself can be denied, before any entry is read.
 	}
 	return all;
 }

@@ -18,7 +18,11 @@
 	onMount(() => {
 		const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone;
 		const ios = isIosLike(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
-		dismissed = localStorage.getItem('tohab.installDismissed') === '1';
+		try {
+			dismissed = localStorage.getItem('tohab.installDismissed') === '1';
+		} catch {
+			dismissed = true;
+		}
 		iosInstall = ios && !standalone && !dismissed;
 
 		if (!('serviceWorker' in navigator)) return;
@@ -35,7 +39,7 @@
 					if (worker.state === 'installed' && navigator.serviceWorker.controller) waiting = worker;
 				});
 			});
-		});
+		}).catch(() => undefined);
 		return () => navigator.serviceWorker.removeEventListener('controllerchange', onController);
 	});
 </script>

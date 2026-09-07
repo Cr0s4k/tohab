@@ -244,6 +244,23 @@
 				background: oklch(0.58 0.19 25);
 				animation: splash-sweep 1.1s ease-in-out infinite;
 			}
+			#splash-recovery {
+				max-width: 22rem;
+				padding: 0 1.5rem;
+				text-align: center;
+				font: 16px/1.5 system-ui, sans-serif;
+				color: #202020;
+			}
+			[data-theme='dark'] #splash-recovery { color: #ffffff; }
+			#splash-recovery button {
+				padding: 0.75rem 1.25rem;
+				border: 0;
+				border-radius: 0.75rem;
+				background: #c3392c;
+				color: white;
+				font: inherit;
+			}
+			#splash-recovery pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
 			[data-theme='dark'] #splash span {
 				background: color-mix(in oklch, #ee796c 35%, transparent);
 			}
@@ -283,7 +300,34 @@
 		<div id="splash">
 			<img src="%sveltekit.assets%/icons/icon-192.png" alt="" />
 			<span></span>
+			<div id="splash-recovery" hidden role="alert">
+				<p>Tohab is taking longer than expected to start. Check your connection, then try reloading.</p>
+				<button type="button" onclick="location.reload()">Reload</button>
+				<details hidden id="splash-details"><summary>Error details</summary><pre id="splash-error"></pre></details>
+			</div>
 		</div>
+		<script>
+			// This must run without the app bundle: module failures happen before onMount.
+			(function () {
+				var lastError = '';
+				function recordError(event) {
+					lastError = event.message || (event.reason && event.reason.message) || 'An application resource could not load.';
+				}
+				window.addEventListener('error', recordError);
+				window.addEventListener('unhandledrejection', recordError);
+				setTimeout(function () {
+					window.removeEventListener('error', recordError);
+					window.removeEventListener('unhandledrejection', recordError);
+					var splash = document.getElementById('splash');
+					if (!splash || splash.hasAttribute('data-leaving')) return;
+					document.getElementById('splash-recovery').hidden = false;
+					if (lastError) {
+						document.getElementById('splash-details').hidden = false;
+						document.getElementById('splash-error').textContent = lastError;
+					}
+				}, 15000);
+			})();
+		</script>
 
 	</body>
 </html>
