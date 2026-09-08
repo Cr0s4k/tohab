@@ -8,6 +8,7 @@ import '../src/app.css';
 import { mount } from 'svelte';
 import TaskRow from '../src/lib/components/TaskRow.svelte';
 import TaskProjectPicker from '../src/lib/components/task/TaskProjectPicker.svelte';
+import HabitRow from '../src/lib/components/HabitRow.svelte';
 window.actions = { complete: 0, delete: 0 };
 mount(TaskRow, { target: document.body, props: {
  task: { id: 'fixture', title: 'Gesture test', done: false, priority: 2, due: '2020-01-01', projectId: '', notes: '' },
@@ -17,6 +18,17 @@ mount(TaskProjectPicker, { target: document.body, props: {
  projects: [{ id: 'work', name: 'Work', color: '#205fbd' }], value: 'work', onSelect: () => {}
 }});
 window.ready = true;
+window.mountLongRows = () => {
+ mount(TaskRow, { target: document.body, props: {
+  task: { id: 'long', title: 'Plan a long weekend with friends and coordinate travel arrangements', done: false, priority: 2, due: '2020-01-01', dueTime: '12:30', repeat: 'day:1', notes: '' },
+  project: { id: 'long-project', name: 'ProjectWithAnUnbrokenNameThatNeedsToStayInsideTheViewport', color: '#205fbd' },
+  onToggle: () => {}, onDelete: () => {}, onOpen: () => {}
+ }});
+ mount(HabitRow, { target: document.body, props: {
+  habit: { id: 'rest', name: 'Read a few pages before bed', color: '#985500', emoji: '📖', goal: 'build', target: 1, kind: 'binary', scheduleKind: 'daily' },
+  value: 0, streak: 3, due: false, onTap: () => {}
+ }});
+};
 </script>
 </body>
 </html>

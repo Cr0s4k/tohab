@@ -27,7 +27,6 @@
 
 <div
 	class="surface pressable group px-4 pt-3 pb-0"
-	class:opacity-55={!due}
 >
 	<div class="hairline measure flex items-center gap-3 border-b pb-3">
 		<a href="/habits/{habit.id}" class="min-w-0 flex-1 flex items-center gap-3 text-left">
@@ -60,7 +59,7 @@
 		<a
 			href="/habits/{habit.id}"
 			aria-label="Edit {habit.name}"
-			class="edit-hint dim size-8 shrink-0 place-items-center rounded-lg opacity-0 transition-opacity group-hover:opacity-100"
+			class="edit-hint dim size-8 shrink-0 place-items-center rounded-lg opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
 		>
 			<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M12 20h9" />

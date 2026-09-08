@@ -103,7 +103,7 @@
 			/>
 			<div class="text-center">
 				<p class="text-sm font-semibold">{humanDay(day)}</p>
-				<p class="dim text-[0.7rem]">{doneCount} of {due.length} done</p>
+				<p class="dim text-caption">{doneCount} of {due.length} done</p>
 			</div>
 		</div>
 

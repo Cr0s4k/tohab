@@ -166,7 +166,7 @@
 					</div>
 				{/if}
 				{#if hasDetails}
-					<div class="mt-1 flex items-center gap-2 text-caption">
+						<div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption">
 						{#if subtaskProgress}
 							<span
 								class="dim flex items-center gap-1 whitespace-nowrap"
@@ -183,14 +183,14 @@
 							</span>
 						{/if}
 						{#if task.due}
-							<span class:dim={!overdue} style={overdue ? 'color: var(--danger)' : ''}>
+								<span class="shrink-0 whitespace-nowrap" class:dim={!overdue} style={overdue ? 'color: var(--danger)' : ''}>
 								{humanDay(task.due)}{task.dueTime ? ` · ${humanTime(task.dueTime)}` : ''}
 							</span>
 						{/if}
 						{#if project}
-							<span class="dim flex items-center gap-1">
-								<span class="size-2 rounded-full" style="background: {project.color}"></span>
-								{project.name}
+								<span class="dim flex min-w-0 max-w-full items-center gap-1" title={project.name}>
+									<span class="size-2 shrink-0 rounded-full" style="background: {project.color}"></span>
+									<span class="truncate">{project.name}</span>
 							</span>
 						{/if}
 						{#if repeats}
