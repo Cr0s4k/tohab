@@ -9,7 +9,13 @@ export const HABIT_COLORS = [
 	'oklch(0.72 0.15 130)',
 	'oklch(0.68 0.13 175)',
 	'oklch(0.65 0.16 250)',
-	'oklch(0.65 0.17 300)'
+	'oklch(0.65 0.17 300)',
+	'oklch(0.68 0.16 205)',
+	'oklch(0.65 0.17 275)',
+	'oklch(0.67 0.17 340)',
+	'oklch(0.67 0.13 45)',
+	'oklch(0.65 0.14 155)',
+	'oklch(0.62 0.12 230)'
 ];
 
 export const HABIT_EMOJI = [
