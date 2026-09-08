@@ -60,10 +60,26 @@
 	let archived = $derived(habits.value.filter((h) => h.archived));
 	let due = $derived(active.filter((h) => isDue(h, day)));
 	let rest = $derived(active.filter((h) => !isDue(h, day)));
+	let buildDue = $derived(due.filter((h) => h.goal !== 'break'));
+	let buildRest = $derived(rest.filter((h) => h.goal !== 'break'));
+	let breakDue = $derived(due.filter((h) => h.goal === 'break'));
+	let breakRest = $derived(rest.filter((h) => h.goal === 'break'));
 	let listFlipCfg = $derived(shouldAnimateList(habits.value.length) ? flipCfg : { duration: 0 });
 
 	let doneCount = $derived(
 		due.filter((h) => isComplete(h, byHabit.get(h.id) ?? new Map(), day, settings.startOfWeek)).length
+	);
+	let buildDoneCount = $derived(
+		buildDue.filter((h) => isComplete(h, byHabit.get(h.id) ?? new Map(), day, settings.startOfWeek)).length
+	);
+	let breakDoneCount = $derived(
+		breakDue.filter((h) => isComplete(h, byHabit.get(h.id) ?? new Map(), day, settings.startOfWeek)).length
+	);
+	let sections = $derived(
+		[
+			{ key: 'build', label: 'Build habits', due: buildDue, rest: buildRest, done: buildDoneCount },
+			{ key: 'break', label: 'Break habits', due: breakDue, rest: breakRest, done: breakDoneCount }
+		].filter((section) => section.due.length || section.rest.length)
 	);
 </script>
 
@@ -165,40 +181,54 @@
 			<p class="dim text-sm">No habits yet.</p>
 		</div>
 	{:else}
-		{#each due as habit (habit.id)}
-			{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
-			<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.value.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
-				<HabitRow
-					{habit}
-					value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
-					streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
-					dayValue={valueOn(habitLogs, day)}
-					onTap={() => logHabit(habit, valueOn(habitLogs, day))}
-				/>
-			</div>
-		{/each}
-
-		{#if rest.length}
-			<h2
-				transition:collapse
-				class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-copy font-semibold tracking-wide"
+		{#each sections as section}
+			<section
+				aria-labelledby="{section.key}-habits-heading"
+				class:mt-4={section.key === 'break' && sections.length > 1}
 			>
-				<span class="hairline measure block border-b pb-1.5">Not scheduled today</span>
-			</h2>
-			{#each rest as habit (habit.id)}
-				{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
-				<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.value.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
-					<HabitRow
-						{habit}
-						value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
-						streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
-						due={false}
-						dayValue={valueOn(habitLogs, day)}
-					onTap={() => logHabit(habit, valueOn(habitLogs, day))}
-					/>
+				<div class="surface px-4 pt-4 pb-2">
+					<div class="measure flex items-baseline justify-between">
+						<h2 id="{section.key}-habits-heading" class="text-copy font-semibold tracking-wide">{section.label}</h2>
+						{#if section.due.length}<span class="dim text-caption">{section.done} of {section.due.length} done</span>{/if}
+					</div>
 				</div>
-			{/each}
-		{/if}
+
+				{#each section.due as habit (habit.id)}
+					{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
+					<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.value.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
+						<HabitRow
+							{habit}
+							value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
+							streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
+							dayValue={valueOn(habitLogs, day)}
+							onTap={() => logHabit(habit, valueOn(habitLogs, day))}
+						/>
+					</div>
+				{/each}
+
+				{#if section.rest.length}
+					<h3
+						transition:collapse
+						class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-copy font-semibold tracking-wide"
+					>
+						<span class="hairline measure block border-b pb-1.5">Not scheduled today</span>
+					</h3>
+					{#each section.rest as habit (habit.id)}
+						{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
+						<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.value.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
+							<HabitRow
+								{habit}
+								value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
+								streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
+								due={false}
+								dayValue={valueOn(habitLogs, day)}
+								onTap={() => logHabit(habit, valueOn(habitLogs, day))}
+							/>
+						</div>
+					{/each}
+				{/if}
+			</section>
+		{/each}
 	{/if}
 </main>
 
