@@ -1,0 +1,295 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-08T20:13:14Z",
+  "title": "Design System: Tohab",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Warm Action Red",
+        "canonical": "#c3392c",
+        "tonalRamp": [
+          "#3f0d0a",
+          "#681610",
+          "#8f2018",
+          "#b52b20",
+          "#c3392c",
+          "#dc665d",
+          "#edaaa4",
+          "#f9e4e1"
+        ]
+      },
+      "primary-soft": {
+        "role": "primary",
+        "displayName": "Soft Action Wash",
+        "canonical": "#fbe9e7",
+        "tonalRamp": [
+          "#4b1512",
+          "#76211b",
+          "#a12d25",
+          "#cc3b31",
+          "#e26b63",
+          "#f0a39e",
+          "#f7cbc7",
+          "#fbe9e7"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "canonical": "#fcfaf8",
+        "tonalRamp": [
+          "#292522",
+          "#514a45",
+          "#786f68",
+          "#a49b94",
+          "#c7c0ba",
+          "#ddd8d3",
+          "#eeeae6",
+          "#fcfaf8"
+        ]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Raised White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#262626",
+          "#4d4d4d",
+          "#737373",
+          "#999999",
+          "#bfbfbf",
+          "#d9d9d9",
+          "#eeeeee",
+          "#ffffff"
+        ]
+      },
+      "surface-sunken": {
+        "role": "neutral",
+        "displayName": "Quiet Stone",
+        "canonical": "#f2efed",
+        "tonalRamp": [
+          "#292725",
+          "#514d49",
+          "#79736e",
+          "#a39e99",
+          "#c1bdb8",
+          "#d4d0cc",
+          "#e5e1de",
+          "#f2efed"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#202020",
+        "tonalRamp": [
+          "#202020",
+          "#3d3d3d",
+          "#595959",
+          "#737373",
+          "#8d8d8d",
+          "#ababab",
+          "#d0d0d0",
+          "#f2f2f2"
+        ]
+      },
+      "text-dim": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#666666",
+        "tonalRamp": [
+          "#202020",
+          "#3c3c3c",
+          "#585858",
+          "#747474",
+          "#909090",
+          "#ababab",
+          "#c8c8c8",
+          "#e8e8e8"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline Gray",
+        "canonical": "#eeeeee",
+        "tonalRamp": [
+          "#303030",
+          "#505050",
+          "#707070",
+          "#909090",
+          "#b0b0b0",
+          "#c8c8c8",
+          "#dddddd",
+          "#eeeeee"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Danger Coral",
+        "canonical": "#dc4c3e",
+        "tonalRamp": [
+          "#42100c",
+          "#701b15",
+          "#9c2920",
+          "#c3372d",
+          "#dc4c3e",
+          "#e7786e",
+          "#f0aba5",
+          "#f9e3e1"
+        ]
+      },
+      "positive": {
+        "role": "tertiary",
+        "displayName": "Positive Green",
+        "canonical": "#058527",
+        "tonalRamp": [
+          "#032d0d",
+          "#045117",
+          "#066c20",
+          "#078628",
+          "#2da64d",
+          "#69c47e",
+          "#a4dda9",
+          "#e1f4e2"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "System Display",
+        "purpose": "Large page or identity moments, used sparingly."
+      },
+      "body": {
+        "displayName": "System Body",
+        "purpose": "Compact everyday UI copy and task content."
+      },
+      "label": {
+        "displayName": "System Label",
+        "purpose": "Metadata, navigation labels, helper copy, and timestamps."
+      }
+    },
+    "shadows": [
+      {
+        "name": "transient",
+        "value": "Tailwind shadow-lg/shadow-2xl",
+        "purpose": "Transient separation for the FAB, sheets, and undo feedback."
+      }
+    ],
+    "motion": [
+      {
+        "name": "press",
+        "value": "transform 90ms ease, opacity 90ms ease",
+        "purpose": "Immediate tactile response for taps and presses."
+      },
+      {
+        "name": "state",
+        "value": "120ms–220ms ease",
+        "purpose": "Short color, opacity, and layout state changes."
+      },
+      {
+        "name": "spatial",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "View transitions, sheets, rings, and navigation movement."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "md",
+        "value": "768px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The focused action for creating, confirming, or saving.",
+      "html": "<button class=\"ds-btn-primary\">Add task</button>",
+      "css": ".ds-btn-primary { background: var(--accent); color: var(--accent-text); min-height: 44px; padding: 10px 16px; border: 0; border-radius: 12px; font: 600 0.875rem/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; transition: transform 90ms ease, opacity 90ms ease, filter 120ms ease; } .ds-btn-primary:hover { filter: brightness(0.96); } .ds-btn-primary:active { transform: scale(0.96); opacity: 0.75; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A sunken, quiet field for quick capture and settings.",
+      "html": "<input class=\"ds-input\" placeholder=\"What needs doing?\" />",
+      "css": ".ds-input { width: 100%; height: 44px; background: var(--surface-sunken); color: var(--text); padding: 10px 12px; border: 0; border-radius: 8px; font: 400 0.875rem/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; outline: 0; } .ds-input::placeholder { color: var(--text-dim); opacity: 0.5; } .ds-input:focus-visible { box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent) 55%, transparent); }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A compact pill for optional task metadata and selectors.",
+      "html": "<button class=\"ds-chip\">Date</button>",
+      "css": ".ds-chip { min-height: 44px; background: var(--surface); color: var(--text-dim); padding: 6px 12px; border: 1px solid var(--line); border-radius: 9999px; font: 500 0.75rem/1.6667 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; transition: transform 90ms ease, background-color 120ms ease, color 120ms ease; } .ds-chip:hover { background: var(--surface-sunken); } .ds-chip:active { transform: scale(0.96); } .ds-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "A desktop rail item with a quiet hover and selected state.",
+      "html": "<a class=\"ds-nav-item\" href=\"#\"><span aria-hidden=\"true\">□</span> Tasks</a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 0.7rem; min-height: 40px; background: var(--surface); color: var(--text); padding: 8px 10px; border-radius: 8px; font: 400 0.875rem/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; text-decoration: none; transition: background-color 140ms ease, color 140ms ease; } .ds-nav-item:hover { background: var(--surface-sunken); } .ds-nav-item[aria-current=\"page\"] { background: var(--selected-bg); color: var(--selected-text); } .ds-nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }"
+    },
+    {
+      "name": "Floating Action Button",
+      "kind": "button",
+      "refersTo": "fab",
+      "description": "The mobile-first creation affordance anchored above the tab bar.",
+      "html": "<button class=\"ds-fab\" aria-label=\"New task\"><span aria-hidden=\"true\">+</span></button>",
+      "css": ".ds-fab { display: grid; place-items: center; width: 56px; height: 56px; background: var(--accent); color: var(--accent-text); border: 0; border-radius: 9999px; font: 400 1.75rem/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.16); transition: transform 90ms ease, opacity 90ms ease, box-shadow 120ms ease; } .ds-fab:hover { box-shadow: 0 14px 32px rgba(0,0,0,0.2); } .ds-fab:active { transform: scale(0.96); opacity: 0.75; } .ds-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }"
+    },
+    {
+      "name": "Bottom Sheet",
+      "kind": "custom",
+      "refersTo": "sheet",
+      "description": "A raised, focus-trapped mobile editor that becomes a centered dialog on desktop.",
+      "html": "<section class=\"ds-sheet\" role=\"dialog\" aria-label=\"New task\"><h2>New task</h2><p>Capture one thing at a time.</p></section>",
+      "css": ".ds-sheet { background: var(--surface-raised); color: var(--text); max-width: 32rem; padding: 16px; border: 1px solid var(--line); border-radius: 24px 24px 0 0; box-shadow: 0 20px 50px rgba(0,0,0,0.2); font: 400 0.875rem/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; } .ds-sheet h2 { margin: 0 0 8px; font-size: 1rem; font-weight: 600; } @media (min-width: 768px) { .ds-sheet { border-radius: 24px; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Daily Workbench",
+    "overview": "This is an inferred name for the incumbent visual system, based on the existing implementation. Tohab presents personal work as calm, immediate, and tactile: warm paper-like surfaces, a single red action voice, and compact rows that keep the user's attention on the next thing to do. The system is deliberately more utility than dashboard. It gives structure to tasks and habits without making the interface feel like a control room.\n\nThe visual language is mobile-first and touch-aware. Full-bleed bands hold focused content, list rows are separated by quiet hairlines, and overlays use tonal contrast plus restrained shadow rather than decorative framing. Desktop adds a collapsible navigation rail while preserving the same compact, calm content rhythm.",
+    "keyCharacteristics": [
+      "Warm, lightly tinted neutral surfaces instead of stark white everywhere.",
+      "One red accent for creation, active state, and primary commitment.",
+      "Compact system typography with clear metadata de-emphasis.",
+      "Flat list rhythm with selective tonal elevation for transient UI.",
+      "Touch-sized controls and motion that responds quickly without spectacle."
+    ],
+    "rules": [
+      {
+        "name": "The Single Accent Rule",
+        "body": "Keep the red accent reserved for action, active state, and meaningful selection; let neutral tonal changes carry most of the screen.",
+        "section": "colors"
+      },
+      {
+        "name": "The Metadata Fade Rule",
+        "body": "Secondary information should recede through muted color and smaller type, never through tiny unreadable text or unnecessary decoration.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tonal Layer Rule",
+        "body": "Prefer a deliberate surface shift before adding a shadow. Elevation should explain interaction state or transient presence, not decorate ordinary content.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep primary actions rare and visually unmistakable through the red accent.",
+      "Do use the surface hierarchy to separate app chrome, editable controls, and transient overlays.",
+      "Do preserve 44px touch targets and safe-area behavior on mobile.",
+      "Do keep list metadata quiet so titles, completion, and logging actions remain scannable.",
+      "Do honor dark mode, reduced motion, and Dynamic Type behavior already established in the app shell."
+    ],
+    "donts": [
+      "Don't introduce decorative gradients, glossy treatments, or ornamental imagery into the utility surfaces without an explicit product reason.",
+      "Don't turn every list row or setting into a floating card; the incumbent system relies on a calm continuous list surface.",
+      "Don't use the accent as general decoration or apply multiple competing “primary” colors.",
+      "Don't hide important state changes behind motion, hover-only affordances, or low-contrast text.",
+      "Don't replace the system sans stack or warm neutral field casually; those are central to the current native, quiet character."
+    ]
+  }
+}
