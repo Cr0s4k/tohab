@@ -4,6 +4,7 @@ export type ReminderTask = {
 	due: string;
 	dueTime: string;
 	reminderMinutes?: number;
+	reminders?: string[];
 	done?: boolean;
 	_deleted?: boolean;
 };
@@ -13,6 +14,7 @@ export type DueReminder = {
 	dueAt: number;
 	notifyAt: number;
 	title: string;
+	body?: string;
 };
 
 const LATE_GRACE_MS = 15 * 60_000;
@@ -46,6 +48,27 @@ export function validPushEndpoint(endpoint: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+/** Independent reminders do not depend on the task's date, time, or automatic setting. */
+export function remindersForTask(task: ReminderTask, timeZone: string, leadMinutes: number, now = Date.now()): DueReminder[] {
+	if (task.done || task._deleted) return [];
+	const automatic = reminderForTask(task, timeZone, leadMinutes, now);
+	const reminders: DueReminder[] = automatic ? [{ ...automatic, body: `Due at ${task.dueTime}` }] : [];
+	for (const value of new Set(Array.isArray(task.reminders) ? task.reminders : [])) {
+		if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) continue;
+		const [date, time] = value.split('T');
+		const notifyAt = zonedDateTime(date, time, timeZone);
+		if (notifyAt === null || now < notifyAt || now >= notifyAt + LATE_GRACE_MS) continue;
+		reminders.push({
+			key: `${task.id}:reminder:${value}:${timeZone}`,
+			dueAt: notifyAt,
+			notifyAt,
+			title: task.title || 'Task reminder',
+			body: 'Task reminder'
+		});
+	}
+	return reminders;
 }
 
 export function validTimeZone(timeZone: string): boolean {

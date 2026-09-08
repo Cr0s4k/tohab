@@ -15,6 +15,8 @@ export type Task = {
 	repeat?: string;
 	/** Undefined inherits the device default; -1 disables; 0 fires at the due time. */
 	reminderMinutes?: number;
+	/** Independent one-off reminders, in local YYYY-MM-DDTHH:mm form. */
+	reminders?: string[];
 	createdAt: number;
 	updatedAt: number;
 };
@@ -91,7 +93,7 @@ const TS = { type: 'number', minimum: 0, maximum: 1e15, multipleOf: 1 } as const
 
 export const taskSchema: RxJsonSchema<Task> = {
 	title: 'task',
-	version: 3,
+	version: 4,
 	primaryKey: 'id',
 	type: 'object',
 	properties: {
@@ -110,6 +112,7 @@ export const taskSchema: RxJsonSchema<Task> = {
 		// it, and a required field would make them fail validation on the way in.
 		repeat: { type: 'string', maxLength: 40 },
 		reminderMinutes: { type: 'number', minimum: -1, maximum: 1440, multipleOf: 1 },
+		reminders: { type: 'array', uniqueItems: true, items: { type: 'string', maxLength: 16, pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$' } },
 		createdAt: TS,
 		updatedAt: TS
 	},

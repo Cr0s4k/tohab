@@ -7,3 +7,8 @@ export function migrateTaskV2<T extends Record<string, unknown>>(doc: T): T {
 export function migrateTaskV3<T extends Record<string, unknown>>(doc: T): T {
 	return doc;
 }
+
+/** Independent reminders are optional; existing tasks keep their timed reminder behavior. */
+export function migrateTaskV4<T extends Record<string, unknown>>(doc: T): T {
+	return doc;
+}

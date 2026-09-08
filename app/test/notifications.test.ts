@@ -44,7 +44,7 @@ globalThis.fetch = originalFetch;
 const reminderPicker = readFileSync(new URL('../src/lib/components/task/TaskReminderPicker.svelte', import.meta.url), 'utf8');
 assert.match(reminderPicker, /Automatic/);
 assert.match(reminderPicker, /None/);
-assert.match(reminderPicker, /At time/);
+assert.match(reminderPicker, /At task time/);
 const settingsSource = readFileSync(new URL('../src/lib/settings.svelte.ts', import.meta.url), 'utf8');
 assert.match(settingsSource, /legacy === '0' \? -1/);
 

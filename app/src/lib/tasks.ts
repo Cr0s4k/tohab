@@ -134,6 +134,7 @@ export type NewTask = {
 	projectId?: string;
 	repeat?: string;
 	reminderMinutes?: number;
+	reminders?: string[];
 	parentId?: string;
 };
 
@@ -177,6 +178,7 @@ export async function createTask(input: NewTask): Promise<Task | null> {
 		...(input.parentId ? { parentId: input.parentId } : {}),
 		repeat,
 		...(input.reminderMinutes !== undefined ? { reminderMinutes: input.reminderMinutes } : {}),
+		...(input.reminders ? { reminders: [...new Set(input.reminders)] } : {}),
 		createdAt: ts,
 		updatedAt: ts
 	};
@@ -203,7 +205,7 @@ export async function toggleTask(id: string) {
 	// point: the series is the task. Reopening one is an ordinary uncomplete.
 	if (!before.done && isRepeating(before.repeat)) {
 		const next = advanceDue(before.repeat!, before.due);
-		await doc.patch({ due: next, completedAt: now(), updatedAt: now() });
+		await doc.patch({ due: next, reminders: [], completedAt: now(), updatedAt: now() });
 		markLocalWrite();
 
 		queueUndo({
@@ -213,6 +215,7 @@ export async function toggleTask(id: string) {
 				if (current) {
 					await current.patch({
 						due: before.due,
+						reminders: before.reminders ?? [],
 						completedAt: before.completedAt,
 						updatedAt: now()
 					});

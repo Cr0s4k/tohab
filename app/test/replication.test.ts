@@ -19,7 +19,7 @@ import {
 	taskSchema,
 	COLLECTION_NAMES
 } from '../src/lib/db/schemas.ts';
-import { migrateTaskV2, migrateTaskV3 } from '../src/lib/db/migrations.ts';
+import { migrateTaskV2, migrateTaskV3, migrateTaskV4 } from '../src/lib/db/migrations.ts';
 import { createReporter } from '../../test/assertions.ts';
 
 import { cleanup, signIn } from './auth.ts';
@@ -42,7 +42,7 @@ async function makeDb(name: string) {
 		eventReduce: true
 	});
 	await db.addCollections({
-		tasks: { schema: taskSchema, migrationStrategies: { 1: (doc) => doc, 2: migrateTaskV2, 3: migrateTaskV3 } },
+		tasks: { schema: taskSchema, migrationStrategies: { 1: (doc) => doc, 2: migrateTaskV2, 3: migrateTaskV3, 4: migrateTaskV4 } },
 		projects: { schema: projectSchema },
 		habits: { schema: habitSchema },
 		habitLogs: { schema: habitLogSchema },

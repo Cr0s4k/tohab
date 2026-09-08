@@ -11,6 +11,7 @@
 	import TaskPriorityPicker from './task/TaskPriorityPicker.svelte';
 	import TaskProjectPicker from './task/TaskProjectPicker.svelte';
 	import TaskRepeatPicker from './task/TaskRepeatPicker.svelte';
+	import TaskReminderPicker from './task/TaskReminderPicker.svelte';
 
 	let {
 		open = false,
@@ -24,10 +25,12 @@
 		onClose: () => void;
 	} = $props();
 
-	type Panel = 'none' | 'date' | 'repeat' | 'priority' | 'project';
+	type Panel = 'none' | 'date' | 'repeat' | 'priority' | 'project' | 'reminder';
 
 	let raw = $state('');
+	let parseBase = $state(new Date());
 	let panel = $state<Panel>('none');
+	let reminderMinutes = $state<number | undefined>(undefined);
 
 	/**
 	 * Typed syntax and tapped chips are the same fields reached two ways, so a tap has to win:
@@ -39,9 +42,10 @@
 		repeat?: string;
 		priority?: number;
 		projectId?: string;
+		reminders?: string[];
 	}>({});
 
-	let parsed = $derived(raw.trim() ? parseQuickAdd(raw) : null);
+	let parsed = $derived(raw.trim() ? parseQuickAdd(raw, parseBase) : null);
 	let title = $derived(parsed?.title ?? '');
 	let repeat = $derived(picked.repeat ?? parsed?.repeat ?? '');
 	let due = $derived(
@@ -49,6 +53,7 @@
 	);
 	let dueTime = $derived(picked.dueTime ?? parsed?.dueTime ?? '');
 	let priority = $derived(picked.priority ?? parsed?.priority ?? 4);
+	let reminders = $derived(picked.reminders ?? parsed?.reminders ?? []);
 
 	let projectId = $derived(picked.projectId ?? (parsed?.project ? undefined : defaults.projectId ?? ''));
 	let projectLabel = $derived.by(() => {
@@ -69,8 +74,10 @@
 
 	function reset() {
 		raw = '';
+		parseBase = new Date();
 		picked = {};
 		panel = 'none';
+		reminderMinutes = undefined;
 	}
 
 	async function submit(e?: SubmitEvent) {
@@ -84,6 +91,8 @@
 			dueTime,
 			repeat,
 			priority,
+			reminderMinutes,
+			reminders,
 			projectId:
 				projectId ?? (parsed?.project ? await resolveProject(parsed.project) : '')
 		});
@@ -93,7 +102,9 @@
 	}
 
 	$effect(() => {
-		if (!open) {
+		if (open) {
+			parseBase = new Date();
+		} else {
 			reset();
 		}
 	});
@@ -183,6 +194,9 @@
 				>
 					{projectLabel}
 				</button>
+				<button type="button" use:hapticTap onclick={() => toggle('reminder')} aria-pressed={panel === 'reminder'} class="tap hairline min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium" class:accent-fg={reminders.length > 0} class:dim={!reminders.length} class:sunken={panel === 'reminder'}>
+					{reminders.length ? `Reminders · ${reminders.length}` : 'Reminders'}
+				</button>
 			</div>
 
 			{#if panel === 'date'}
@@ -193,6 +207,12 @@
 						onDue={(value) => (picked.due = value)}
 						onDueTime={(value) => (picked.dueTime = value)}
 					/>
+				</div>
+			{/if}
+
+			{#if panel === 'reminder'}
+				<div transition:collapse={{ duration: 200 }}>
+					<TaskReminderPicker value={reminderMinutes} {dueTime} onSelect={(value) => (reminderMinutes = value)} {reminders} onReminders={(value) => (picked.reminders = value)} />
 				</div>
 			{/if}
 

@@ -6,7 +6,7 @@ import { createReporter } from '../../test/assertions.ts';
 const reporter = createReporter();
 const eq = reporter.eq;
 
-eq('task schema advances for reminders', taskSchema.version, 3);
+eq('task schema advances for reminders', taskSchema.version, 4);
 eq('parentId is optional', taskSchema.required?.includes('parentId'), false);
 eq('parentId accepts task ids', taskSchema.properties.parentId, { type: 'string', maxLength: 40 });
 const legacy = { id: 'old', title: 'Legacy' };
@@ -21,7 +21,7 @@ eq('editor collapses empty subtasks initially', editor.includes('subtasksOpen = 
 eq('editor places subtasks immediately after notes', editor.indexOf('aria-label="Subtasks"') > editor.indexOf('bind:value={draft.notes}'), true);
 eq('editor groups scheduling controls', editor.includes('>Schedule</span>'), true);
 eq('editor groups organization controls', editor.includes('>Organization</span>'), true);
-eq('editor expands non-default scheduling', editor.includes('scheduleOpen = Boolean(task.due || task.dueTime || task.repeat || task.reminderMinutes !== undefined)'), true);
+eq('editor expands non-default scheduling', editor.includes('scheduleOpen = Boolean(task.due || task.dueTime || task.repeat || task.reminderMinutes !== undefined || task.reminders?.length)'), true);
 eq('editor expands non-default organization', editor.includes("organizationOpen = task.priority !== 4 || Boolean(task.projectId)"), true);
 eq('editor loads subtasks independently of route filters', editor.includes('directSubtasksQuery'), true);
 eq('editor dismisses without saving accidental changes', editor.includes('onClose={onClose}'), true);

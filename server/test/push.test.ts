@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { reminderForTask, validPushEndpoint, validTimeZone, type ReminderTask } from '../src/push.ts';
+import { reminderForTask, remindersForTask, validPushEndpoint, validTimeZone, type ReminderTask } from '../src/push.ts';
 import { createApp } from '../src/app.ts';
 import { pushReminders, pushSubscriptions } from '../src/schema.ts';
 
@@ -43,6 +43,22 @@ assert.equal(reminderForTask({ ...task, reminderMinutes: 0 }, 'Europe/Madrid', -
 const winter: ReminderTask = { ...task, due: '2026-12-23' };
 const winterReminder = reminderForTask(winter, 'Europe/Madrid', 10, Date.parse('2026-12-23T15:20:10Z'));
 assert.equal(winterReminder?.dueAt, Date.parse('2026-12-23T15:30:00Z'), 'DST offset is derived from the requested date');
+
+const independent: ReminderTask = { ...task, due: '', dueTime: '', reminders: ['2026-08-23T16:20', '2026-08-23T17:00'] };
+const instant = Date.parse('2026-08-23T14:20:30Z');
+const custom = remindersForTask(independent, 'Europe/Madrid', -1, instant);
+assert.equal(custom.length, 1, 'undated tasks remind even with automatic reminders off');
+assert.equal(custom[0].notifyAt, Date.parse('2026-08-23T14:20:00Z'));
+assert.equal(custom[0].body, 'Task reminder', 'an independent reminder must not invent a due time');
+assert.equal(remindersForTask({ ...independent, due: '2026-08-30', dueTime: '09:00', reminderMinutes: -1 }, 'Europe/Madrid', 10, instant)[0].key, custom[0].key, 'rescheduling the task leaves the independent reminder unchanged');
+assert.equal(remindersForTask({ ...independent, done: true }, 'Europe/Madrid', -1, instant).length, 0);
+assert.equal(remindersForTask({ ...independent, _deleted: true }, 'Europe/Madrid', -1, instant).length, 0);
+assert.equal(remindersForTask({ ...independent, reminders: [] }, 'Europe/Madrid', -1, instant).length, 0, 'removing a reminder cancels it');
+assert.equal(remindersForTask(independent, 'Europe/Madrid', -1, Date.parse('2026-08-23T14:19:00Z')).length, 0);
+assert.equal(remindersForTask(independent, 'Europe/Madrid', -1, Date.parse('2026-08-23T14:35:00Z')).length, 0, 'stale independent reminders expire');
+assert.equal(remindersForTask({ ...task, reminders: independent.reminders }, 'Europe/Madrid', 10, instant).length, 2, 'automatic and custom reminders can coexist');
+assert.equal(remindersForTask({ ...independent, reminders: [independent.reminders![0], independent.reminders![0], 'invalid'] }, 'Europe/Madrid', -1, instant).length, 1, 'duplicate and malformed reminders are ignored');
+assert.equal(remindersForTask({ ...independent, reminders: ['2026-12-23T16:20'] }, 'Europe/Madrid', -1, Date.parse('2026-12-23T15:20:00Z')).length, 1, 'independent reminders respect winter time');
 
 assert.ok(pushSubscriptions);
 assert.ok(pushReminders);

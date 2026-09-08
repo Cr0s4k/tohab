@@ -235,6 +235,27 @@ eq('custom reminder persists', (await db.tasks.findOne(reminded!.id).exec()).rem
 await updateTask(reminded!.id, { reminderMinutes: undefined });
 eq('automatic reminder removes the override', (await db.tasks.findOne(reminded!.id).exec()).reminderMinutes, undefined);
 
+const custom = await createTask({ title: 'Undated reminder', reminders: ['2026-09-09T09:00'] });
+eq('independent reminder persists without a date', (await db.tasks.findOne(custom!.id).exec()).reminders, ['2026-09-09T09:00']);
+eq('independent reminder does not give the task a time', (await db.tasks.findOne(custom!.id).exec()).dueTime, '');
+await updateTask(custom!.id, { due: '2026-09-15' });
+eq('rescheduling preserves independent reminder', (await db.tasks.findOne(custom!.id).exec()).reminders, ['2026-09-09T09:00']);
+await updateTask(custom!.id, { reminders: [] });
+eq('independent reminder removal persists', (await db.tasks.findOne(custom!.id).exec()).reminders, []);
+e = (await log()).find((entry: any) => entry.entityId === custom!.id && entry.detail === 'Changed reminders');
+await revertActivity(e.id);
+eq('undo restores removed reminder', (await db.tasks.findOne(custom!.id).exec()).reminders, ['2026-09-09T09:00']);
+await updateTask(custom!.id, { repeat: 'day:1', due: '2026-09-09', dueTime: '10:00', reminderMinutes: 10 });
+await toggleTask(custom!.id);
+eq('one-off reminders do not carry into the next task occurrence', (await db.tasks.findOne(custom!.id).exec()).reminders, []);
+eq('relative reminders carry into the next task occurrence', (await db.tasks.findOne(custom!.id).exec()).reminderMinutes, 10);
+await runUndo();
+eq('undoing occurrence completion restores one-off reminders', (await db.tasks.findOne(custom!.id).exec()).reminders, ['2026-09-09T09:00']);
+const reminderBackup = await exportBackup();
+await updateTask(custom!.id, { reminders: [] });
+await importBackup(JSON.stringify(reminderBackup));
+eq('backup round trip restores independent reminders', (await db.tasks.findOne(custom!.id).exec()).reminders, ['2026-09-09T09:00']);
+
 // --- the log stays newest-first and capped -------------------------------------------
 const entries = await log();
 eq(

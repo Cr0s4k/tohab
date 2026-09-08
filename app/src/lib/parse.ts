@@ -1,4 +1,5 @@
 import { toKey } from './dates.ts';
+import { reminderStamp, suggestedReminder } from './reminders.ts';
 import { describeRepeat, firstDue, formatRule, type Repeat } from './repeat.ts';
 
 export type Parsed = {
@@ -9,6 +10,7 @@ export type Parsed = {
 	project: string;
 	/** A serialised recurrence rule, or '' — see `repeat.ts` for the format. */
 	repeat: string;
+	reminders: string[];
 	/** Human-readable chips describing what was recognised, for the live preview. */
 	matched: string[];
 };
@@ -141,6 +143,37 @@ export function parseQuickAdd(raw: string, base = new Date()): Parsed {
 	let priority = 4;
 	let project = '';
 	let repeat = '';
+	const reminders: string[] = [];
+
+	// Consume reminder expressions before task dates/times, so !tomorrow never dates the task.
+	const clock = '(?:\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)|(?:[01]?\\d|2[0-3]):[0-5]\\d)';
+	const reminderSyntax = new RegExp(`\\s!((?:tomorrow|tmrw|tmr|tom|today|${WEEKDAY_RE})(?:\\s+(?:at\\s+)?${clock})?|later|\\d+h(?:\\d+m)?|\\d+m|${clock})(?=\\s|$)`, 'gi');
+	text = text.replace(reminderSyntax, (whole, expression: string) => {
+		const value = expression.toLowerCase();
+		let stamp: string;
+		if (value === 'later') {
+			stamp = suggestedReminder('later', base);
+		} else if (/^\d+[hm]/.test(value)) {
+			const duration = /^(?:(\d+)h)?(?:(\d+)m)?$/.exec(value);
+			if (!duration) return whole;
+			const minutes = Number(duration[1] ?? 0) * 60 + Number(duration[2] ?? 0);
+			if (!minutes || minutes > 525600) return whole;
+			stamp = reminderStamp(new Date(base.getTime() + minutes * 60_000));
+		} else {
+			const parsedReminder = parseQuickAdd(value, base);
+			if (parsedReminder.title || (!parsedReminder.due && !parsedReminder.dueTime)) return whole;
+			stamp = `${parsedReminder.due}T${parsedReminder.dueTime || '09:00'}`;
+			// A bare clock means its next occurrence, unlike a task's bare due time.
+			if (new RegExp(`^${clock}$`, 'i').test(value) && new Date(stamp) <= base) {
+				const next = new Date(stamp);
+				next.setDate(next.getDate() + 1);
+				stamp = reminderStamp(next);
+			}
+		}
+		if (!reminders.includes(stamp)) reminders.push(stamp);
+		matched.push(`Reminder ${stamp.replace('T', ' ')}`);
+		return ' ';
+	});
 
 	const eat = (re: RegExp, onMatch: (m: RegExpMatchArray) => boolean | void) => {
 		const m = text.match(re);
@@ -267,5 +300,5 @@ export function parseQuickAdd(raw: string, base = new Date()): Parsed {
 	if (dueTime && !due) due = toKey(base);
 
 	const title = text.replace(/\s+/g, ' ').trim();
-	return { title, due, dueTime, priority, project, repeat, matched };
+	return { title, due, dueTime, priority, project, repeat, reminders, matched };
 }

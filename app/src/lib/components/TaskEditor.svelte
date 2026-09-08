@@ -36,6 +36,7 @@
 		dueTime: '',
 		repeat: '',
 		reminderMinutes: undefined as number | undefined,
+		reminders: [] as string[],
 		priority: 4,
 		projectId: ''
 	});
@@ -62,7 +63,7 @@
 			loadedTaskId = task.id;
 			subtasksExpandedForId = '';
 			subtasksOpen = false;
-			scheduleOpen = Boolean(task.due || task.dueTime || task.repeat || task.reminderMinutes !== undefined);
+			scheduleOpen = Boolean(task.due || task.dueTime || task.repeat || task.reminderMinutes !== undefined || task.reminders?.length);
 			organizationOpen = task.priority !== 4 || Boolean(task.projectId);
 		}
 		id = task.id;
@@ -73,6 +74,7 @@
 			dueTime: task.dueTime,
 			repeat: task.repeat ?? '',
 			reminderMinutes: task.reminderMinutes,
+			reminders: [...(task.reminders ?? [])],
 			priority: task.priority,
 			projectId: task.projectId
 		};
@@ -225,7 +227,7 @@
 
 					<div>
 						<p class="dim mb-1.5 text-caption font-semibold tracking-wide uppercase">Reminder</p>
-						<TaskReminderPicker value={draft.reminderMinutes} dueTime={draft.dueTime} onSelect={(value) => (draft.reminderMinutes = value)} />
+						<TaskReminderPicker value={draft.reminderMinutes} dueTime={draft.dueTime} onSelect={(value) => (draft.reminderMinutes = value)} reminders={draft.reminders} onReminders={(value) => (draft.reminders = value)} />
 					</div>
 				</div>
 			</details>
