@@ -127,7 +127,7 @@
       "danger": {
         "role": "tertiary",
         "displayName": "Danger Coral",
-        "canonical": "#dc4c3e",
+        "canonical": "#b83329",
         "tonalRamp": [
           "#42100c",
           "#701b15",

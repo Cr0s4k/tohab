@@ -22,6 +22,7 @@
 
 {#if variant === 'select'}
 	<select
+		aria-label="Project"
 		value={value ?? ''}
 		onchange={(event) => onSelect(event.currentTarget.value)}
 		class="sunken w-full rounded-xl px-3 py-2.5 text-copy outline-none"
@@ -37,6 +38,7 @@
 			type="button"
 			use:hapticTap
 			onclick={() => select('')}
+			aria-pressed={value === ''}
 			class="tap min-h-11 rounded-full px-3 py-1.5 text-caption font-medium"
 			class:accent-bg={value === ''}
 			class:sunken={value !== ''}
@@ -48,6 +50,7 @@
 				type="button"
 				use:hapticTap
 				onclick={() => select(project.id)}
+				aria-pressed={value === project.id}
 				class="tap flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-caption font-medium"
 				class:accent-bg={value === project.id}
 				class:sunken={value !== project.id}

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Task hardening fixture</title>
+<body>
+<script type="module">
+import '../src/app.css';
+import { mount } from 'svelte';
+import TaskRow from '../src/lib/components/TaskRow.svelte';
+import TaskProjectPicker from '../src/lib/components/task/TaskProjectPicker.svelte';
+window.actions = { complete: 0, delete: 0 };
+mount(TaskRow, { target: document.body, props: {
+ task: { id: 'fixture', title: 'Gesture test', done: false, priority: 2, due: '2020-01-01', projectId: '', notes: '' },
+ onToggle: () => window.actions.complete++, onDelete: () => window.actions.delete++, onOpen: () => {}
+}});
+mount(TaskProjectPicker, { target: document.body, props: {
+ projects: [{ id: 'work', name: 'Work', color: '#205fbd' }], value: 'work', onSelect: () => {}
+}});
+window.ready = true;
+</script>
+</body>
+</html>

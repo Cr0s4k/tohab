@@ -6,9 +6,9 @@
 	--font-sans:
 		-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', system-ui, sans-serif,
 		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-	--color-p1: #d1453b;
-	--color-p2: #eb8909;
-	--color-p3: #246fe0;
+	--color-p1: #b83329;
+	--color-p2: #985500;
+	--color-p3: #205fbd;
 	--color-p4: #666;
 }
 
@@ -28,7 +28,7 @@
 		--accent-muted: #a92f24;
 		--accent-soft: #fbe9e7;
 		--accent-text: #ffffff;
-		--danger: #dc4c3e;
+		--danger: #b83329;
 		--positive: #058527;
 		--selected-bg: #ffefe5;
 		--selected-text: #a81f00;

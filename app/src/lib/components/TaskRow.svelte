@@ -74,14 +74,20 @@
 		if (axis === 'x') e.preventDefault();
 	}
 
-	function up() {
-		if (!dragging) return;
+	function cancel() {
 		swipeEl?.removeEventListener('touchmove', preventVerticalScroll);
 		dragging = false;
-		const settled = dx;
 		dx = 0;
 		armed = false;
-		if (axis !== 'x') return;
+		axis = 'none';
+	}
+
+	function up() {
+		if (!dragging) return;
+		const settled = dx;
+		const horizontal = axis === 'x';
+		cancel();
+		if (!horizontal) return;
 		if (settled > THRESHOLD) {
 			haptic('success');
 			complete();
@@ -123,7 +129,7 @@
 		onpointerdown={down}
 		onpointermove={move}
 		onpointerup={up}
-		onpointercancel={up}
+		onpointercancel={cancel}
 	>
 		<div
 			class="hairline measure flex gap-3 border-b pb-2.5"
@@ -198,7 +204,7 @@
 				type="button"
 				onclick={onOpen}
 				aria-label="Edit {task.title}"
-				class="edit-hint dim size-8 shrink-0 self-center place-items-center rounded-lg opacity-0 transition-opacity group-hover:opacity-100"
+					class="edit-hint dim size-8 shrink-0 self-center place-items-center rounded-lg opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
 			>
 				<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M12 20h9" />

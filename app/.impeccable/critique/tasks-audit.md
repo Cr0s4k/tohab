@@ -100,3 +100,22 @@ not cover the verified accessibility and gesture issues above.
 4. `$impeccable polish`: final consistency pass after the functional fixes.
 
 Issue count: P0 0, P1 3, P2 2, P3 0.
+
+## Hardening follow-up
+
+The four task UI findings have been addressed. Pointer cancellation now resets
+gesture state without mutation; keyboard focus reveals the edit button; project
+chips expose aria-pressed and the select variant has an accessible name.
+Light-theme danger and P1/P2/P3 colors now exceed 5:1 against canvas, raised and
+sunken surfaces. Dark-theme tokens were preserved.
+
+The real components passed an isolated Chrome fixture test at mobile and desktop
+viewport sizes: cancel in both directions produces no mutations, a completed
+right swipe still completes the task, the selected project is exposed, and the
+keyboard-focused edit button is visible. Run with Vite active using
+`pnpm --filter app test:hardening`. App and server type checks also passed.
+
+Documentation now includes copy/subtitle sizes, actual page-header weights,
+sidebar radius/padding and dark colors. Sidecar previews are explicitly
+illustrative. This targeted verification does not establish a new full audit
+score or replace device reflow and screen-reader testing.

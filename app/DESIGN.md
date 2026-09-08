@@ -15,15 +15,39 @@ colors:
   text: "#202020"
   text-dim: "#666666"
   text-faint: "#6f6f6f"
-  danger: "#dc4c3e"
+  danger: "#b83329"
   positive: "#058527"
   selected-bg: "#ffefe5"
   selected-text: "#a81f00"
-  priority-one: "#d1453b"
-  priority-two: "#eb8909"
-  priority-three: "#246fe0"
+  priority-one: "#b83329"
+  priority-two: "#985500"
+  priority-three: "#205fbd"
   priority-four: "#666666"
+  dark-surface: "#1f1f1f"
+  dark-surface-raised: "#262626"
+  dark-surface-sunken: "#363636"
+  dark-line: "#3d3d3d"
+  dark-line-strong: "#666666"
+  dark-text: "#ffffff"
+  dark-text-dim: "#b3b3b3"
+  dark-text-faint: "#aaaaaa"
+  dark-primary: "#c94642"
+  dark-primary-muted: "#e36564"
+  dark-primary-soft: "#472525"
+  dark-selected-text: "#f07f75"
+  dark-danger: "#e06155"
+  dark-positive: "#08a531"
+  dark-priority-one: "#ff7066"
+  dark-priority-two: "#ff9a13"
+  dark-priority-three: "#5297ff"
+  dark-priority-four: "#a9a9a9"
 typography:
+  copy:
+    fontSize: "0.8125rem"
+    lineHeight: 1.6154
+  subtitle:
+    fontSize: "1rem"
+    lineHeight: 1.5
   display:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', system-ui, sans-serif"
     fontSize: "2rem"
@@ -33,12 +57,12 @@ typography:
   headline:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', system-ui, sans-serif"
     fontSize: "1.5rem"
-    fontWeight: 600
+    fontWeight: 700
     lineHeight: 1.25
   title:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', system-ui, sans-serif"
     fontSize: "1.25rem"
-    fontWeight: 600
+    fontWeight: 700
     lineHeight: 1.2
   body:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', system-ui, sans-serif"
@@ -51,6 +75,7 @@ typography:
     fontWeight: 500
     lineHeight: 1.6667
 rounded:
+  nav: "0.7rem"
   sm: "8px"
   md: "12px"
   lg: "16px"
@@ -89,11 +114,9 @@ components:
     padding: "10px 12px"
     height: "44px"
   nav-item:
-    backgroundColor: "{colors.surface}"
     textColor: "{colors.text}"
-    rounded: "{rounded.sm}"
-    padding: "8px 10px"
-    height: "40px"
+    rounded: "{rounded.nav}"
+    padding: "0.5rem 0.65rem"
   fab:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.primary-text}"
@@ -107,6 +130,13 @@ components:
 ---
 
 # Design System: Tohab
+
+Source authority: `src/app.css` and the Svelte components. Sidecar previews
+are illustrative renderings, not exact component replicas; synthesized color
+ramps and preview shadows must not be copied into the app as normative tokens.
+Dark mode aliases hover to sunken, selected background to primary-soft, and
+accent text to white. Typography utilities define size and line-height; weights
+are chosen by each component (page headers use 700, sheet titles use 600).
 
 ## Overview
 
@@ -147,9 +177,9 @@ keeps the same roles while shifting the surface and accent values for contrast.
 
 ### Secondary
 
-- **Priority Coral** (#d1453b): Highest task priority.
-- **Priority Amber** (#eb8909): Second task priority.
-- **Priority Blue** (#246fe0): Third task priority.
+- **Priority Coral**: Highest task priority; darker in light mode for text contrast.
+- **Priority Amber**: Second task priority; darker in light mode for text contrast.
+- **Priority Blue**: Third task priority; darker in light mode for text contrast.
 
 ### Neutral
 
@@ -182,8 +212,10 @@ face or ornamental type treatment.
 ### Hierarchy
 
 - **Display** (600, 2rem, 1.125): Large page or app identity moments; used sparingly.
-- **Headline** (600, 1.5rem, 1.25): Desktop page titles and prominent headings.
-- **Title** (600, 1.25rem, 1.2): Sheet titles and compact section headings.
+- **Headline** (700, 1.5rem, 1.25): Desktop page titles.
+- **Title** (700, 1.25rem, 1.2): Mobile page titles.
+- **Subtitle** (1rem, 1.5): Sheet titles, with semibold weight.
+- **Copy** (0.8125rem, 1.6154): Compact form copy and group labels.
 - **Body** (400, 0.875rem, 1.5): Task names, form content, and everyday UI copy.
 - **Label** (500, 0.75rem, 1.6667): Metadata, navigation labels, helper copy, and timestamps.
 
