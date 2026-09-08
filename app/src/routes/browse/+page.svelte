@@ -106,8 +106,8 @@
 		</div>
 
 		{#if adding}
-			<form onsubmit={submit} class="hairline surface border-b px-4 py-3">
-				<div class="measure flex gap-2">
+			<form onsubmit={submit} class="surface px-4">
+				<div class="hairline measure flex gap-2 border-b py-3">
 					<input
 						bind:this={input}
 						bind:value={name}

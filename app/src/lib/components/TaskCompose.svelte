@@ -28,7 +28,6 @@
 
 	let raw = $state('');
 	let panel = $state<Panel>('none');
-	let input: HTMLInputElement | null = $state(null);
 
 	/**
 	 * Typed syntax and tapped chips are the same fields reached two ways, so a tap has to win:
@@ -96,19 +95,18 @@
 	$effect(() => {
 		if (!open) {
 			reset();
-			return;
 		}
-		queueMicrotask(() => input?.focus());
 	});
 
 </script>
 
-<Sheet {open} title="New task" confirmLabel="Done" showHeader={false} onClose={onClose}>
+<Sheet {open} title="New task" confirmLabel="Done" showHeader={false} showCloseButton={false} onClose={onClose}>
 	{#snippet children()}
 		<form onsubmit={submit} class="flex flex-col gap-3">
 			<div class="flex items-center gap-2">
+				<!-- svelte-ignore a11y_autofocus (Opening the task dialog focuses its primary input.) -->
 				<input
-					bind:this={input}
+					autofocus
 					bind:value={raw}
 					aria-label="Quick add task"
 					placeholder="What needs doing?"

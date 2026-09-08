@@ -9,6 +9,7 @@
 		title = '',
 		confirmLabel = 'Done',
 		showHeader = true,
+		showCloseButton = true,
 		onClose,
 		onConfirm = onClose,
 		children
@@ -17,6 +18,7 @@
 		title?: string;
 		confirmLabel?: string;
 		showHeader?: boolean;
+		showCloseButton?: boolean;
 		onClose: () => void;
 		onConfirm?: () => void;
 		children: Snippet;
@@ -81,9 +83,11 @@
 				</div>
 			{:else}
 				<h2 id={titleId} class="sr-only">{title || 'Dialog'}</h2>
+				{#if showCloseButton}
 				<button type="button" aria-label="Close dialog" onclick={onClose} class="tap raised absolute top-2 right-2 z-20 flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl" title="Close">×</button>
+				{/if}
 			{/if}
-			<div class={showHeader ? 'px-4 py-4' : 'px-4 pt-14 pb-0'}>{@render children()}</div>
+			<div class={showHeader ? 'px-4 py-4' : showCloseButton ? 'px-4 pt-14 pb-0' : 'px-4 pt-4 pb-0'}>{@render children()}</div>
 		</div>
 	</div>
 {/if}

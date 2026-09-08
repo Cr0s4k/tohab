@@ -12,6 +12,16 @@
 		withTabBar?: boolean;
 		mobileOnly?: boolean;
 	} = $props();
+
+	let pointerStart: { x: number; y: number } | null = null;
+	let ignoreClick = false;
+
+	function trackMovement(event: PointerEvent) {
+		if (!pointerStart) return;
+		if (Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 10) {
+			ignoreClick = true;
+		}
+	}
 </script>
 
 <!-- Anchored to the app column, so it stays beside the list on wide screens instead of
@@ -24,7 +34,25 @@
 			type="button"
 			use:hapticTap
 			aria-label={label}
+			onpointerdown={(event) => {
+				pointerStart = { x: event.clientX, y: event.clientY };
+				ignoreClick = false;
+			}}
+			onpointermove={trackMovement}
+			onpointerup={(event) => {
+				trackMovement(event);
+				pointerStart = null;
+			}}
+			onpointercancel={() => {
+				pointerStart = null;
+				ignoreClick = true;
+			}}
+			onkeydown={(event) => {
+				if (event.key === 'Enter' || event.key === ' ') ignoreClick = false;
+			}}
 			onclick={() => {
+				// Keep the guard for clicks forwarded by the iOS haptic overlay too.
+				if (ignoreClick) return;
 				haptic('tap');
 				onPress();
 			}}
