@@ -42,8 +42,20 @@ export function valueOn(logs: LogMap, day: DayKey): number {
 	return logs.get(day) ?? 0;
 }
 
-export function isComplete(habit: Habit, logs: LogMap, day: DayKey): boolean {
-	const value = valueOn(logs, day);
+export function isWeeklyQuantity(habit: Habit): boolean {
+	return habit.scheduleKind === 'weekly' && habit.kind === 'quantity';
+}
+
+export function periodValue(habit: Habit, logs: LogMap, day: DayKey, weekStartsOn: 0 | 1 = 1): number {
+	if (!isWeeklyQuantity(habit)) return valueOn(logs, day);
+	const start = startOfWeekKey(day, weekStartsOn);
+	let total = 0;
+	for (let i = 0; i < 7; i++) total += valueOn(logs, shiftKey(start, i));
+	return total;
+}
+
+export function isComplete(habit: Habit, logs: LogMap, day: DayKey, weekStartsOn: 0 | 1 = 1): boolean {
+	const value = periodValue(habit, logs, day, weekStartsOn);
 	return habit.goal === 'break' ? value <= habit.target : value >= habit.target;
 }
 
@@ -65,6 +77,12 @@ function weeklyCompletions(habit: Habit, logs: LogMap, weekStart: DayKey): numbe
 	return count;
 }
 
+function weekComplete(habit: Habit, logs: LogMap, week: DayKey, weekStartsOn: 0 | 1): boolean {
+	return isWeeklyQuantity(habit)
+		? isComplete(habit, logs, week, weekStartsOn)
+		: weeklyCompletions(habit, logs, week) >= habit.timesPerWeek;
+}
+
 /**
  * Consecutive streak up to today. An unfinished *today* never breaks a streak — it is
  * simply not counted yet — and days the schedule does not ask for are skipped entirely.
@@ -80,9 +98,13 @@ export function currentStreak(
 	if (habit.scheduleKind === 'weekly') {
 		let week = startOfWeekKey(todayKey, weekStartsOn);
 		let streak = 0;
-		if (weeklyCompletions(habit, logs, week) < habit.timesPerWeek) week = shiftKey(week, -7);
+		// A maximum can only be earned when the week has ended.
+		if (habit.goal === 'break') {
+			if (!weekComplete(habit, logs, week, weekStartsOn)) return 0;
+			week = shiftKey(week, -7);
+		} else if (!weekComplete(habit, logs, week, weekStartsOn)) week = shiftKey(week, -7);
 		while (week >= startOfWeekKey(floor, weekStartsOn)) {
-			if (weeklyCompletions(habit, logs, week) < habit.timesPerWeek) break;
+			if (!weekComplete(habit, logs, week, weekStartsOn)) break;
 			streak++;
 			week = shiftKey(week, -7);
 		}
@@ -116,7 +138,7 @@ export function bestStreak(
 		let best = 0;
 		let run = 0;
 		while (week <= last) {
-			const met = weeklyCompletions(habit, logs, week) >= habit.timesPerWeek;
+			const met = !(habit.goal === 'break' && week === last) && weekComplete(habit, logs, week, weekStartsOn);
 			if (met) {
 				run++;
 				best = Math.max(best, run);
@@ -150,7 +172,8 @@ export function completionRate(
 	habit: Habit,
 	logs: LogMap,
 	days: number,
-	todayKey = today()
+	todayKey = today(),
+	weekStartsOn: 0 | 1 = 1
 ): number {
 	const floor = floorDay(habit, logs);
 	let due = 0;
@@ -160,7 +183,7 @@ export function completionRate(
 		if (day < floor) break;
 		if (!isDue(habit, day)) continue;
 		due++;
-		if (isComplete(habit, logs, day)) done++;
+		if (isComplete(habit, logs, day, weekStartsOn)) done++;
 	}
 	return due === 0 ? 0 : done / due;
 }

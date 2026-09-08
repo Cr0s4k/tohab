@@ -184,4 +184,20 @@ eq(
 	0
 );
 
+// Weekly quantities count occurrences across days, including multiple on one day.
+const cap = habit({ goal: 'break', kind: 'quantity', target: 3, scheduleKind: 'weekly', createdAt: new Date(2026, 7, 10).getTime() });
+const cappedLogs = new Map([['2026-08-10', 2], ['2026-08-12', 1], ['2026-08-17', 2], ['2026-08-19', 1]]);
+eq('weekly cap: at the limit succeeds', isComplete(cap, cappedLogs, TODAY, 1), true);
+eq('weekly cap: aggregate over limit fails', isComplete(cap, new Map([...cappedLogs, ['2026-08-18', 1]]), TODAY, 1), false);
+eq('weekly cap: current week is not earned early', currentStreak(cap, cappedLogs, 1, TODAY), 1);
+eq('weekly cap: best excludes unfinished current week', bestStreak(cap, cappedLogs, 1, TODAY), 1);
+eq('weekly cap: exceeding current limit breaks streak', currentStreak(cap, new Map([...cappedLogs, ['2026-08-18', 1]]), 1, TODAY), 0);
+eq('weekly cap: zero limit accepts empty week', isComplete({ ...cap, target: 0 }, new Map(), TODAY, 1), true);
+eq('weekly cap: zero limit rejects a single occurrence', isComplete({ ...cap, target: 0 }, logs(['2026-08-18']), TODAY, 1), false);
+eq('weekly cap: Sunday start includes Sunday', isComplete(cap, new Map([['2026-08-16', 4]]), TODAY, 0), false);
+eq('weekly cap: Monday start excludes previous Sunday', isComplete(cap, new Map([['2026-08-16', 4]]), TODAY, 1), true);
+const weeklyQuantity = { ...cap, goal: 'build' as const, target: 8 };
+eq('weekly quantity: sum reaches goal across days', isComplete(weeklyQuantity, new Map([['2026-08-17', 5], ['2026-08-19', 3]]), TODAY), true);
+eq('weekly quantity: starts fresh next week', isComplete(weeklyQuantity, new Map([['2026-08-17', 8]]), '2026-08-24'), false);
+
 reporter.finish();

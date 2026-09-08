@@ -13,6 +13,8 @@
 		setLog,
 		tapLog,
 		toLogMap,
+		isWeeklyQuantity,
+		periodValue,
 		valueOn
 	} from '$lib/habits';
 	import { humanDay, today, WEEKDAY_NAMES } from '$lib/dates';
@@ -38,7 +40,7 @@
 		return {
 			current: currentStreak(habit, logs, settings.startOfWeek, todayKey),
 			best: bestStreak(habit, logs, settings.startOfWeek, todayKey),
-			month: Math.round(completionRate(habit, logs, 30, todayKey) * 100),
+			month: Math.round(completionRate(habit, logs, 30, todayKey, settings.startOfWeek) * 100),
 			total:
 				habit.goal === 'break'
 					? logBox.value.reduce((n, l) => n + l.value, 0)
@@ -48,6 +50,7 @@
 
 	let scheduleLabel = $derived.by(() => {
 		if (!habit) return '';
+		if (isWeeklyQuantity(habit)) return `${habit.goal === 'break' ? 'At most' : 'At least'} ${habit.target} ${habit.unit || 'times'} per week`;
 		if (habit.scheduleKind === 'daily') return 'Every day';
 		if (habit.scheduleKind === 'weekly') return `${habit.timesPerWeek}× per week`;
 		return habit.weekdays.map((d) => WEEKDAY_NAMES[d].slice(0, 3)).join(', ');
@@ -105,18 +108,18 @@
 				class="tap"
 			>
 				<ProgressRing
-					value={valueOn(logs, todayKey)}
+					value={periodValue(habit, logs, todayKey, settings.startOfWeek)}
 					target={habit.target}
 					color={habit.color}
 					size={64}
 					label={habit.goal === 'break' || habit.kind === 'quantity'
-						? `${valueOn(logs, todayKey)}/${habit.target}`
+						? `${periodValue(habit, logs, todayKey, settings.startOfWeek)}/${habit.target}`
 						: ''}
 					invert={habit.goal === 'break'}
 				/>
 			</button>
 			<div class="min-w-0 flex-1">
-				<p class="text-sm font-semibold">Today</p>
+				<p class="text-sm font-semibold">{isWeeklyQuantity(habit) ? 'This week' : 'Today'}</p>
 				<p class="dim text-xs">
 					{habit.goal === 'break' ? 'Break a bad habit' : 'Build a good habit'} · {scheduleLabel}
 				</p>
@@ -132,7 +135,7 @@
 						</button>
 						<span class="text-sm tabular-nums">
 							{valueOn(logs, todayKey)}{habit.goal === 'break'
-								? `/${habit.target}`
+								? (isWeeklyQuantity(habit) ? ' today' : `/${habit.target}`)
 								: habit.unit
 									? ` ${habit.unit}`
 									: ''}
@@ -191,7 +194,7 @@
 					<div class="hairline flex items-center justify-between border-b px-4 py-2.5 last:border-b-0">
 						<span class="text-sm">{humanDay(log.date)}</span>
 						<span class="dim text-sm tabular-nums">
-							{habit.goal === 'break'
+							{isWeeklyQuantity(habit) ? '' : habit.goal === 'break'
 								? log.value <= habit.target
 									? '✓'
 									: ''
@@ -199,7 +202,7 @@
 									? '✓'
 									: ''}
 							{habit.goal === 'break' || habit.kind === 'quantity'
-								? `${log.value}/${habit.target}`
+								? (isWeeklyQuantity(habit) ? `${log.value} ${habit.unit || 'times'}` : `${log.value}/${habit.target}`)
 								: ''}
 						</span>
 					</div>

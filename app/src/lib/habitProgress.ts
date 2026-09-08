@@ -7,7 +7,7 @@ import {
 	currentStreak,
 	isComplete,
 	isDue,
-	valueOn,
+	periodValue,
 	type LogMap
 } from './streaks.ts';
 
@@ -15,7 +15,7 @@ export function percentage(done: number, due: number) {
 	return due === 0 ? 0 : Math.round((done / due) * 100);
 }
 
-function windowStats(habits: Habit[], byHabit: Map<string, LogMap>, days: number, today: DayKey) {
+function windowStats(habits: Habit[], byHabit: Map<string, LogMap>, days: number, today: DayKey, weekStartsOn: 0 | 1) {
 	let due = 0;
 	let done = 0;
 	for (const habit of habits) {
@@ -24,7 +24,7 @@ function windowStats(habits: Habit[], byHabit: Map<string, LogMap>, days: number
 			const day = shiftKey(today, -offset);
 			if (!isDue(habit, day)) continue;
 			due++;
-			if (isComplete(habit, logs, day)) done++;
+			if (isComplete(habit, logs, day, weekStartsOn)) done++;
 		}
 	}
 	return { due, done };
@@ -49,24 +49,24 @@ export function buildHabitProgress(
 	const byHabit = groupLogs(logs);
 	const dueToday = habits.filter((habit) => isDue(habit, today));
 	const doneToday = dueToday.filter((habit) =>
-		isComplete(habit, byHabit.get(habit.id) ?? new Map(), today)
+		isComplete(habit, byHabit.get(habit.id) ?? new Map(), today, weekStartsOn)
 	).length;
 
 	return {
 		overview: {
 			dueToday: dueToday.length,
 			doneToday,
-			seven: windowStats(habits, byHabit, 7, today),
-			thirty: windowStats(habits, byHabit, 30, today)
+			seven: windowStats(habits, byHabit, 7, today, weekStartsOn),
+			thirty: windowStats(habits, byHabit, 30, today, weekStartsOn)
 		},
 		rows: habits.map((habit) => {
 			const habitLogs = byHabit.get(habit.id) ?? new Map();
 			return {
 				habit,
-				value: valueOn(habitLogs, today),
+				value: periodValue(habit, habitLogs, today, weekStartsOn),
 				current: currentStreak(habit, habitLogs, weekStartsOn, today),
 				best: bestStreak(habit, habitLogs, weekStartsOn, today),
-				month: Math.round(completionRate(habit, habitLogs, 30, today) * 100)
+				month: Math.round(completionRate(habit, habitLogs, 30, today, weekStartsOn) * 100)
 			};
 		})
 	};

@@ -42,6 +42,8 @@
 				<span class="dim mt-0.5 block text-xs">
 					{#if !due}
 						Rest day
+					{:else if habit.scheduleKind === 'weekly' && habit.kind === 'quantity'}
+						{value} / {habit.target} {habit.unit || 'times'} this week{habit.goal === 'break' ? ' · max' : ''}
 					{:else if streak > 0}
 						🔥 {streak} {habit.scheduleKind === 'weekly' ? (streak === 1 ? 'week' : 'weeks') : (streak === 1 ? 'day' : 'days')}
 					{:else if habit.goal === 'break'}

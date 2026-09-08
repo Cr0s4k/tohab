@@ -69,8 +69,8 @@ export async function createHabit(input: HabitInput) {
 				: input.kind === 'binary'
 					? 1
 					: Math.max(1, Math.min(10000, Math.round(input.target))),
-		unit: input.goal === 'break' ? '' : input.unit,
-		scheduleKind: input.goal === 'break' ? 'daily' : input.scheduleKind
+		unit: input.unit.trim(),
+		scheduleKind: input.scheduleKind
 	};
 	await db.habits.insert(doc);
 	markLocalWrite();
@@ -91,8 +91,6 @@ export async function updateHabit(id: string, patch: Partial<Habit>) {
 	const next = { ...patch, updatedAt: now() };
 	if (next.goal === 'break') {
 		next.kind = 'quantity';
-		next.unit = '';
-		next.scheduleKind = 'daily';
 	}
 	const before = doc.toMutableJSON();
 	const updated = await doc.patch(next);
@@ -192,7 +190,7 @@ export async function setLog(habit: Habit, date: DayKey, value: number) {
  * past target. Break habits always increment: each tap records one slip.
  */
 export async function tapLog(habit: Habit, date: DayKey, current: number) {
-	if (habit.goal === 'break') return setLog(habit, date, current + 1);
+	if (habit.goal === 'break' || (habit.kind === 'quantity' && habit.scheduleKind === 'weekly')) return setLog(habit, date, current + 1);
 	if (habit.kind === 'binary') return setLog(habit, date, current >= habit.target ? 0 : habit.target);
 	return setLog(habit, date, current >= habit.target ? 0 : current + 1);
 }

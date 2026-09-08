@@ -11,6 +11,7 @@
 		isComplete,
 		logsQuery,
 		tapLog,
+		periodValue,
 		valueOn
 	} from '$lib/habits';
 	import { humanDay, shiftKey, today } from '$lib/dates';
@@ -40,7 +41,7 @@
 	let listFlipCfg = $derived(shouldAnimateList(habits.value.length) ? flipCfg : { duration: 0 });
 
 	let doneCount = $derived(
-		due.filter((h) => isComplete(h, byHabit.get(h.id) ?? new Map(), day)).length
+		due.filter((h) => isComplete(h, byHabit.get(h.id) ?? new Map(), day, settings.startOfWeek)).length
 	);
 </script>
 
@@ -135,7 +136,7 @@
 			<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.value.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
 				<HabitRow
 					{habit}
-					value={valueOn(habitLogs, day)}
+					value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
 					streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
 					onTap={() => tapLog(habit, day, valueOn(habitLogs, day))}
 				/>
@@ -154,7 +155,7 @@
 				<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.value.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
 					<HabitRow
 						{habit}
-						value={valueOn(habitLogs, day)}
+						value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
 						streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
 						due={false}
 						onTap={() => tapLog(habit, day, valueOn(habitLogs, day))}

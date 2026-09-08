@@ -27,11 +27,11 @@
 	let pane = $state<HTMLElement | null>(null);
 	// Only one sheet is exposed at a time; a deterministic id avoids SSR hydration drift.
 	const titleId = 'active-sheet-title';
-	const focusable = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+	const focusable = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
 	function trapFocus(event: KeyboardEvent) {
 		if (event.key !== 'Tab' || !pane) return;
-		const items = [...pane.querySelectorAll<HTMLElement>(focusable)].filter((item) => !item.hidden);
+		const items = [...pane.querySelectorAll<HTMLElement>(focusable)].filter((item) => item.getClientRects().length > 0);
 		if (!items.length) {
 			event.preventDefault();
 			pane.focus();

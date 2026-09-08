@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Habit } from '$lib/db/schemas';
 	import { humanDay, shiftKey, startOfWeekKey, today, WEEKDAY_LABELS } from '$lib/dates';
-	import { isDue, valueOn, type LogMap } from '$lib/streaks';
+	import { isDue, isWeeklyQuantity, valueOn, type LogMap } from '$lib/streaks';
 	import { haptic, hapticTap } from '$lib/haptics';
 
 	let {
@@ -58,7 +58,9 @@
 						type="button"
 						use:hapticTap
 						disabled={future}
-						aria-label={habit.goal === 'break'
+						aria-label={isWeeklyQuantity(habit)
+							? `${humanDay(day)}: ${valueOn(logs, day)} ${habit.unit || 'times'} logged`
+							: habit.goal === 'break'
 							? `${humanDay(day)}: ${valueOn(logs, day)} slips, limit ${habit.target}`
 							: `${humanDay(day)}: ${valueOn(logs, day)} of ${habit.target}`}
 						onclick={() => {
