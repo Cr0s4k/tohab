@@ -26,7 +26,7 @@
 			<button type="button" onclick={() => (scheduleKind = 'daily')} aria-pressed={scheduleKind !== 'weekly'} class="tap min-h-11 rounded-lg text-sm" class:chosen={scheduleKind !== 'weekly'}>Per day</button>
 			<button type="button" onclick={() => (scheduleKind = 'weekly')} aria-pressed={scheduleKind === 'weekly'} class="tap min-h-11 rounded-lg text-sm" class:chosen={scheduleKind === 'weekly'}>Per week</button>
 		</div>
-		<p class="dim text-xs leading-relaxed">{goal === 'break' ? 'Log each occurrence. Zero is a valid limit.' : 'Each tap adds one to your total.'} {scheduleKind === 'weekly' ? 'Your total resets at the start of each week.' : ''}</p>
+		<p class="dim text-xs leading-relaxed">{goal === 'break' ? 'Log each occurrence. Zero is a valid limit.' : 'Enter your total for each day.'} {scheduleKind === 'weekly' ? 'Your total resets at the start of each week.' : ''}</p>
 	</div>
 {/if}
 

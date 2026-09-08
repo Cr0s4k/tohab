@@ -12,12 +12,14 @@
 		logsQuery,
 		tapLog,
 		periodValue,
+		updateHabit,
 		valueOn
 	} from '$lib/habits';
 	import { humanDay, shiftKey, today } from '$lib/dates';
 	import { settings } from '$lib/settings.svelte';
 	import { habitCompose } from '$lib/compose.svelte';
 	import HabitRow from '$lib/components/HabitRow.svelte';
+	import HabitLogEditor from '$lib/components/HabitLogEditor.svelte';
 	import HabitEditor from '$lib/components/HabitEditor.svelte';
 	import Fab from '$lib/components/Fab.svelte';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
@@ -28,16 +30,36 @@
 	import { shouldAnimateList } from '$lib/pwa';
 
 	let offset = $state(0);
+	let showArchived = $state(false);
+	let restoring = $state('');
+	let archiveError = $state('');
+	let logEntry = $state<{ habit: Habit; day: string; value: number } | null>(null);
+
+	async function restore(habit: Habit) {
+		if (restoring) return;
+		restoring = habit.id;
+		archiveError = '';
+		try { await updateHabit(habit.id, { archived: false }); }
+		catch { archiveError = 'Could not restore this habit. Please try again.'; }
+		finally { restoring = ''; }
+	}
+
+	function logHabit(habit: Habit, value: number) {
+		if (habit.kind === 'quantity') logEntry = { habit, day, value };
+		else void tapLog(habit, day, value);
+	}
 
 	let day = $derived(shiftKey(today(), offset));
 
-	let habits = rx<Habit[]>(() => (live.db ? habitsQuery(live.db).$ : null), []);
+	let habits = rx<Habit[]>(() => (live.db ? habitsQuery(live.db, true).$ : null), []);
 	let logs = rx<HabitLog[]>(() => (live.db ? logsQuery(live.db).$ : null), []);
 
 	let byHabit = $derived(groupLogs(logs.value));
 
-	let due = $derived(habits.value.filter((h) => isDue(h, day)));
-	let rest = $derived(habits.value.filter((h) => !isDue(h, day)));
+	let active = $derived(habits.value.filter((h) => !h.archived));
+	let archived = $derived(habits.value.filter((h) => h.archived));
+	let due = $derived(active.filter((h) => isDue(h, day)));
+	let rest = $derived(active.filter((h) => !isDue(h, day)));
 	let listFlipCfg = $derived(shouldAnimateList(habits.value.length) ? flipCfg : { duration: 0 });
 
 	let doneCount = $derived(
@@ -73,6 +95,7 @@
 					<path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4-4m-4 4l4 4" />
 				</svg>
 			</button>
+			<button type="button" aria-pressed={showArchived} onclick={() => (showArchived = !showArchived)} class="tap dim min-h-11 px-2 text-sm">{showArchived ? 'Journal' : 'Archived'}</button>
 			<SettingsButton />
 		</div>
 	</div>
@@ -126,7 +149,18 @@
 </header>
 
 <main class="flex-1 pb-20">
-	{#if !habits.value.length}
+	{#if showArchived}
+		<div class="measure px-4 py-4">
+			<h2 class="mb-3 text-sm font-semibold">Archived habits</h2>
+			{#if archiveError}<p role="alert" class="danger mb-3 text-sm">{archiveError}</p>{/if}
+			{#each archived as habit (habit.id)}
+				<div class="hairline flex items-center gap-3 border-b py-3">
+					<a href="/habits/{habit.id}" class="min-w-0 flex-1 text-sm">{habit.emoji} {habit.name}</a>
+					<button type="button" disabled={!!restoring} onclick={() => restore(habit)} class="tap accent-fg min-h-11 px-3 text-sm disabled:opacity-30">{restoring === habit.id ? 'Restoring…' : 'Restore'}</button>
+				</div>
+			{:else}<p class="dim py-8 text-center text-sm">No archived habits.</p>{/each}
+		</div>
+	{:else if !active.length}
 		<div class="measure px-8 py-14 text-center">
 			<p class="dim text-sm">No habits yet.</p>
 		</div>
@@ -138,7 +172,8 @@
 					{habit}
 					value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
 					streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
-					onTap={() => tapLog(habit, day, valueOn(habitLogs, day))}
+					dayValue={valueOn(habitLogs, day)}
+					onTap={() => logHabit(habit, valueOn(habitLogs, day))}
 				/>
 			</div>
 		{/each}
@@ -158,7 +193,8 @@
 						value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
 						streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
 						due={false}
-						onTap={() => tapLog(habit, day, valueOn(habitLogs, day))}
+						dayValue={valueOn(habitLogs, day)}
+					onTap={() => logHabit(habit, valueOn(habitLogs, day))}
 					/>
 				</div>
 			{/each}
@@ -173,3 +209,7 @@
 	nextColor={habits.value.length}
 	onClose={() => (habitCompose.open = false)}
 />
+
+{#if logEntry}
+	<HabitLogEditor {...logEntry} onClose={() => (logEntry = null)} />
+{/if}

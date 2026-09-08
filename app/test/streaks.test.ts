@@ -200,4 +200,10 @@ const weeklyQuantity = { ...cap, goal: 'build' as const, target: 8 };
 eq('weekly quantity: sum reaches goal across days', isComplete(weeklyQuantity, new Map([['2026-08-17', 5], ['2026-08-19', 3]]), TODAY), true);
 eq('weekly quantity: starts fresh next week', isComplete(weeklyQuantity, new Map([['2026-08-17', 8]]), '2026-08-24'), false);
 
+eq('weekly binary: met target remains complete on Sunday', isComplete(wk, logs(['2026-08-17', '2026-08-18', '2026-08-19']), '2026-08-23', 1), true);
+eq('weekly binary: new week starts incomplete', isComplete(wk, logs(['2026-08-17', '2026-08-18', '2026-08-19']), '2026-08-24', 1), false);
+eq('weekly binary: Sunday-start boundary respected', isComplete(wk, logs(['2026-08-16', '2026-08-17', '2026-08-18']), TODAY, 0), true);
+eq('weekly binary: Monday-start excludes preceding Sunday', isComplete(wk, logs(['2026-08-16', '2026-08-17', '2026-08-18']), TODAY, 1), false);
+eq('weekly quantity: complete week earns 100 percent', completionRate(weeklyQuantity, logs(['2026-08-17'], 8), 7, '2026-08-23', 1), 1);
+
 reporter.finish();

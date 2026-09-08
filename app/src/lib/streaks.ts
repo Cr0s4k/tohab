@@ -53,16 +53,19 @@ export function isWeeklyQuantity(habit: Habit): boolean {
 }
 
 export function periodValue(habit: Habit, logs: LogMap, day: DayKey, weekStartsOn: 0 | 1 = 1): number {
-	if (!isWeeklyQuantity(habit)) return valueOn(logs, day);
+	if (habit.scheduleKind !== 'weekly') return valueOn(logs, day);
 	const start = startOfWeekKey(day, weekStartsOn);
 	let total = 0;
-	for (let i = 0; i < 7; i++) total += valueOn(logs, shiftKey(start, i));
+	for (let i = 0; i < 7; i++) {
+		const value = valueOn(logs, shiftKey(start, i));
+		total += habit.kind === 'binary' ? Number(value >= habit.target) : value;
+	}
 	return total;
 }
 
 export function isComplete(habit: Habit, logs: LogMap, day: DayKey, weekStartsOn: 0 | 1 = 1): boolean {
 	const value = periodValue(habit, logs, day, weekStartsOn);
-	return habit.goal === 'break' ? value <= habit.target : value >= habit.target;
+	return habit.goal === 'break' ? value <= habit.target : value >= periodTarget(habit);
 }
 
 /**
@@ -75,18 +78,12 @@ function floorDay(habit: Habit, logs: LogMap): DayKey {
 	return floor;
 }
 
-function weeklyCompletions(habit: Habit, logs: LogMap, weekStart: DayKey): number {
-	let count = 0;
-	for (let i = 0; i < 7; i++) {
-		if (isComplete(habit, logs, shiftKey(weekStart, i))) count++;
-	}
-	return count;
+export function periodTarget(habit: Habit): number {
+	return habit.scheduleKind === 'weekly' && habit.kind === 'binary' ? habit.timesPerWeek : habit.target;
 }
 
 function weekComplete(habit: Habit, logs: LogMap, week: DayKey, weekStartsOn: 0 | 1): boolean {
-	return isWeeklyQuantity(habit)
-		? isComplete(habit, logs, week, weekStartsOn)
-		: weeklyCompletions(habit, logs, week) >= habit.timesPerWeek;
+	return isComplete(habit, logs, week, weekStartsOn);
 }
 
 /**
@@ -173,23 +170,30 @@ export function bestStreak(
 	return best;
 }
 
-/** Completed due days over the trailing window, as a 0..1 rate. */
-export function completionRate(
-	habit: Habit,
-	logs: LogMap,
-	days: number,
-	todayKey = today(),
-	weekStartsOn: 0 | 1 = 1
-): number {
+/** Each scheduled day or calendar week counts once; backfilled history extends creation. */
+export function completionWindow(
+	habit: Habit, logs: LogMap, days: number, todayKey = today(), weekStartsOn: 0 | 1 = 1
+): { due: number; done: number } {
 	const floor = floorDay(habit, logs);
+	const seen = new Set<string>();
 	let due = 0;
 	let done = 0;
 	for (let i = 0; i < days; i++) {
 		const day = shiftKey(todayKey, -i);
 		if (day < floor) break;
 		if (!isDue(habit, day)) continue;
+		const period = habit.scheduleKind === 'weekly' ? startOfWeekKey(day, weekStartsOn) : day;
+		if (seen.has(period)) continue;
+		seen.add(period);
 		due++;
 		if (isComplete(habit, logs, day, weekStartsOn)) done++;
 	}
+	return { due, done };
+}
+
+export function completionRate(
+	habit: Habit, logs: LogMap, days: number, todayKey = today(), weekStartsOn: 0 | 1 = 1
+): number {
+	const { due, done } = completionWindow(habit, logs, days, todayKey, weekStartsOn);
 	return due === 0 ? 0 : done / due;
 }

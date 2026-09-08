@@ -1,9 +1,9 @@
 import type { DayKey } from './dates.ts';
-import { shiftKey } from './dates.ts';
 import type { Habit, HabitLog } from './db/schemas.ts';
 import {
 	bestStreak,
 	completionRate,
+	completionWindow,
 	currentStreak,
 	isComplete,
 	isDue,
@@ -20,12 +20,9 @@ function windowStats(habits: Habit[], byHabit: Map<string, LogMap>, days: number
 	let done = 0;
 	for (const habit of habits) {
 		const logs = byHabit.get(habit.id) ?? new Map();
-		for (let offset = 0; offset < days; offset++) {
-			const day = shiftKey(today, -offset);
-			if (!isDue(habit, day)) continue;
-			due++;
-			if (isComplete(habit, logs, day, weekStartsOn)) done++;
-		}
+		const window = completionWindow(habit, logs, days, today, weekStartsOn);
+		due += window.due;
+		done += window.done;
 	}
 	return { due, done };
 }

@@ -186,11 +186,10 @@ export async function setLog(habit: Habit, date: DayKey, value: number) {
 }
 
 /**
- * One tap for build habits: binary habits toggle, quantity habits increment and wrap once
- * past target. Break habits always increment: each tap records one slip.
+ * One tap for build habits: binary habits toggle, quantity habits increment without clearing existing progress. Break habits always increment: each tap records one slip.
  */
 export async function tapLog(habit: Habit, date: DayKey, current: number) {
 	if (habit.goal === 'break' || (habit.kind === 'quantity' && habit.scheduleKind === 'weekly')) return setLog(habit, date, current + 1);
 	if (habit.kind === 'binary') return setLog(habit, date, current >= habit.target ? 0 : habit.target);
-	return setLog(habit, date, current >= habit.target ? 0 : current + 1);
+	return setLog(habit, date, current + 1);
 }

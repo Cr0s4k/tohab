@@ -46,4 +46,17 @@ check('row exposes today value', progress.rows[0].value, 1);
 check('row exposes current streak', progress.rows[0].current, 2);
 check('percentage handles an empty denominator', percentage(0, 0), 0);
 
+const fresh = habit('fresh', { createdAt: new Date(2026, 7, 19).getTime() });
+const freshProgress = buildHabitProgress([fresh], [log('fresh', TODAY)], 1, TODAY);
+check('new habit does not count days before creation', freshProgress.overview.thirty, { due: 1, done: 1 });
+check('new habit overview agrees with individual rate', freshProgress.rows[0].month, 100);
+const backfilled = buildHabitProgress([fresh], [log('fresh', '2026-08-18'), log('fresh', TODAY)], 1, TODAY);
+check('aggregate respects backfilled history', backfilled.overview.thirty, { due: 2, done: 2 });
+const weekly = habit('weekly', { scheduleKind: 'weekly', createdAt: new Date(2026, 7, 17).getTime() });
+const met = buildHabitProgress([weekly], ['2026-08-17', '2026-08-18', TODAY].map(day => log('weekly', day)), 1, '2026-08-23');
+check('weekly goal remains complete on unlogged days', met.overview.doneToday, 1);
+check('weekly goal counts once in overview', met.overview.seven, { due: 1, done: 1 });
+check('three days meets the weekly rate', met.rows[0].month, 100);
+check('weekly row exposes completed days this week', met.rows[0].value, 3);
+
 reporter.finish('Habit progress assertions passed');

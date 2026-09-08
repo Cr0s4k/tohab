@@ -1,27 +1,30 @@
 <script lang="ts">
 	import type { Habit } from '$lib/db/schemas';
 	import { haptic, hapticTap } from '$lib/haptics';
+	import { periodTarget } from '$lib/streaks';
 	import ProgressRing from './ProgressRing.svelte';
 
 	let {
 		habit,
 		value,
+		dayValue = value,
 		streak,
 		due = true,
 		onTap
 	}: {
 		habit: Habit;
 		value: number;
+		dayValue?: number;
 		streak: number;
 		due?: boolean;
 		onTap: () => void;
 	} = $props();
 
 	let complete = $derived(
-		habit.goal === 'break' ? value <= habit.target : value >= habit.target
+		habit.goal === 'break' ? value <= habit.target : value >= periodTarget(habit)
 	);
 	let ringLabel = $derived(
-		habit.goal === 'break' || habit.kind === 'quantity' ? `${value}/${habit.target}` : ''
+		habit.goal === 'break' || habit.kind === 'quantity' || habit.scheduleKind === 'weekly' ? `${value}/${periodTarget(habit)}` : ''
 	);
 </script>
 
@@ -41,10 +44,10 @@
 				<span class="dim mt-0.5 block text-xs">
 					{#if !due}
 						Rest day
-					{:else if habit.scheduleKind === 'weekly' && habit.kind === 'quantity'}
-						{value} / {habit.target} {habit.unit || 'times'} this week{habit.goal === 'break' ? ' · max' : ''}
+					{:else if habit.scheduleKind === 'weekly'}
+						{value} / {periodTarget(habit)} {habit.kind === 'binary' ? 'days' : habit.unit || 'times'} this week{habit.goal === 'break' ? ' · max' : ''}
 					{:else if streak > 0}
-						🔥 {streak} {habit.scheduleKind === 'weekly' ? (streak === 1 ? 'week' : 'weeks') : (streak === 1 ? 'day' : 'days')}
+						🔥 {streak} {streak === 1 ? 'day' : 'days'}
 					{:else if habit.goal === 'break'}
 						{value === 0 ? 'Clean today' : `${value} ${value === 1 ? 'slip' : 'slips'} today`}
 					{:else if habit.kind === 'quantity'}
@@ -70,9 +73,9 @@
 		<button
 			type="button"
 			use:hapticTap
-			aria-label={habit.goal === 'break'
-				? `Log slip for ${habit.name}`
-				: complete
+			aria-label={habit.kind === 'quantity'
+				? `Edit entry for ${habit.name}`
+				: dayValue >= habit.target
 					? `Undo ${habit.name}`
 					: `Log ${habit.name}`}
 			onclick={() => {
@@ -83,7 +86,7 @@
 		>
 			<ProgressRing
 				value={value}
-				target={habit.target}
+				target={periodTarget(habit)}
 				color={habit.color}
 				label={ringLabel}
 				invert={habit.goal === 'break'}

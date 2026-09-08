@@ -3,7 +3,7 @@
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import type { Habit, HabitLog } from '$lib/db/schemas';
-	import { habitsQuery, logsQuery } from '$lib/habits';
+	import { habitsQuery, logsQuery, periodTarget } from '$lib/habits';
 	import { today } from '$lib/dates';
 	import { buildHabitProgress, percentage } from '$lib/habitProgress';
 	import { settings } from '$lib/settings.svelte';
@@ -72,7 +72,7 @@
 						{overview.doneToday} of {overview.dueToday} due habits complete
 					</p>
 					<p class="dim mt-1 text-caption">
-						Weekly habits count toward the current week.
+						Each scheduled day or week counts once.
 					</p>
 				</div>
 			</div>
@@ -84,7 +84,7 @@
 					</p>
 					<p class="dim text-caption">Last 7 days</p>
 					<p class="dim text-caption tabular-nums">
-						{overview.seven.done}/{overview.seven.due} due days
+						{overview.seven.done}/{overview.seven.due} scheduled periods
 					</p>
 				</div>
 				<div class="sunken rounded-2xl px-3 py-3 text-center">
@@ -93,7 +93,7 @@
 					</p>
 					<p class="dim text-caption">Last 30 days</p>
 					<p class="dim text-caption tabular-nums">
-						{overview.thirty.done}/{overview.thirty.due} due days
+						{overview.thirty.done}/{overview.thirty.due} scheduled periods
 					</p>
 				</div>
 			</div>
@@ -126,11 +126,11 @@
 						</span>
 						<ProgressRing
 							value={row.value}
-							target={row.habit.target}
+							target={periodTarget(row.habit)}
 							color={row.habit.color}
 							size={44}
-							label={row.habit.goal === 'break' || row.habit.kind === 'quantity'
-								? `${row.value}/${row.habit.target}`
+							label={row.habit.goal === 'break' || row.habit.kind === 'quantity' || row.habit.scheduleKind === 'weekly'
+								? `${row.value}/${periodTarget(row.habit)}`
 								: ''}
 							invert={row.habit.goal === 'break'}
 						/>

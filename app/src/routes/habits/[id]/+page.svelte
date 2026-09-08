@@ -15,16 +15,19 @@
 		toLogMap,
 		isWeeklyQuantity,
 		periodValue,
+		periodTarget,
 		valueOn
 	} from '$lib/habits';
 	import { humanDay, today, WEEKDAY_NAMES } from '$lib/dates';
 	import { settings } from '$lib/settings.svelte';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import Heatmap from '$lib/components/Heatmap.svelte';
+	import HabitLogEditor from '$lib/components/HabitLogEditor.svelte';
 	import HabitEditor from '$lib/components/HabitEditor.svelte';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
 
 	let editing = $state(false);
+	let logDay = $state<string | null>(null);
 
 	let id = $derived(page.params.id ?? '');
 
@@ -42,7 +45,7 @@
 			best: bestStreak(habit, logs, settings.startOfWeek, todayKey),
 			month: Math.round(completionRate(habit, logs, 30, todayKey, settings.startOfWeek) * 100),
 			total:
-				habit.goal === 'break'
+				habit.kind === 'quantity'
 					? logBox.value.reduce((n, l) => n + l.value, 0)
 					: logBox.value.filter((l) => l.value >= habit.target).length
 		};
@@ -100,26 +103,27 @@
 			<button
 				type="button"
 				use:hapticTap
-				aria-label={habit.goal === 'break' ? 'Log slip today' : 'Log today'}
+				aria-label={habit.kind === 'quantity' ? 'Edit today’s entry' : 'Log today'}
 				onclick={() => {
 					haptic(habit.goal === 'break' ? 'warn' : 'success');
-					tapLog(habit, todayKey, valueOn(logs, todayKey));
+					if (habit.kind === 'quantity') logDay = todayKey;
+					else tapLog(habit, todayKey, valueOn(logs, todayKey));
 				}}
 				class="tap"
 			>
 				<ProgressRing
 					value={periodValue(habit, logs, todayKey, settings.startOfWeek)}
-					target={habit.target}
+					target={periodTarget(habit)}
 					color={habit.color}
 					size={64}
-					label={habit.goal === 'break' || habit.kind === 'quantity'
-						? `${periodValue(habit, logs, todayKey, settings.startOfWeek)}/${habit.target}`
+					label={habit.goal === 'break' || habit.kind === 'quantity' || habit.scheduleKind === 'weekly'
+						? `${periodValue(habit, logs, todayKey, settings.startOfWeek)}/${periodTarget(habit)}`
 						: ''}
 					invert={habit.goal === 'break'}
 				/>
 			</button>
 			<div class="min-w-0 flex-1">
-				<p class="text-sm font-semibold">{isWeeklyQuantity(habit) ? 'This week' : 'Today'}</p>
+				<p class="text-sm font-semibold">{habit.scheduleKind === 'weekly' ? 'This week' : 'Today'}</p>
 				<p class="dim text-xs">
 					{habit.goal === 'break' ? 'Break a bad habit' : 'Build a good habit'} · {scheduleLabel}
 				</p>
@@ -133,13 +137,13 @@
 						>
 							−
 						</button>
-						<span class="text-sm tabular-nums">
+						<button type="button" aria-label="Edit today’s amount" onclick={() => (logDay = todayKey)} class="tap min-h-11 px-2 text-sm tabular-nums underline underline-offset-4">
 							{valueOn(logs, todayKey)}{habit.goal === 'break'
 								? (isWeeklyQuantity(habit) ? ' today' : `/${habit.target}`)
 								: habit.unit
 									? ` ${habit.unit}`
 									: ''}
-						</span>
+						</button>
 						<button
 							type="button"
 							aria-label="Increase"
@@ -162,7 +166,7 @@
 					{
 						label: habit.goal === 'break' ? 'Slips' : 'Total',
 						value: stats.total,
-						sub: habit.goal === 'break' ? 'logged' : 'days'
+						sub: habit.kind === 'quantity' ? habit.unit || 'times' : 'days'
 					}
 				] as stat (stat.label)}
 					<div class="raised hairline rounded-2xl border px-2 py-3 text-center">
@@ -177,13 +181,13 @@
 		<section class="mb-4">
 			<div class="mb-2 flex items-baseline justify-between">
 				<h2 class="text-sm font-semibold">Last 12 weeks</h2>
-				<p class="dim text-caption">Tap a day to backfill</p>
+				<p class="dim text-caption">Tap a day to edit</p>
 			</div>
 			<Heatmap
 				{habit}
 				{logs}
 				weekStartsOn={settings.startOfWeek}
-				onToggleDay={(day) => tapLog(habit, day, valueOn(logs, day))}
+				onToggleDay={(day) => (logDay = day)}
 			/>
 		</section>
 
@@ -220,3 +224,7 @@
 	onClose={() => (editing = false)}
 	onDeleted={() => goto('/habits')}
 />
+
+{#if logDay && habit}
+	<HabitLogEditor {habit} day={logDay} value={valueOn(logs, logDay)} onClose={() => (logDay = null)} />
+{/if}
