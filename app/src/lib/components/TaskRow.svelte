@@ -5,7 +5,6 @@
 	import { playComplete } from '$lib/sound';
 	import { priorityClass } from '$lib/tasks';
 	import { describeRepeat, isRepeating } from '$lib/repeat';
-	import { scrollTap } from '$lib/scrollTap';
 	import { isDesktop } from '$lib/viewport';
 	import type { SubtaskProgress } from '$lib/taskViews';
 
@@ -119,7 +118,6 @@
 
 	<div
 		role="group"
-		use:scrollTap
 		class="surface pressable group relative pr-4 pt-2.5 pb-0"
 		style:padding-left="1rem"
 		style="transform: translateX({dx}px); transition: {dragging

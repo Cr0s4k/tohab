@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { scrollTap } from '$lib/scrollTap';
 	import type { Habit } from '$lib/db/schemas';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { periodTarget } from '$lib/streaks';
@@ -30,7 +29,6 @@
 </script>
 
 <div
-	use:scrollTap
 	class="surface pressable group px-4 pt-3 pb-0"
 >
 	<div class="hairline measure flex items-center gap-3 border-b pb-3">

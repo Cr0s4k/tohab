@@ -2,8 +2,10 @@
 export function scrollTap(node: HTMLElement) {
 	let start: { id: number; x: number; y: number } | undefined;
 	let cancelled = false;
+	let origin: Node | null = null;
 	const down = (event: PointerEvent) => {
 		if (start) { cancelled = true; return; }
+		origin = event.target as Node;
 		start = { id: event.pointerId, x: event.clientX, y: event.clientY };
 		cancelled = false;
 	};
@@ -20,9 +22,18 @@ export function scrollTap(node: HTMLElement) {
 		cancelled = true;
 		start = undefined;
 	};
+	const scroll = (event: Event) => {
+		// Scroll does not bubble. Watch ancestors in capture, including modal scrollers.
+		if (origin && event.target instanceof Node && event.target.contains(origin)) cancelled = true;
+	};
+	const keydown = () => { cancelled = false; origin = null; };
 	const click = (event: MouseEvent) => {
-		// Keyboard and assistive activation have no pointer click count.
-		if (!cancelled || event.detail === 0) return;
+		// Label activation can produce a zero-detail click on the iOS haptic input.
+		// Only exempt zero-detail activation when it did not come from that overlay
+		// or a physical pointer. Keyboard activation clears cancellation above.
+		const overlay = event.target instanceof Element && event.target.matches('input[switch]');
+		const physical = event.detail > 0 || ('pointerType' in event && Boolean(event.pointerType));
+		if (!cancelled || (!physical && !overlay)) return;
 		event.preventDefault();
 		event.stopImmediatePropagation();
 	};
@@ -30,12 +41,16 @@ export function scrollTap(node: HTMLElement) {
 	window.addEventListener('pointermove', move, true);
 	window.addEventListener('pointerup', up, true);
 	window.addEventListener('pointercancel', cancel, true);
+	window.addEventListener('scroll', scroll, true);
+	node.addEventListener('keydown', keydown, true);
 	node.addEventListener('click', click, true);
 	return { destroy() {
 		node.removeEventListener('pointerdown', down, true);
 		window.removeEventListener('pointermove', move, true);
 		window.removeEventListener('pointerup', up, true);
 		window.removeEventListener('pointercancel', cancel, true);
+		window.removeEventListener('scroll', scroll, true);
+		node.removeEventListener('keydown', keydown, true);
 		node.removeEventListener('click', click, true);
 	} };
 }

@@ -53,13 +53,15 @@ try {
   window.habitButton = button;
  })()`);
  for (const end of ['pointerup', 'pointercancel']) {
+ for (const detail of [0, 1]) {
   await browser.evaluate(`(() => {
    const input = window.habitButton.querySelector('input');
    for (const [type,y] of [['pointerdown',100],['pointermove',140],['${end}',140]])
     input.dispatchEvent(new PointerEvent(type, {bubbles:true, pointerType:'touch', clientX:200, clientY:y}));
-   input.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, detail:1}));
+   input.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, detail:${detail}}));
   })()`);
   assert.equal(await browser.evaluate('window.habitClicks'), 0);
+ }
  }
  await browser.evaluate(`(() => {
   const input = window.habitButton.querySelector('input');
@@ -93,6 +95,33 @@ try {
  await browser.send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[] });
  await browser.waitFor('window.scrollTest.scrollTop > 0');
  assert.equal(await browser.evaluate('window.habitClicks'), 2, 'native scroll does not log habit');
+ // Ordinary editor controls use the same app-wide guard, including actual scroll events
+ // that occur with less than the movement threshold or after pointer cancellation.
+ await browser.evaluate(`(async () => {
+  const { mount, createRawSnippet } = await import('/node_modules/svelte/src/index-client.js');
+  const { default: Sheet } = await import('/src/lib/components/Sheet.svelte');
+  window.sheetClicks = 0;
+  mount(Sheet, {target:document.body, props:{open:true, title:'Scroll regression', onClose:()=>window.sheetClicks++, children:createRawSnippet(() => ({render:()=>'<div style="height:1800px">Scrollable editor content</div>'}))}});
+ })()`);
+ await browser.waitFor('document.querySelector("[role=dialog]")');
+ for (const gesture of ['move', 'scroll', 'cancel']) {
+  await browser.evaluate(`(() => {
+   const pane = document.querySelector('[role=dialog]');
+   const button = pane.querySelector('button');
+   button.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true,pointerType:'touch',clientX:200,clientY:100}));
+   if ('${gesture}' === 'move') button.dispatchEvent(new PointerEvent('pointermove', {bubbles:true,pointerType:'touch',clientX:200,clientY:130}));
+   if ('${gesture}' === 'scroll') pane.dispatchEvent(new Event('scroll'));
+   button.dispatchEvent(new PointerEvent('${gesture}' === 'cancel' ? 'pointercancel' : 'pointerup', {bubbles:true,pointerType:'touch',clientX:200,clientY:100}));
+   button.dispatchEvent(new MouseEvent('click', {bubbles:true,cancelable:true,detail:1}));
+  })()`);
+  assert.equal(await browser.evaluate('window.sheetClicks'), 0, `${gesture} does not activate editor button`);
+ }
+ await browser.evaluate(`(() => {
+  const button = document.querySelector('[role=dialog] button');
+  button.dispatchEvent(new KeyboardEvent('keydown', {bubbles:true,key:'Enter'}));
+  button.click();
+ })()`);
+ assert.equal(await browser.evaluate('window.sheetClicks'), 1, 'keyboard works immediately after scrolling');
  await browser.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
  await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
  await browser.evaluate(`document.querySelector('[aria-label="Edit Gesture test"]').focus()`);

@@ -1,5 +1,4 @@
 import { browser } from '$app/environment';
-import { scrollTap } from './scrollTap';
 
 type Pattern = 'tap' | 'success' | 'warn';
 
@@ -25,8 +24,7 @@ export function haptic(pattern: Pattern = 'tap') {
  */
 export function hapticTap(node: HTMLElement) {
 	if (!browser) return;
-	const guard = scrollTap(node);
-	if ('vibrate' in navigator) return guard;
+	if ('vibrate' in navigator) return;
 
 	const input = document.createElement('input');
 	input.type = 'checkbox';
@@ -56,5 +54,5 @@ export function hapticTap(node: HTMLElement) {
 	if (getComputedStyle(node).position === 'static') node.style.position = 'relative';
 	node.append(label);
 
-	return { destroy() { guard.destroy(); label.remove(); } };
+	return { destroy() { label.remove(); } };
 }

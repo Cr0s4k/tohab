@@ -24,6 +24,7 @@
 	} from '$lib/db/session.svelte';
 	import { motionOk } from '$lib/motion';
 	import { hideSplash } from '$lib/splash';
+	import { scrollTap } from '$lib/scrollTap';
 	import { preventEdgeNavigation } from '$lib/navigationGestures';
 
 	let { children } = $props();
@@ -54,6 +55,7 @@
 
 	onMount(() => {
 		applyTheme();
+		const tapGuard = scrollTap(document.body);
 		const onTouchStart = (event: TouchEvent) => preventEdgeNavigation(event, window.innerWidth);
 		document.addEventListener('touchstart', onTouchStart, { passive: false });
 
@@ -63,6 +65,7 @@
 		};
 		media.addEventListener('change', onSystemChange);
 		return () => {
+			tapGuard.destroy();
 			document.removeEventListener('touchstart', onTouchStart);
 			media.removeEventListener('change', onSystemChange);
 		};
