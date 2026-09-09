@@ -120,8 +120,9 @@ registration exactly as it found it.
 ## What's in it
 
 **Tasks** — quick capture with natural-language parsing, due dates, recurrence, Today / Upcoming /
-Inbox views, four priorities, projects, notes, overdue carry-over, and swipe to complete or
-delete. Completed work stays out of the daily list unless you turn on “Show completed tasks”.
+Inbox views, four priorities, projects, notes, overdue carry-over to tomorrow or a chosen date,
+and swipe to complete or delete. Completed work stays out of the daily list unless you turn on
+“Show completed tasks”.
 
 **Habits** — binary and quantity habits, three schedule kinds (daily, chosen weekdays,
 N× per week), schedule-aware streaks, a 12-week heatmap you can tap to backfill, per-habit
@@ -155,10 +156,10 @@ priority 1, in the Groceries project.
 
 ### A daily pass
 
-Today is the working surface: overdue tasks are called out with a one-tap “Move to tomorrow”
-action, Today also shows a compact habit completion summary, and the bottom “What remains today?”
-prompt gives a quick wrap-up without turning the app into a long-term archive. Every carry-over,
-delete, completion, and habit log can be undone immediately.
+Today is the working surface: overdue tasks are called out with a default “Move to tomorrow”
+action and an optional destination date, Today also shows a compact habit completion summary,
+and the bottom “What remains today?” prompt gives a quick wrap-up without turning the app into a
+long-term archive. Every carry-over, delete, completion, and habit log can be undone immediately.
 
 To pause a habit, open it from Progress, choose a date under “Take a pause”, and save. The pause
 starts today and ends on the selected date; paused days are omitted from due counts and streak

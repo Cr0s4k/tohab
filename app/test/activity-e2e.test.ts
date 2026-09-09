@@ -166,6 +166,11 @@ eq('overdue task moved to tomorrow', carried > 0 && (await db.tasks.findOne(over
 eq('carry-over queues undo', undoState.current?.label, 'Moved 1 overdue task');
 await runUndo();
 eq('carry-over undo restores overdue date', (await db.tasks.findOne(overdue!.id).exec()).due, shiftKey(today(), -2));
+const customCarryTarget = shiftKey(today(), 4);
+await carryOverOverdueTasks(customCarryTarget);
+eq('carry-over accepts a custom date', (await db.tasks.findOne(overdue!.id).exec()).due, customCarryTarget);
+await runUndo();
+eq('custom carry-over undo restores overdue date', (await db.tasks.findOne(overdue!.id).exec()).due, shiftKey(today(), -2));
 
 // --- habits ---------------------------------------------------------------------------
 const h = await createHabit({

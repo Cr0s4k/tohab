@@ -8,7 +8,7 @@
 	import { subtaskProgressByParent, tasksInView, type View } from '$lib/taskViews';
 	import { arrangeTasks } from '$lib/arrange';
 	import { isCustomised, viewOptions } from '$lib/viewOptions.svelte';
-	import { daysFromToday, shiftKey, today } from '$lib/dates';
+	import { daysFromToday, humanDay, isValidKey, shiftKey, today } from '$lib/dates';
 	import Fab from '$lib/components/Fab.svelte';
 	import { taskCompose } from '$lib/compose.svelte';
 	import TaskCompose from '$lib/components/TaskCompose.svelte';
@@ -35,6 +35,7 @@
 	let mainEl = $state<HTMLElement | null>(null);
 	let scrolled = $state(false);
 	let carryingOver = $state(false);
+	let carryOverTarget = $state(shiftKey(today(), 1));
 
 	const viewTitles: Record<View, string> = {
 		inbox: 'Inbox',
@@ -67,6 +68,9 @@
 	let todayOpenCount = $derived(tasks.value.filter((task) => !task.parentId && !task.done && task.due && task.due <= today()).length);
 	let todayDoneCount = $derived(tasks.value.filter((task) => !task.parentId && task.done && task.due && task.due <= today()).length);
 	let queryError = $derived(tasks.error ?? projects.error);
+	let carryOverTargetLabel = $derived(
+		isValidKey(carryOverTarget) && carryOverTarget > today() ? humanDay(carryOverTarget) : 'a later date'
+	);
 
 	function retryQueries() {
 		tasks.retry?.();
@@ -79,10 +83,15 @@
 
 	async function carryOver() {
 		if (carryingOver) return;
+		if (!isValidKey(carryOverTarget) || carryOverTarget <= today()) return;
 		carryingOver = true;
+		const target = carryOverTarget;
 		const action = async () => {
-			const moved = await carryOverOverdueTasks(shiftKey(today(), 1));
-			if (moved) haptic('success');
+			const moved = await carryOverOverdueTasks(target);
+			if (moved) {
+				haptic('success');
+				carryOverTarget = shiftKey(today(), 1);
+			}
 		};
 		try {
 			await action();
@@ -182,14 +191,36 @@
 		<TodaySummary />
 	{/if}
 	{#if view === 'today' && overdueCount > 0}
-		<div class="sunken measure mx-4 my-3 flex items-center gap-3 rounded-2xl border px-4 py-3">
-			<div class="min-w-0 flex-1">
-				<p class="danger text-sm font-semibold">{overdueCount} overdue {overdueCount === 1 ? 'task' : 'tasks'}</p>
-				<p class="dim mt-0.5 text-xs">Move them to tomorrow to keep today actionable.</p>
+		<div class="sunken measure mx-4 my-3 rounded-2xl border px-4 py-3">
+			<div class="flex items-start gap-3">
+				<div class="min-w-0 flex-1">
+					<p class="danger text-sm font-semibold">{overdueCount} overdue {overdueCount === 1 ? 'task' : 'tasks'}</p>
+					<p class="dim mt-0.5 text-xs">Move them out of today’s list to keep it actionable.</p>
+				</div>
 			</div>
-			<button type="button" class="tap accent-bg shrink-0 rounded-xl px-3 py-2 text-xs font-semibold disabled:opacity-40" disabled={carryingOver} onclick={() => void carryOver()}>
-				{carryingOver ? 'Moving…' : 'Move to tomorrow'}
-			</button>
+			<div class="mt-3 flex items-center gap-2">
+				<label class="dim flex min-w-0 flex-1 items-center gap-2 text-xs">
+					<span class="shrink-0">Move to</span>
+					<input
+						type="date"
+						aria-label="Move overdue tasks to"
+						min={shiftKey(today(), 1)}
+						bind:value={carryOverTarget}
+						disabled={carryingOver}
+						class="sunken min-h-11 min-w-0 flex-1 rounded-xl px-3 py-2 text-copy outline-none disabled:opacity-50"
+					/>
+				</label>
+				<button
+					type="button"
+					class="tap accent-bg shrink-0 rounded-xl px-3 py-2 text-xs font-semibold disabled:opacity-40"
+					disabled={carryingOver || !isValidKey(carryOverTarget) || carryOverTarget <= today()}
+					aria-label={`Move ${overdueCount} overdue ${overdueCount === 1 ? 'task' : 'tasks'} to ${carryOverTargetLabel}`}
+					onclick={() => void carryOver()}
+				>
+					{carryingOver ? 'Moving…' : 'Move'}
+				</button>
+			</div>
+			<p class="dim mt-1 text-xs">{carryOverTargetLabel}. Choose any date after today.</p>
 		</div>
 	{/if}
 	{#if tasks.loading && !tasks.value.length}
