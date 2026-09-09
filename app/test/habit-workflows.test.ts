@@ -46,6 +46,11 @@ try {
 	await click('Cancel');
 	await waitFor("!document.querySelector('[role=dialog]')");
 	await waitFor("document.querySelector('button[aria-label=\"Edit entry for Read\"]')");
+	assert.deepEqual(
+		await evaluate(`Array.from(document.querySelectorAll('header > div:first-child > div:last-child button')).map(button => button.getAttribute('aria-label'))`),
+		['Archived habits', 'Switch to Tasks', 'Settings'],
+		'archived habits is the first header action'
+	);
 	assert.equal(await evaluate(`(async () => {const {today}=await import('/src/lib/dates.ts'); return window.defaultHabit.startDate === today();})()`), true);
 	assert.equal(await evaluate(`document.body.innerText.includes('Future')`), false);
 	assert.equal(await evaluate(`document.body.innerText.includes('0/45')`), true);
@@ -83,11 +88,11 @@ try {
 	assert.equal(await evaluate(`(async () => !!(await window.db.habitLogs.findOne(window.habit.id+':'+window.yesterday).exec()))()`), false);
 	await evaluate('window.archiveHabit()');
 	await waitFor("!document.querySelector('button[aria-label=\"Edit entry for Read\"]')");
-	await click('Archived');
+	await evaluate(`document.querySelector('button[aria-label="Archived habits"]').click()`);
 	await waitFor("document.body.innerText.includes('Restore')");
 	await click('Restore');
 	await waitFor("document.body.innerText.includes('No archived habits.')");
-	await click('Journal');
+	await evaluate(`document.querySelector('button[aria-label="Archived habits"]').click()`);
 	await waitFor("document.querySelector('button[aria-label=\"Edit entry for Read\"]')");
 	assert.equal(await evaluate(`(async () => (await window.db.habits.findOne(window.habit.id).exec()).archived)()`), false);
 	// Creating from a past journal date still starts today unless explicitly changed.
