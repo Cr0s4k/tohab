@@ -220,8 +220,8 @@
 				aria-labelledby="{section.key}-habits-heading"
 				class:mt-4={section.key === 'break' && sections.length > 1}
 			>
-				<div class="surface px-4 pt-4 pb-2">
-					<div class="measure flex items-baseline justify-between">
+				<div class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-copy font-semibold tracking-wide">
+					<div class="hairline measure flex items-baseline justify-between border-b pb-1.5">
 						<h2 id="{section.key}-habits-heading" class="text-copy font-semibold tracking-wide">{section.label}</h2>
 						{#if section.due.length}<span class="dim text-caption">{section.done} of {section.due.length} done</span>{/if}
 					</div>
