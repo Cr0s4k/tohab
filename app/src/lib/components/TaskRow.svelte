@@ -5,7 +5,7 @@
 	import { playComplete } from '$lib/sound';
 	import { priorityClass } from '$lib/tasks';
 	import { describeRepeat, isRepeating } from '$lib/repeat';
-	import { pop } from '$lib/motion';
+	import { scrollTap } from '$lib/scrollTap';
 	import { isDesktop } from '$lib/viewport';
 	import type { SubtaskProgress } from '$lib/taskViews';
 
@@ -25,12 +25,12 @@
 		onOpen: () => void;
 	} = $props();
 
-	const THRESHOLD = 88;
+	const THRESHOLD = 112;
 
 	let dx = $state(0);
 	let dragging = $state(false);
 	let armed = $state(false);
-	let swipeEl = $state<HTMLElement | null>(null);
+	let pointerId: number | undefined;
 	let start = { x: 0, y: 0 };
 	let axis = $state<'none' | 'x' | 'y'>('none');
 
@@ -46,20 +46,24 @@
 
 	function down(e: PointerEvent) {
 		if (isDesktop()) return;
+		if (dragging) { cancel(); return; }
+		if (!e.isPrimary && e.isTrusted) return;
 		if (e.pointerType === 'mouse' && e.button !== 0) return;
+		pointerId = e.pointerId;
 		start = { x: e.clientX, y: e.clientY };
 		axis = 'none';
 		dragging = true;
-		swipeEl?.addEventListener('touchmove', preventVerticalScroll, { passive: false });
 	}
 
 	function move(e: PointerEvent) {
-		if (!dragging) return;
+		if (!dragging || e.pointerId !== pointerId) return;
 		const mx = e.clientX - start.x;
 		const my = e.clientY - start.y;
 		if (axis === 'none') {
-			if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
-			axis = Math.abs(mx) > Math.abs(my) ? 'x' : 'y';
+			// Give scrolling priority; diagonal intent never becomes a swipe later.
+			if (Math.abs(my) >= 10 && Math.abs(mx) < Math.abs(my) * 2) axis = 'y';
+			else if (Math.abs(mx) >= 24 && Math.abs(mx) >= Math.abs(my) * 2) axis = 'x';
+			else return;
 		}
 		if (axis !== 'x') return;
 		dx = mx;
@@ -70,20 +74,17 @@
 		}
 	}
 
-	function preventVerticalScroll(e: TouchEvent) {
-		if (axis === 'x') e.preventDefault();
-	}
-
 	function cancel() {
-		swipeEl?.removeEventListener('touchmove', preventVerticalScroll);
+		pointerId = undefined;
 		dragging = false;
 		dx = 0;
 		armed = false;
 		axis = 'none';
 	}
 
-	function up() {
-		if (!dragging) return;
+	function up(e: PointerEvent) {
+		if (!dragging || e.pointerId !== pointerId) return;
+		move(e);
 		const settled = dx;
 		const horizontal = axis === 'x';
 		cancel();
@@ -118,14 +119,12 @@
 
 	<div
 		role="group"
-		bind:this={swipeEl}
+		use:scrollTap
 		class="surface pressable group relative pr-4 pt-2.5 pb-0"
 		style:padding-left="1rem"
 		style="transform: translateX({dx}px); transition: {dragging
 			? 'none'
-			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: {axis === 'x'
-			? 'none'
-			: 'pan-y'}"
+			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: pan-y pinch-zoom"
 		onpointerdown={down}
 		onpointermove={move}
 		onpointerup={up}

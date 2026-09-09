@@ -30,7 +30,69 @@ try {
    row.dispatchEvent(new PointerEvent(type, { bubbles:true, pointerType:'touch', clientX:x, clientY:100 }));
  })()`);
  assert.deepEqual(await browser.evaluate('window.actions'), { complete: 1, delete: 0 });
+ // A diagonal start must stay a scroll even if it later moves far sideways.
+ for (const points of [[[188,111],[60,125]], [[197,120],[60,140]], [[180,100]]]) {
+  await browser.evaluate(`(() => {
+   const row = document.querySelector('[role="group"]');
+   row.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch', clientX:200, clientY:100}));
+   const points = ${JSON.stringify(points)};
+   for (const [x,y] of points) row.dispatchEvent(new PointerEvent('pointermove', {bubbles:true, pointerType:'touch', clientX:x, clientY:y}));
+   const [x,y] = points.at(-1);
+   row.dispatchEvent(new PointerEvent('pointerup', {bubbles:true, pointerType:'touch', clientX:x, clientY:y}));
+   row.querySelector('[role="checkbox"]').dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, detail:1}));
+  })()`);
+  assert.deepEqual(await browser.evaluate('window.actions'), { complete: 1, delete: 0 });
+ }
+ // Exercise the iOS overlay path even though Chromium normally supports vibrate.
+ await browser.evaluate(`(() => { delete Navigator.prototype.vibrate; window.mountLongRows(); })()`);
+ await browser.waitFor('document.querySelector("button label input")');
+ await browser.evaluate(`(() => {
+  const button = document.querySelector('[aria-label="Log Read a few pages before bed"]');
+  window.habitClicks = 0;
+  button.addEventListener('click', () => window.habitClicks++);
+  window.habitButton = button;
+ })()`);
+ for (const end of ['pointerup', 'pointercancel']) {
+  await browser.evaluate(`(() => {
+   const input = window.habitButton.querySelector('input');
+   for (const [type,y] of [['pointerdown',100],['pointermove',140],['${end}',140]])
+    input.dispatchEvent(new PointerEvent(type, {bubbles:true, pointerType:'touch', clientX:200, clientY:y}));
+   input.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, detail:1}));
+  })()`);
+  assert.equal(await browser.evaluate('window.habitClicks'), 0);
+ }
+ await browser.evaluate(`(() => {
+  const input = window.habitButton.querySelector('input');
+  for (const type of ['pointerdown','pointerup']) input.dispatchEvent(new PointerEvent(type, {bubbles:true, pointerType:'touch', clientX:200, clientY:100}));
+  input.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, detail:1}));
+ })()`);
+ assert.equal(await browser.evaluate('window.habitClicks'), 1, 'tap forwards exactly once');
+ await browser.evaluate('window.habitButton.click()');
+ assert.equal(await browser.evaluate('window.habitClicks'), 2, 'non-pointer activation remains available');
  assert.equal(await browser.evaluate(`Array.from(document.querySelectorAll('[aria-pressed="true"]')).some(e => e.textContent.trim() === 'Work')`), true);
+ // Native touch scrolling starting directly on the habit's haptic input.
+ await browser.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+ await browser.evaluate(`(() => {
+  const main = document.createElement('main');
+  main.style.cssText = 'height:600px;overflow-y:auto';
+  const row = window.habitButton.closest('.surface');
+  const spacer = document.createElement('div');
+  spacer.style.height = '1800px';
+  main.append(row, spacer);
+  document.body.prepend(main);
+  window.scrollTest = main;
+ })()`);
+ const point = await browser.evaluate<{x:number;y:number}>(`(() => {
+  const rect = window.habitButton.getBoundingClientRect();
+  return {x:rect.x+rect.width/2,y:rect.y+rect.height/2};
+ })()`);
+ await browser.send('Input.dispatchTouchEvent', { type:'touchStart', touchPoints:[point] });
+ for (let step = 1; step <= 6; step++) {
+  await browser.send('Input.dispatchTouchEvent', { type:'touchMove', touchPoints:[{x:point.x-step*2,y:point.y-step*4}] });
+ }
+ await browser.send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[] });
+ await browser.waitFor('window.scrollTest.scrollTop > 0');
+ assert.equal(await browser.evaluate('window.habitClicks'), 2, 'native scroll does not log habit');
  await browser.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
  await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
  await browser.evaluate(`document.querySelector('[aria-label="Edit Gesture test"]').focus()`);
