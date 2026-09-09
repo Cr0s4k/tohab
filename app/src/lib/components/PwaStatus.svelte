@@ -30,8 +30,10 @@
 			if (reloadForUpdate) location.reload();
 		};
 		navigator.serviceWorker.addEventListener('controllerchange', onController);
+		let registrationRef: ServiceWorkerRegistration | null = null;
 		void navigator.serviceWorker.getRegistration().then((registration) => {
 			if (!registration) return;
+			registrationRef = registration;
 			waiting = registration.waiting;
 			registration.addEventListener('updatefound', () => {
 				const worker = registration.installing;
@@ -40,7 +42,21 @@
 				});
 			});
 		}).catch(() => undefined);
-		return () => navigator.serviceWorker.removeEventListener('controllerchange', onController);
+
+		// The browser only refetches the worker script on navigation, which never happens for an
+		// installed PWA left open in the background, so poke it whenever the app regains focus.
+		const checkForUpdate = () => void registrationRef?.update().catch(() => undefined);
+		const onVisibilityChange = () => {
+			if (document.visibilityState === 'visible') checkForUpdate();
+		};
+		document.addEventListener('visibilitychange', onVisibilityChange);
+		const interval = setInterval(checkForUpdate, 30 * 60 * 1000);
+
+		return () => {
+			navigator.serviceWorker.removeEventListener('controllerchange', onController);
+			document.removeEventListener('visibilitychange', onVisibilityChange);
+			clearInterval(interval);
+		};
 	});
 </script>
 

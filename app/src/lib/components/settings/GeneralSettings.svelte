@@ -34,6 +34,23 @@
 		await stopSync();
 		await logout();
 	}
+
+	async function forceReload() {
+		haptic('tap');
+		try {
+			if ('serviceWorker' in navigator) {
+				const registrations = await navigator.serviceWorker.getRegistrations();
+				await Promise.all(registrations.map((registration) => registration.unregister()));
+			}
+			if ('caches' in window) {
+				const keys = await caches.keys();
+				await Promise.all(keys.map((key) => caches.delete(key)));
+			}
+		} catch {
+			// best effort — reload regardless
+		}
+		location.reload();
+	}
 </script>
 
 <section class="mb-6">
@@ -125,6 +142,19 @@
 			<p class="dim mt-1 break-all">Account: {auth.session?.email ?? 'signed out'}</p>
 		</div>
 	</div>
+</section>
+
+<section class="mb-6">
+	<h2 class="dim mb-2 text-caption font-semibold tracking-wide uppercase">App</h2>
+	<div class="raised hairline rounded-2xl border">
+		<button type="button" use:hapticTap onclick={forceReload} class="tap w-full px-4 py-3 text-left text-sm">
+			Force reload app
+		</button>
+	</div>
+	<p class="dim mt-2 text-caption">
+		Unregisters the service worker and clears cached files, then reloads. Use this if the app
+		seems stuck on an old version.
+	</p>
 </section>
 
 <section class="mb-6">
