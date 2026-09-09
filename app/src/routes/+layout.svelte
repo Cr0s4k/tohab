@@ -24,6 +24,7 @@
 	} from '$lib/db/session.svelte';
 	import { motionOk } from '$lib/motion';
 	import { hideSplash } from '$lib/splash';
+	import { preventEdgeNavigation } from '$lib/navigationGestures';
 
 	let { children } = $props();
 
@@ -53,6 +54,8 @@
 
 	onMount(() => {
 		applyTheme();
+		const onTouchStart = (event: TouchEvent) => preventEdgeNavigation(event, window.innerWidth);
+		document.addEventListener('touchstart', onTouchStart, { passive: false });
 
 		const media = matchMedia('(prefers-color-scheme: dark)');
 		const onSystemChange = () => {
@@ -60,6 +63,7 @@
 		};
 		media.addEventListener('change', onSystemChange);
 		return () => {
+			document.removeEventListener('touchstart', onTouchStart);
 			media.removeEventListener('change', onSystemChange);
 		};
 	});
