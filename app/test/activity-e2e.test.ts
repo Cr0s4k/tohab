@@ -2,6 +2,7 @@ import { getDb } from './activity-e2e-db.ts';
 import {
 	createProject,
 	createTask,
+	carryOverOverdueTasks,
 	deleteProject,
 	deleteTask,
 	toggleTask,
@@ -11,7 +12,7 @@ import { createHabit, deleteHabit, setLog, tapLog, updateHabit } from '../src/li
 import { activityQuery, decodeChanges, revertActivity } from '../src/lib/activity.ts';
 import { undoState, runUndo } from '../src/lib/undo.svelte.ts';
 import { exportBackup, importBackup } from '../src/lib/backup.ts';
-import { humanDay } from '../src/lib/dates.ts';
+import { humanDay, shiftKey, today } from '../src/lib/dates.ts';
 import { createReporter } from '../../test/assertions.ts';
 
 const reporter = createReporter();
@@ -152,10 +153,19 @@ eq('project delete recorded', [e.verb, e.subject, e.detail], [
 	'2 tasks moved to Inbox'
 ]);
 eq('it captured project plus both tasks', decodeChanges(e.changes).length, 3);
+eq('project delete queues immediate undo', undoState.current?.label, 'Project deleted · 2 tasks moved');
 eq('project delete reverted', await revertActivity(e.id), true);
 eq('project restored', (await db.projects.findOne(p1.id).exec())?.name, 'Groceries');
 eq('task a back in the project', (await db.tasks.findOne(a!.id).exec()).projectId, p1.id);
 eq('task b back in the project', (await db.tasks.findOne(b!.id).exec()).projectId, p1.id);
+
+// --- overdue carry-over is one reversible journal action -----------------------------
+const overdue = await createTask({ title: 'Overdue note', due: shiftKey(today(), -2) });
+const carried = await carryOverOverdueTasks(shiftKey(today(), 1));
+eq('overdue task moved to tomorrow', carried > 0 && (await db.tasks.findOne(overdue!.id).exec()).due, shiftKey(today(), 1));
+eq('carry-over queues undo', undoState.current?.label, 'Moved 1 overdue task');
+await runUndo();
+eq('carry-over undo restores overdue date', (await db.tasks.findOne(overdue!.id).exec()).due, shiftKey(today(), -2));
 
 // --- habits ---------------------------------------------------------------------------
 const h = await createHabit({
@@ -179,6 +189,20 @@ e = await pending('habit', 'archive');
 eq('archiving reads as archiving, not an edit', e.verb, 'archive');
 eq('archive reverted', await revertActivity(e.id), true);
 eq('unarchived by undo', (await db.habits.findOne(h.id).exec()).archived, false);
+
+await updateHabit(h.id, { pauseUntil: shiftKey(today(), 1) });
+const pausedHabit = (await db.habits.findOne(h.id).exec()).toMutableJSON();
+eq('pause window persists', [pausedHabit.pauseFrom, pausedHabit.pauseUntil], [today(), shiftKey(today(), 1)]);
+let pauseRejected = '';
+try {
+	await setLog(pausedHabit, today(), 1);
+} catch (error) {
+	pauseRejected = (error as Error).message;
+}
+eq('paused day rejects a log', pauseRejected, `This habit is paused through ${humanDay(shiftKey(today(), 1))}.`);
+await updateHabit(h.id, { pauseUntil: '' });
+const resumedHabit = (await db.habits.findOne(h.id).exec()).toMutableJSON();
+eq('resume clears pause window', [resumedHabit.pauseFrom, resumedHabit.pauseUntil], [undefined, undefined]);
 
 // Repeated taps on one day fold into a single entry, undone in one go.
 const fresh = await db.habits.findOne(h.id).exec();
@@ -217,6 +241,7 @@ eq('its logs gone', (await db.habitLogs.find({ selector: { habitId: h.id } }).ex
 e = await pending('habit', 'delete');
 eq('habit delete recorded', [e.verb, e.subject], ['delete', 'Water']);
 eq('habit delete captured the habit, baseline and both logs', decodeChanges(e.changes).length, 4);
+eq('habit delete queues immediate undo', undoState.current?.label, 'Habit deleted · Water');
 eq('habit delete reverted', await revertActivity(e.id), true);
 eq('habit restored', (await db.habits.findOne(h.id).exec())?.name, 'Water');
 eq(

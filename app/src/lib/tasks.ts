@@ -2,7 +2,7 @@ import { getDb } from './db/lazy.ts';
 import type { Db } from './db/index.ts';
 import type { Project, Task } from './db/schemas.ts';
 import { markLocalWrite } from './db/syncState.svelte.ts';
-import { humanDay } from './dates.ts';
+import { humanDay, isValidKey, shiftKey, today, type DayKey } from './dates.ts';
 import { advanceDue, firstDue, isRepeating } from './repeat.ts';
 import { now, uid } from './ids.ts';
 import { queueUndo } from './undo.svelte.ts';
@@ -107,22 +107,69 @@ export async function deleteProject(id: string) {
 	await doc.remove();
 	markLocalWrite();
 
-	await record({
+	const changes: DocChange[] = [
+		{ collection: 'projects', id, before: project, after: null },
+		...moved.map((task) => ({
+			collection: 'tasks' as const,
+			id: task.id,
+			before: task,
+			after: { ...task, projectId: '' }
+		}))
+	];
+	const entryId = await record({
 		entity: 'project',
 		entityId: id,
 		verb: 'delete',
 		subject: project.name,
 		detail: moved.length ? `${moved.length} task${moved.length === 1 ? '' : 's'} moved to Inbox` : '',
-		changes: [
-			{ collection: 'projects', id, before: project, after: null },
-			...moved.map((task) => ({
-				collection: 'tasks' as const,
-				id: task.id,
-				before: task,
-				after: { ...task, projectId: '' }
-			}))
-		]
+		changes
 	});
+	queueUndo({
+		label: `Project deleted · ${moved.length} task${moved.length === 1 ? '' : 's'} moved`,
+		restore: async () => {
+			if (entryId) await revertActivity(entryId);
+			else await applyRevert(changes);
+		}
+	});
+}
+
+/** Move every open dated task that is behind today into tomorrow as one journal action. */
+export async function carryOverOverdueTasks(target: DayKey = shiftKey(today(), 1)): Promise<number> {
+	if (!isValidKey(target) || target <= today()) throw new Error('Choose a day after today.');
+	const db = await getDb();
+	const overdue = await db.tasks
+		.find({ selector: { done: false, due: { $gt: '', $lt: today() } } })
+		.exec();
+	if (!overdue.length) return 0;
+
+	const timestamp = now();
+	const changes: DocChange[] = overdue.map((task) => {
+		const before = task.toMutableJSON();
+		return {
+			collection: 'tasks',
+			id: task.id,
+			before,
+			after: { ...before, due: target, updatedAt: timestamp }
+		};
+	});
+	await Promise.all(overdue.map((task) => task.patch({ due: target, updatedAt: timestamp })));
+	markLocalWrite();
+	const entryId = await record({
+		entity: 'task',
+		entityId: 'overdue',
+		verb: 'update',
+		subject: 'Overdue tasks',
+		detail: `${overdue.length} task${overdue.length === 1 ? '' : 's'} moved to ${humanDay(target)}`,
+		changes
+	});
+	queueUndo({
+		label: `Moved ${overdue.length} overdue task${overdue.length === 1 ? '' : 's'}`,
+		restore: async () => {
+			if (entryId) await revertActivity(entryId);
+			else await applyRevert(changes);
+		}
+	});
+	return overdue.length;
 }
 
 export type NewTask = {

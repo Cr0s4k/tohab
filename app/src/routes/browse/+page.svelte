@@ -4,9 +4,11 @@
 	import { createProject, deleteProject, openTasksQuery, projectsQuery, renameProject } from '$lib/tasks';
 	import { activityCountQuery } from '$lib/activity';
 	import { haptic, hapticTap } from '$lib/haptics';
+	import { reportActionError } from '$lib/actionError.svelte';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg } from '$lib/motion';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
+	import DataError from '$lib/components/DataError.svelte';
 
 	let name = $state('');
 	let adding = $state(false);
@@ -15,6 +17,9 @@
 	let input: HTMLInputElement | null = $state(null);
 	let mainEl = $state<HTMLElement | null>(null);
 	let scrolled = $state(false);
+	let saving = $state(false);
+	let confirmingDelete = $state<string | null>(null);
+	let deleting = $state<string | null>(null);
 
 	let projects = rx(() => (live.db ? projectsQuery(live.db).$ : null), []);
 	let open = rx(() => (live.db ? openTasksQuery(live.db).$ : null), []);
@@ -33,11 +38,21 @@
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
 		const trimmed = name.trim();
-		if (!trimmed) return;
+		if (!trimmed || saving) return;
 		haptic('success');
-		await createProject(trimmed);
-		name = '';
-		adding = false;
+		saving = true;
+		const add = async () => {
+			await createProject(trimmed);
+			name = '';
+			adding = false;
+		};
+		try {
+			await add();
+		} catch (caught) {
+			reportActionError(caught, add);
+		} finally {
+			saving = false;
+		}
 	}
 
 	function cancelAdd() {
@@ -50,10 +65,42 @@
 		renameValue = current;
 	}
 
-	function commitRename(id: string) {
-		if (renameValue.trim()) renameProject(id, renameValue);
+	async function commitRename(id: string) {
+		const nextName = renameValue.trim();
 		renaming = null;
+		if (!nextName) return;
+		const rename = () => renameProject(id, nextName);
+		try {
+			await rename();
+		} catch (caught) {
+			reportActionError(caught, rename);
+		}
 	}
+
+	async function confirmProjectDelete(id: string) {
+		if (deleting) return;
+		deleting = id;
+		const remove = async () => {
+			await deleteProject(id);
+			confirmingDelete = null;
+		};
+		try {
+			haptic('warn');
+			await remove();
+		} catch (caught) {
+			reportActionError(caught, remove);
+		} finally {
+			deleting = null;
+		}
+	}
+
+	function retryQueries() {
+		projects.retry?.();
+		open.retry?.();
+		activityCount.retry?.();
+	}
+
+	let queryError = $derived(projects.error ?? open.error ?? activityCount.error);
 </script>
 
 <header
@@ -84,6 +131,7 @@
 	bind:this={mainEl}
 	onscroll={() => (scrolled = (mainEl?.scrollTop ?? 0) > 0)}
 >
+	{#if queryError}<DataError label="Browse" onRetry={retryQueries} />{/if}
 	<section>
 		<div class="surface sticky top-0 z-10 px-4 pt-1.5 pb-0 text-copy font-semibold tracking-wide">
 			<div class="hairline measure flex items-center justify-between border-b pb-1.5">
@@ -117,7 +165,7 @@
 					<button
 						type="submit"
 						use:hapticTap
-						disabled={!name.trim()}
+						disabled={!name.trim() || saving}
 						class="tap accent-bg rounded-xl px-4 text-sm font-semibold disabled:opacity-30"
 					>
 						Add
@@ -152,11 +200,19 @@
 			>
 				<div class="hairline measure flex items-center gap-3 border-b pb-3.5">
 					<span class="size-3 shrink-0 rounded-full" style="background: {project.color}"></span>
-					{#if renaming === project.id}
+					{#if confirmingDelete === project.id}
+						<div class="min-w-0 flex-1">
+							<p class="danger text-xs font-medium">Delete “{project.name}” and move its tasks to Inbox?</p>
+							<div class="mt-2 flex gap-2">
+								<button type="button" class="tap danger-bg rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-40" disabled={deleting === project.id} onclick={() => void confirmProjectDelete(project.id)}>{deleting === project.id ? 'Deleting…' : 'Delete'}</button>
+								<button type="button" class="tap sunken rounded-lg px-3 py-2 text-xs font-medium" disabled={deleting === project.id} onclick={() => (confirmingDelete = null)}>Cancel</button>
+							</div>
+						</div>
+					{:else if renaming === project.id}
 						<input
 							bind:value={renameValue}
-							onblur={() => commitRename(project.id)}
-							onkeydown={(e) => e.key === 'Enter' && commitRename(project.id)}
+							onblur={() => void commitRename(project.id)}
+							onkeydown={(e) => e.key === 'Enter' && void commitRename(project.id)}
 							class="sunken min-w-0 flex-1 rounded-lg px-2 py-1 text-body outline-none"
 						/>
 					{:else}
@@ -177,8 +233,7 @@
 							use:hapticTap
 							aria-label="Delete {project.name}"
 							onclick={() => {
-								haptic('warn');
-								deleteProject(project.id);
+								confirmingDelete = project.id;
 							}}
 							class="tap danger p-1 text-xs"
 						>

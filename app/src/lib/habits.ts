@@ -2,10 +2,11 @@ import { getDb } from './db/lazy.ts';
 import type { Db } from './db/index.ts';
 import type { Habit, HabitGoal, HabitLog, HabitKind, HabitRevision, ScheduleKind } from './db/schemas.ts';
 import { markLocalWrite } from './db/syncState.svelte.ts';
-import { HABIT_COLORS, habitStartDate, logId, type LogMap } from './streaks.ts';
+import { HABIT_COLORS, habitStartDate, isPausedOn, logId, type LogMap } from './streaks.ts';
 import { humanDay, isValidKey, today, type DayKey } from './dates.ts';
-import { changeSummary, record, type DocChange } from './activity.ts';
+import { applyRevert, changeSummary, record, revertActivity, type DocChange } from './activity.ts';
 import { now, uid } from './ids.ts';
+import { queueUndo } from './undo.svelte.ts';
 import { habitForEdit, habitOn, habitRules, RULE_FIELDS, ruleChangeDate, rulesEqual, withHabitHistory } from './habitHistory.ts';
 
 export * from './streaks.ts';
@@ -44,6 +45,8 @@ export function groupLogs(logs: HabitLog[]): Map<string, LogMap> {
 
 export type HabitInput = {
 	startDate?: string;
+	pauseFrom?: string;
+	pauseUntil?: string;
 	name: string;
 	emoji: string;
 	color: string;
@@ -56,12 +59,22 @@ export type HabitInput = {
 	timesPerWeek: number;
 };
 
+function normalizedPause(pauseUntil: string | undefined, pauseFrom?: string): { pauseFrom?: string; pauseUntil?: string } {
+	const until = pauseUntil?.trim() ?? '';
+	if (!until) return {};
+	const from = pauseFrom?.trim() || today();
+	if (!isValidKey(from) || !isValidKey(until)) throw new Error('Choose valid pause dates.');
+	if (until < from) throw new Error('Pause end must be on or after its start.');
+	return { pauseFrom: from, pauseUntil: until };
+}
+
 export async function createHabit(input: HabitInput) {
 	const startDate = input.startDate ?? today();
 	if (!isValidKey(startDate)) throw new Error('Choose a valid start date.');
 	const db = await getDb();
 	const ts = now();
 	const count = await db.habits.count().exec();
+	const pause = normalizedPause(input.pauseUntil, input.pauseFrom);
 	const doc: Habit = {
 		id: uid(),
 		archived: false,
@@ -81,8 +94,13 @@ export async function createHabit(input: HabitInput) {
 					? 1
 					: Math.max(1, Math.min(10000, Math.round(input.target))),
 		unit: input.unit.trim(),
-		scheduleKind: input.scheduleKind
+		scheduleKind: input.scheduleKind,
+		...pause
 	};
+	if (!pause.pauseUntil) {
+		delete doc.pauseFrom;
+		delete doc.pauseUntil;
+	}
 	const baseline: HabitRevision = { ...habitRules(doc), id: doc.id, habitId: doc.id,
 		effectiveFrom: '0001-01-01', createdAt: 0, updatedAt: ts };
 	await db.habitRevisions.insert(baseline);
@@ -110,7 +128,18 @@ export async function updateHabit(id: string, patch: Partial<Habit>, options: { 
 	const db = await getDb();
 	const doc = await db.habits.findOne(id).exec();
 	if (!doc) return;
+	const before = doc.toMutableJSON();
 	const next = { ...patch, updatedAt: now() };
+	let clearPause = false;
+	if ('pauseFrom' in patch || 'pauseUntil' in patch) {
+		const pause = normalizedPause(patch.pauseUntil, patch.pauseFrom ?? before.pauseFrom);
+		if (pause.pauseUntil) Object.assign(next, pause);
+		else {
+			delete next.pauseFrom;
+			delete next.pauseUntil;
+			clearPause = true;
+		}
+	}
 	// Creation is audit metadata; changing the tracking start must never rewrite it.
 	delete next.createdAt;
 	delete next.historyVersion;
@@ -122,7 +151,6 @@ export async function updateHabit(id: string, patch: Partial<Habit>, options: { 
 			throw new Error(`You have an entry on ${humanDay(earliest)}. Choose that date or earlier.`);
 		}
 	}
-	const before = doc.toMutableJSON();
 	const revisions = (await revisionsQuery(db, id).exec()).map((revision) => revision.toMutableJSON());
 	const view = withHabitHistory(before, revisions);
 	const previousRules = habitRules(habitForEdit(view));
@@ -159,7 +187,14 @@ export async function updateHabit(id: string, patch: Partial<Habit>, options: { 
 	}
 	let updated;
 	try {
-		updated = await doc.patch(next);
+		updated = clearPause
+			? await doc.incrementalModify((data) => {
+				Object.assign(data, next);
+				delete data.pauseFrom;
+				delete data.pauseUntil;
+				return data;
+			})
+			: await doc.patch(next);
 	} catch (error) {
 		// Do not leave a failed rule edit effective. A baseline is harmless and can stay.
 		if (inserted) await (await db.habitRevisions.findOne(inserted).exec())?.remove();
@@ -196,7 +231,17 @@ export async function deleteHabit(id: string) {
 	await doc.remove();
 	markLocalWrite();
 
-	await record({
+	const changes: DocChange[] = [
+		{ collection: 'habits', id, before: habit, after: null },
+		...revisionEntries.map((revision) => ({ collection: 'habitRevisions' as const, id: revision.id, before: revision, after: null })),
+		...entries.map((entry) => ({
+			collection: 'habitLogs' as const,
+			id: entry.id,
+			before: entry,
+			after: null
+		}))
+	];
+	const entryId = await record({
 		entity: 'habit',
 		entityId: id,
 		verb: 'delete',
@@ -204,16 +249,14 @@ export async function deleteHabit(id: string) {
 		detail: entries.length
 			? `${entries.length} logged day${entries.length === 1 ? '' : 's'} removed`
 			: '',
-		changes: [
-			{ collection: 'habits', id, before: habit, after: null },
-			...revisionEntries.map((revision) => ({ collection: 'habitRevisions' as const, id: revision.id, before: revision, after: null })),
-			...entries.map((entry) => ({
-				collection: 'habitLogs' as const,
-				id: entry.id,
-				before: entry,
-				after: null
-			}))
-		]
+		changes
+	});
+	queueUndo({
+		label: `Habit deleted · ${habit.name}`,
+		restore: async () => {
+			if (entryId) await revertActivity(entryId);
+			else await applyRevert(changes);
+		}
 	});
 }
 
@@ -229,8 +272,12 @@ export async function setLog(habit: Habit, date: DayKey, value: number) {
 	if (!isValidKey(date)) throw new Error('Choose a valid date.');
 	const current = await db.habits.findOne(habit.id).exec();
 	if (!current) throw new Error('This habit no longer exists.');
+	const currentView = current.toMutableJSON();
+	if (isPausedOn(currentView, date)) {
+		throw new Error(`This habit is paused through ${humanDay(currentView.pauseUntil!)}.`);
+	}
 	const existingLogs = (await logsQuery(db, habit.id).exec()).map((log) => log.toMutableJSON());
-	if (date < habitStartDate(current.toMutableJSON(), toLogMap(existingLogs))) {
+	if (date < habitStartDate(currentView, toLogMap(existingLogs))) {
 		throw new Error('Change the habit’s start date before logging an earlier day.');
 	}
 	const revisions = (await revisionsQuery(db, habit.id).exec()).map((revision) => revision.toMutableJSON());

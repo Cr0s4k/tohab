@@ -6,6 +6,7 @@ export type RxBox<T> = {
 	value: T;
 	loading: boolean;
 	error: Error | null;
+	retry?: () => void;
 };
 
 export function subscribeSource<T>(source: RxSource<T>, box: RxBox<T>, initial: T) {

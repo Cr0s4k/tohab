@@ -10,12 +10,14 @@
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import { haptic, hapticTap } from '$lib/haptics';
+	import { reportActionError } from '$lib/actionError.svelte';
 	import Sheet from './Sheet.svelte';
 	import TaskDueControls from './task/TaskDueControls.svelte';
 	import TaskPriorityPicker from './task/TaskPriorityPicker.svelte';
 	import TaskProjectPicker from './task/TaskProjectPicker.svelte';
 	import TaskRepeatPicker from './task/TaskRepeatPicker.svelte';
 	import TaskReminderPicker from './task/TaskReminderPicker.svelte';
+	import DataError from './DataError.svelte';
 
 	let {
 		task,
@@ -49,6 +51,9 @@
 	let addingSubtask = $state(false);
 	let subtaskTitle = $state('');
 	let subtaskInput = $state<HTMLInputElement | null>(null);
+	let saving = $state(false);
+	let confirmingDelete = $state(false);
+	let deleting = $state(false);
 	let subtasks = rx<Task[]>(
 		() => (live.db && id ? directSubtasksQuery(live.db, id).$ : null),
 		[]
@@ -57,10 +62,12 @@
 	$effect(() => {
 		if (!task) {
 			loadedTaskId = '';
+			confirmingDelete = false;
 			return;
 		}
 		if (loadedTaskId !== task.id) {
 			loadedTaskId = task.id;
+			confirmingDelete = false;
 			subtasksExpandedForId = '';
 			subtasksOpen = false;
 			scheduleOpen = Boolean(task.due || task.dueTime || task.repeat || task.reminderMinutes !== undefined || task.reminders?.length);
@@ -89,32 +96,75 @@
 	});
 
 	async function save() {
-		if (!id) return;
+		if (!id || saving) return;
 		const title = draft.title.trim();
 		if (!title) return;
-		await updateTask(id, { ...$state.snapshot(draft), title });
+		saving = true;
+		try {
+			await updateTask(id, { ...$state.snapshot(draft), title });
+		} finally {
+			saving = false;
+		}
 	}
 
-	function saveAndClose() {
-		save().then(onClose);
+	async function saveAndClose() {
+		try {
+			await save();
+			onClose();
+		} catch (caught) {
+			reportActionError(caught, () => saveAndClose());
+		}
 	}
 
 	async function beginSubtask() {
-		await save();
-		addingSubtask = true;
-		queueMicrotask(() => subtaskInput?.focus());
+		try {
+			await save();
+			addingSubtask = true;
+			queueMicrotask(() => subtaskInput?.focus());
+		} catch (caught) {
+			reportActionError(caught, () => beginSubtask());
+		}
 	}
 
 	async function addSubtask() {
 		if (!task || !subtaskTitle.trim()) return;
-		await createTask({ title: subtaskTitle, parentId: id, projectId: draft.projectId });
-		subtaskTitle = '';
-		addingSubtask = false;
+		const title = subtaskTitle;
+		const add = async () => {
+			await createTask({ title, parentId: id, projectId: draft.projectId });
+			subtaskTitle = '';
+			addingSubtask = false;
+		};
+		try {
+			await add();
+		} catch (caught) {
+			reportActionError(caught, add);
+		}
 	}
 
 	async function openSubtask(subtask: Task) {
-		await save();
-		onOpenTask?.(subtask);
+		try {
+			await save();
+			onOpenTask?.(subtask);
+		} catch (caught) {
+			reportActionError(caught, () => openSubtask(subtask));
+		}
+	}
+
+	async function confirmDelete() {
+		if (!id || deleting) return;
+		deleting = true;
+		const remove = async () => {
+			await deleteTask(id);
+			onClose();
+		};
+		try {
+			haptic('warn');
+			await remove();
+		} catch (caught) {
+			reportActionError(caught, remove);
+		} finally {
+			deleting = false;
+		}
 	}
 
 </script>
@@ -154,6 +204,7 @@
 					</span>
 				</summary>
 				<div class="hairline border-t px-3 pt-2 pb-3">
+					{#if subtasks.error}<DataError label="subtasks" onRetry={() => subtasks.retry?.()} />{/if}
 					<div class="flex justify-end">
 						<button
 							type="button"
@@ -172,7 +223,7 @@
 										role="checkbox"
 										aria-checked={subtask.done}
 										aria-label={subtask.done ? `Reopen ${subtask.title}` : `Complete ${subtask.title}`}
-										onclick={() => toggleTask(subtask.id)}
+										onclick={() => void toggleTask(subtask.id).catch((caught) => reportActionError(caught, () => toggleTask(subtask.id)))}
 										class="tap grid size-11 shrink-0 place-items-center rounded-full border text-caption"
 									>
 										{subtask.done ? '✓' : ''}
@@ -255,22 +306,25 @@
 			<div class="flex gap-2 pt-1">
 				<button
 					type="button"
-					onclick={saveAndClose}
-					class="tap accent-bg flex-1 rounded-lg py-2.5 text-body font-semibold"
+					onclick={() => void saveAndClose()}
+					disabled={saving}
+					class="tap accent-bg flex-1 rounded-lg py-2.5 text-body font-semibold disabled:opacity-40"
 				>
-					Save
+					{saving ? 'Saving…' : 'Save'}
 				</button>
-				<button
-					type="button"
-					use:hapticTap
-					onclick={() => {
-						haptic('warn');
-						deleteTask(id).then(onClose);
-					}}
-					class="tap sunken danger rounded-lg px-5 py-2.5 text-body font-semibold"
-				>
-					Delete
-				</button>
+				{#if confirmingDelete}
+					<div class="sunken flex-1 rounded-xl p-2" role="alert">
+						<p class="danger text-xs font-medium">Delete this task?</p>
+						<div class="mt-1 flex gap-1">
+							<button type="button" class="tap danger-bg rounded-lg px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-40" disabled={deleting} onclick={() => void confirmDelete()}>{deleting ? 'Deleting…' : 'Delete'}</button>
+							<button type="button" class="tap dim rounded-lg px-2 py-1.5 text-xs" disabled={deleting} onclick={() => (confirmingDelete = false)}>Cancel</button>
+						</div>
+					</div>
+				{:else}
+					<button type="button" use:hapticTap onclick={() => (confirmingDelete = true)} class="tap sunken danger rounded-lg px-5 py-2.5 text-body font-semibold">
+						Delete
+					</button>
+				{/if}
 			</div>
 		</div>
 	{/snippet}

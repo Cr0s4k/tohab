@@ -12,3 +12,8 @@ export function migrateTaskV3<T extends Record<string, unknown>>(doc: T): T {
 export function migrateTaskV4<T extends Record<string, unknown>>(doc: T): T {
 	return doc;
 }
+
+/** Pause windows are optional; existing habits continue tracking without one. */
+export function migrateHabitV3<T extends Record<string, unknown>>(doc: T): T {
+	return doc;
+}

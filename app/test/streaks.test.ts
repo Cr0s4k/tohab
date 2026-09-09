@@ -5,6 +5,7 @@ import {
 	isComplete,
 	isDue,
 	isActiveOn,
+	isPausedOn,
 	habitStartDate,
 	periodValue,
 	type LogMap
@@ -125,6 +126,11 @@ eq(
 	currentStreak(breakHabit, logs([]), 1, TODAY),
 	80
 );
+
+const paused = habit({ pauseFrom: '2026-08-18', pauseUntil: '2026-08-20' });
+eq('pause: paused day is identified', isPausedOn(paused, TODAY), true);
+eq('pause: paused day is not active', isActiveOn(paused, TODAY), false);
+eq('pause: paused day is not due', isDue(paused, TODAY), false);
 
 // --- weekly (3x per week), week starts Monday ---
 const wk = habit({ scheduleKind: 'weekly', timesPerWeek: 3 });

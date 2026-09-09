@@ -8,6 +8,7 @@
 		groupLogs,
 		habitsQuery,
 		isActiveOn,
+		isPausedOn,
 		isDue,
 		isComplete,
 		logsQuery,
@@ -29,6 +30,8 @@
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
 	import { haptic, hapticTap } from '$lib/haptics';
+	import { reportActionError } from '$lib/actionError.svelte';
+	import DataError from '$lib/components/DataError.svelte';
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg } from '$lib/motion';
 	import { shouldAnimateList } from '$lib/pwa';
@@ -55,7 +58,10 @@
 
 	function logHabit(habit: Habit, value: number) {
 		if (habit.kind === 'quantity') logEntry = { habit, day, value, logs: byHabit.get(habit.id) ?? new Map() };
-		else void tapLog(habit, day, value);
+		else {
+			const action = () => tapLog(habit, day, value);
+			void action().catch((caught) => reportActionError(caught, action));
+		}
 	}
 
 	let day = $derived(shiftKey(today(), offset));
@@ -73,6 +79,7 @@
 
 	let active = $derived(habits.filter((h) => !h.archived));
 	let available = $derived(active.map((h) => habitOn(h, day)).filter((h) => isActiveOn(h, day, byHabit.get(h.id))));
+	let paused = $derived(active.map((h) => habitOn(h, day)).filter((h) => isPausedOn(h, day)));
 	let archived = $derived(habits.filter((h) => h.archived));
 	let due = $derived(available.filter((h) => isDue(h, day, byHabit.get(h.id))));
 	let rest = $derived(available.filter((h) => !isDue(h, day, byHabit.get(h.id))));
@@ -97,6 +104,13 @@
 			{ key: 'break', label: 'Break habits', due: breakDue, rest: breakRest, done: breakDoneCount }
 		].filter((section) => section.due.length || section.rest.length)
 	);
+	let queryError = $derived(habitDocs.error ?? revisionDocs.error ?? logs.error);
+
+	function retryQueries() {
+		habitDocs.retry?.();
+		revisionDocs.retry?.();
+		logs.retry?.();
+	}
 </script>
 
 <header class="z-20 shrink-0 border-b pt-safe" style:border-color="var(--product-library-divider-secondary)">
@@ -194,6 +208,7 @@
 </header>
 
 <main class="flex-1 pb-20">
+	{#if queryError}<DataError label="habit journal" onRetry={retryQueries} />{/if}
 	{#if showArchived}
 		<div class="measure px-4 py-4">
 			<h2 class="mb-3 text-sm font-semibold">Archived habits</h2>
@@ -211,8 +226,13 @@
 		</div>
 	{:else if !sections.length}
 		<div class="measure px-8 py-14 text-center">
-			<p class="dim text-sm">No habits scheduled for {humanDay(day)}.</p>
-			<p class="dim mt-2 text-xs">Future habits appear here when they start.</p>
+			{#if paused.length}
+				<p class="dim text-sm">{paused.length} {paused.length === 1 ? 'habit is' : 'habits are'} paused for {humanDay(day)}.</p>
+				<p class="dim mt-2 text-xs">Open Progress to resume or change a pause.</p>
+			{:else}
+				<p class="dim text-sm">No habits scheduled for {humanDay(day)}.</p>
+				<p class="dim mt-2 text-xs">Future habits appear here when they start.</p>
+			{/if}
 		</div>
 	{:else}
 		{#each sections as section}

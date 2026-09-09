@@ -3,7 +3,7 @@
 	import type { HabitView } from '$lib/db/schemas';
 	import { setLog } from '$lib/habits';
 	import { humanDay } from '$lib/dates';
-	import { habitStartDate, isActiveOn, type LogMap } from '$lib/streaks';
+	import { habitStartDate, isActiveOn, isPausedOn, type LogMap } from '$lib/streaks';
 	import Sheet from './Sheet.svelte';
 
 	let { habit, day, value, logs = new Map(), onClose }: { habit: HabitView; day: string; value: number; logs?: LogMap; onClose: () => void } = $props();
@@ -11,6 +11,7 @@
 	let saving = $state(false);
 	let error = $state('');
 	let active = $derived(isActiveOn(habit, day, logs));
+	let paused = $derived(isPausedOn(habit, day));
 	let valid = $derived(active && Number.isInteger(draft) && draft >= 0 && draft <= 10000);
 
 	async function save() {
@@ -30,7 +31,11 @@
 	<form onsubmit={(event) => { event.preventDefault(); save(); }} class="space-y-4">
 		<p class="text-sm font-semibold">{humanDay(day)}</p>
 		{#if !active}
-			<p class="dim text-sm">This habit starts on {humanDay(habitStartDate(habit, logs))}. Edit the start date to backfill this day.</p>
+			{#if paused}
+				<p class="dim text-sm">This habit is paused through {humanDay(habit.pauseUntil!)}. Resume it to log this day.</p>
+			{:else}
+				<p class="dim text-sm">This habit starts on {humanDay(habitStartDate(habit, logs))}. Edit the start date to backfill this day.</p>
+			{/if}
 		{:else if habit.kind === 'binary'}
 			<label class="flex min-h-11 items-center gap-3 text-sm">
 				<input type="checkbox" checked={draft >= habit.target} onchange={(event) => (draft = event.currentTarget.checked ? habit.target : 0)} />

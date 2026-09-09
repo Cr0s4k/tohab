@@ -12,11 +12,18 @@
 	} from '$lib/activity';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { collapse } from '$lib/motion';
+	import DataError from '$lib/components/DataError.svelte';
+	import { reportActionError } from '$lib/actionError.svelte';
 
 	let confirmingClear = $state(false);
 
 	let entries = rx<Activity[]>(() => (live.db ? activityQuery(live.db).$ : null), []);
 	let groups = $derived(groupActivity(entries.value));
+	let queryError = $derived(entries.error);
+
+	function retryQuery() {
+		entries.retry?.();
+	}
 
 	const TONE_COLORS = {
 		destructive: 'var(--danger)',
@@ -26,9 +33,16 @@
 
 
 	async function clearAll() {
-		await clearActivity();
-		confirmingClear = false;
-		haptic('success');
+		const clear = async () => {
+			await clearActivity();
+			confirmingClear = false;
+			haptic('success');
+		};
+		try {
+			await clear();
+		} catch (caught) {
+			reportActionError(caught, clear);
+		}
 	}
 </script>
 
@@ -73,6 +87,7 @@
 </header>
 
 <main class="flex-1 overflow-y-auto pb-20">
+	{#if queryError}<DataError label="activity" onRetry={retryQuery} />{/if}
 	{#if confirmingClear}
 		<div transition:collapse class="hairline raised border-b px-4 py-3">
 			<div class="measure flex items-center gap-3">

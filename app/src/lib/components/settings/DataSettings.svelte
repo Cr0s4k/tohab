@@ -8,6 +8,7 @@
 	import { rx } from '$lib/rx.svelte';
 	import { openTasksQuery } from '$lib/tasks';
 	import { importTodoistCsv } from '$lib/todoist';
+	import DataError from '$lib/components/DataError.svelte';
 
 	let { onNotice }: { onNotice: (message: string) => void } = $props();
 	let fileInput: HTMLInputElement | null = $state(null);
@@ -15,6 +16,12 @@
 	let confirmReset = $state(false);
 	let habits = rx(() => (live.db ? habitsQuery(live.db, true).$ : null), []);
 	let openTasks = rx(() => (live.db ? openTasksQuery(live.db).$ : null), []);
+	let queryError = $derived(habits.error ?? openTasks.error);
+
+	function retryQueries() {
+		habits.retry?.();
+		openTasks.retry?.();
+	}
 
 	async function onFile(event: Event) {
 		const file = (event.target as HTMLInputElement).files?.[0];
@@ -58,6 +65,7 @@
 </script>
 
 <section class="mb-6">
+	{#if queryError}<DataError label="data counts" onRetry={retryQueries} />{/if}
 	<h2 class="dim mb-2 text-caption font-semibold tracking-wide uppercase">Data</h2>
 	<div class="raised hairline rounded-2xl border">
 		<div class="hairline flex items-center justify-between border-b px-4 py-3 text-sm"><span class="dim">Open tasks</span><span class="tabular-nums">{openTasks.value.length}</span></div>

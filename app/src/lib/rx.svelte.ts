@@ -5,9 +5,20 @@ import { subscribeSource, type RxBox, type RxSource } from './rx.ts';
  * values it reads change, so callers can express dependent queries inline.
  */
 export function rx<T>(factory: () => RxSource<T>, initial: T) {
-	const box = $state<RxBox<T>>({ value: initial, loading: true, error: null });
+	let revision = $state(0);
+	const box = $state<RxBox<T>>({
+		value: initial,
+		loading: true,
+		error: null,
+		retry: () => (revision += 1)
+	});
 
-	$effect(() => subscribeSource(factory(), box, initial));
+	$effect(() => {
+		// Reading the revision makes retry resubscribe even when the observable factory has
+		// the same inputs as before.
+		revision;
+		return subscribeSource(factory(), box, initial);
+	});
 
 	return box;
 }

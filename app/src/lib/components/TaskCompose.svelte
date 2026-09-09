@@ -5,6 +5,7 @@
 	import { humanDay, humanTime } from '$lib/dates';
 	import { describeRepeat, firstDue } from '$lib/repeat';
 	import { haptic, hapticTap } from '$lib/haptics';
+	import { reportActionError } from '$lib/actionError.svelte';
 	import { collapse } from '$lib/motion';
 	import Sheet from './Sheet.svelte';
 	import TaskDueControls from './task/TaskDueControls.svelte';
@@ -28,9 +29,11 @@
 	type Panel = 'none' | 'date' | 'repeat' | 'priority' | 'project' | 'reminder';
 
 	let raw = $state('');
+	let inputEl: HTMLInputElement | null = $state(null);
 	let parseBase = $state(new Date());
 	let panel = $state<Panel>('none');
 	let reminderMinutes = $state<number | undefined>(undefined);
+	let saving = $state(false);
 
 	/**
 	 * Typed syntax and tapped chips are the same fields reached two ways, so a tap has to win:
@@ -82,23 +85,31 @@
 
 	async function submit(e?: SubmitEvent) {
 		e?.preventDefault();
-		if (!title) return;
+		if (!title || saving) return;
 		haptic('success');
-
-		await createTask({
-			title,
-			due,
-			dueTime,
-			repeat,
-			priority,
-			reminderMinutes,
-			reminders,
-			projectId:
-				projectId ?? (parsed?.project ? await resolveProject(parsed.project) : '')
-		});
-
-		reset();
-		onClose();
+		saving = true;
+		const add = async () => {
+			await createTask({
+				title,
+				due,
+				dueTime,
+				repeat,
+				priority,
+				reminderMinutes,
+				reminders,
+				projectId:
+					projectId ?? (parsed?.project ? await resolveProject(parsed.project) : '')
+			});
+			reset();
+			queueMicrotask(() => inputEl?.focus());
+		};
+		try {
+			await add();
+		} catch (caught) {
+			reportActionError(caught, add);
+		} finally {
+			saving = false;
+		}
 	}
 
 	$effect(() => {
@@ -111,13 +122,14 @@
 
 </script>
 
-<Sheet {open} title="New task" confirmLabel="Done" showHeader={false} showCloseButton={false} onClose={onClose}>
+<Sheet {open} title="Quick capture" confirmLabel="Done" showHeader={true} onClose={onClose}>
 	{#snippet children()}
 		<form onsubmit={submit} class="flex flex-col gap-3">
 			<div class="flex items-center gap-2">
 				<!-- svelte-ignore a11y_autofocus (Opening the task dialog focuses its primary input.) -->
 				<input
 					autofocus
+					bind:this={inputEl}
 					bind:value={raw}
 					aria-label="Quick add task"
 					placeholder="What needs doing?"
@@ -128,7 +140,8 @@
 				/>
 				<button
 					type="submit"
-					disabled={!title}
+					disabled={!title || saving}
+					aria-busy={saving}
 					aria-label="Add task"
 					class="tap accent-bg grid size-11 shrink-0 place-items-center rounded-full disabled:opacity-30"
 				>
@@ -238,7 +251,7 @@
 				{#if parsed?.matched.length}
 					Understood: {parsed.matched.join(' · ')}
 				{:else}
-					Typing “every friday 5pm !!1 #work” fills these in too
+					Add another task, or tap Done when you’re finished. Typing “every friday 5pm !!1 #work” fills these in too
 				{/if}
 			</p>
 		</form>

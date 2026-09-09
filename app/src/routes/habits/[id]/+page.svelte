@@ -11,6 +11,7 @@
 		habitStartDate,
 		habitQuery,
 		isActiveOn,
+		isPausedOn,
 		logsQuery,
 		revisionsQuery,
 		setLog,
@@ -25,6 +26,8 @@
 	import { compareRevisions, habitOn, withHabitHistory } from '$lib/habitHistory';
 	import { settings } from '$lib/settings.svelte';
 	import { haptic, hapticTap } from '$lib/haptics';
+	import { reportActionError } from '$lib/actionError.svelte';
+	import DataError from '$lib/components/DataError.svelte';
 	import Heatmap from '$lib/components/Heatmap.svelte';
 	import HabitLogEditor from '$lib/components/HabitLogEditor.svelte';
 	import HabitEditor from '$lib/components/HabitEditor.svelte';
@@ -54,6 +57,18 @@
 	let todayHabit = $derived(habit ? habitOn(habit, todayKey) : null);
 	let startDate = $derived(habit ? habitStartDate(habit, logs) : '');
 	let activeToday = $derived(todayHabit ? isActiveOn(todayHabit, todayKey, logs) : false);
+	let pausedToday = $derived(todayHabit ? isPausedOn(todayHabit, todayKey) : false);
+	let queryError = $derived(habitBox.error ?? revisionBox.error ?? logBox.error);
+
+	function retryQueries() {
+		habitBox.retry?.();
+		revisionBox.retry?.();
+		logBox.retry?.();
+	}
+
+	function runLog(action: () => Promise<void>) {
+		void action().catch((caught) => reportActionError(caught, action));
+	}
 
 	let stats = $derived.by(() => {
 		if (!habit) return null;
@@ -132,6 +147,7 @@
 </header>
 
 <main class="measure flex-1 px-4 py-4">
+	{#if queryError}<DataError label="habit details" onRetry={retryQueries} />{/if}
 	{#if !habit}
 		<p class="dim py-14 text-center text-sm">
 			{habitBox.loading ? 'Loading…' : 'This habit no longer exists.'}
@@ -142,12 +158,12 @@
 			<button
 				type="button"
 				use:hapticTap
-				aria-label={activeToday ? (currentHabit.kind === 'quantity' ? 'Edit today’s entry' : 'Log today') : `Starts ${humanDay(startDate)}`}
+					aria-label={activeToday ? (currentHabit.kind === 'quantity' ? 'Edit today’s entry' : 'Log today') : pausedToday ? `Paused through ${humanDay(currentHabit.pauseUntil!)}` : `Starts ${humanDay(startDate)}`}
 				disabled={!activeToday}
 				onclick={() => {
 					haptic(currentHabit.goal === 'break' ? 'warn' : 'success');
 					if (currentHabit.kind === 'quantity') logDay = todayKey;
-					else tapLog(currentHabit, todayKey, valueOn(logs, todayKey));
+						else runLog(() => tapLog(currentHabit, todayKey, valueOn(logs, todayKey)));
 				}}
 				class="tap disabled:opacity-50"
 			>
@@ -163,11 +179,11 @@
 				/>
 			</button>
 			<div class="min-w-0 flex-1">
-				<p class="text-sm font-semibold">{activeToday ? (currentHabit.scheduleKind === 'weekly' ? 'This week' : 'Today') : `Starts ${humanDay(startDate)}`}</p>
+				<p class="text-sm font-semibold">{activeToday ? (currentHabit.scheduleKind === 'weekly' ? 'This week' : 'Today') : pausedToday ? `Paused through ${humanDay(currentHabit.pauseUntil!)}` : `Starts ${humanDay(startDate)}`}</p>
 				<p class="dim text-xs">
 					{currentHabit.goal === 'break' ? 'Break a bad habit' : 'Build a good habit'} · {scheduleLabel}
 				</p>
-				<p class="dim mt-1 text-caption">Starts {humanDay(startDate)}</p>
+							<p class="dim mt-1 text-caption">{pausedToday ? 'Entries before the pause are still included.' : `Starts ${humanDay(startDate)}`}</p>
 				{#if pendingRevision}
 					<p class="dim mt-1 text-caption">Tracking changes start {humanDay(pendingRevision.effectiveFrom)}.</p>
 				{/if}
@@ -177,7 +193,7 @@
 							type="button"
 							aria-label="Decrease"
 							disabled={!activeToday}
-							onclick={() => setLog(currentHabit, todayKey, valueOn(logs, todayKey) - 1)}
+								onclick={() => runLog(() => setLog(currentHabit, todayKey, valueOn(logs, todayKey) - 1))}
 							class="tap sunken grid size-8 place-items-center rounded-lg text-lg font-semibold disabled:opacity-50"
 						>
 							−
@@ -193,7 +209,7 @@
 							type="button"
 							aria-label="Increase"
 							disabled={!activeToday}
-							onclick={() => setLog(currentHabit, todayKey, valueOn(logs, todayKey) + 1)}
+								onclick={() => runLog(() => setLog(currentHabit, todayKey, valueOn(logs, todayKey) + 1))}
 							class="tap sunken grid size-8 place-items-center rounded-lg text-lg font-semibold disabled:opacity-50"
 						>
 							+

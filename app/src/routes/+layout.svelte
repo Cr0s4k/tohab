@@ -7,6 +7,7 @@
 	import SideNav from '$lib/components/SideNav.svelte';
 	import HabitNav from '$lib/components/HabitNav.svelte';
 	import UndoToast from '$lib/components/UndoToast.svelte';
+	import ActionError from '$lib/components/ActionError.svelte';
 	import SettingsSheet from '$lib/components/SettingsSheet.svelte';
 	import ConnectivityAlert from '$lib/components/ConnectivityAlert.svelte';
 	import PwaStatus from '$lib/components/PwaStatus.svelte';
@@ -104,6 +105,7 @@
 			<SettingsSheet open={settingsSheet.open} onClose={() => (settingsSheet.open = false)} />
 			<ConnectivityAlert />
 			<UndoToast />
+			<ActionError />
 			{#if page.url.pathname === '/habits' || page.url.pathname === '/progress'}
 				<HabitNav />
 			{:else if !page.url.pathname.startsWith('/habits')}

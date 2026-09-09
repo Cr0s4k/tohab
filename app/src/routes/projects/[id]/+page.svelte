@@ -14,6 +14,8 @@
 	import TaskEditor from '$lib/components/TaskEditor.svelte';
 	import ViewOptionsSheet from '$lib/components/ViewOptionsSheet.svelte';
 	import { haptic, hapticTap } from '$lib/haptics';
+	import { reportActionError } from '$lib/actionError.svelte';
+	import DataError from '$lib/components/DataError.svelte';
 
 	let editing = $state<Task | null>(null);
 	let tuning = $state(false);
@@ -39,6 +41,16 @@
 	let subtaskProgress = $derived(subtaskProgressByParent(tasks.value));
 	let groups = $derived(arrangeTasks(visibleTasks, opts, projects.value));
 	let count = $derived(groups.reduce((n, g) => n + g.tasks.length, 0));
+	let queryError = $derived(tasks.error ?? projects.error);
+
+	function retryQueries() {
+		tasks.retry?.();
+		projects.retry?.();
+	}
+
+	function runTaskAction(action: () => Promise<void>) {
+		void action().catch((caught) => reportActionError(caught, action));
+	}
 </script>
 
 <header class="hairline z-20 shrink-0 border-b pt-safe">
@@ -81,6 +93,7 @@
 </header>
 
 <main class="flex-1 pb-20">
+	{#if queryError}<DataError label="project tasks" onRetry={retryQueries} />{/if}
 	{#if !count}
 		<p class="dim measure px-8 py-14 text-center text-sm">No tasks in this project.</p>
 	{:else}
@@ -99,8 +112,8 @@
 				<TaskRow
 					{task}
 					subtaskProgress={subtaskProgress.get(task.id)}
-					onToggle={() => toggleTask(task.id)}
-					onDelete={() => deleteTask(task.id)}
+					onToggle={() => runTaskAction(() => toggleTask(task.id))}
+					onDelete={() => runTaskAction(() => deleteTask(task.id))}
 					onOpen={() => (editing = task)}
 				/>
 			{/each}

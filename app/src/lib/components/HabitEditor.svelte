@@ -14,6 +14,7 @@
 	import type { LogMap } from '$lib/streaks';
 	import { settings } from '$lib/settings.svelte';
 	import { haptic, hapticTap } from '$lib/haptics';
+	import { reportActionError } from '$lib/actionError.svelte';
 	import Sheet from './Sheet.svelte';
 	import HabitIdentityControls from './habit/HabitIdentityControls.svelte';
 	import HabitScheduleControls from './habit/HabitScheduleControls.svelte';
@@ -56,6 +57,8 @@
 	let loadedDraft = $state<HabitInput | null>(null);
 	let saving = $state(false);
 	let error = $state('');
+	let confirmingDelete = $state(false);
+	let deleting = $state(false);
 
 	function chooseGoal(goal: 'build' | 'break') {
 		if (draft.goal === goal) return;
@@ -79,7 +82,7 @@
 	));
 
 	$effect(() => {
-		if (!open) { loadedKey = ''; loadedDraft = null; error = ''; return; }
+		if (!open) { loadedKey = ''; loadedDraft = null; error = ''; confirmingDelete = false; deleting = false; return; }
 		const nextKey = habit
 			? `${habit.id}:${habit.revisions?.map((revision) => `${revision.id}:${revision.updatedAt}`).join(',') ?? ''}`
 			: 'new';
@@ -99,6 +102,10 @@
 				timesPerWeek: editable.timesPerWeek,
 				startDate: habitStartDate(habit, logs)
 			};
+			if (habit.pauseUntil) {
+				draft.pauseFrom = habit.pauseFrom;
+				draft.pauseUntil = habit.pauseUntil;
+			}
 			loadedDraft = { ...draft, weekdays: [...draft.weekdays] };
 		} else if (!habit && loadedKey !== 'new') {
 			loadedKey = 'new';
@@ -145,6 +152,40 @@
 		draft.weekdays = draft.weekdays.includes(d)
 			? draft.weekdays.filter((x) => x !== d)
 			: [...draft.weekdays, d].sort();
+	}
+
+	function setPauseUntil(value: string) {
+		draft.pauseUntil = value || undefined;
+		draft.pauseFrom = value ? (draft.pauseFrom || today()) : undefined;
+	}
+
+	function clearPause() {
+		draft.pauseFrom = undefined;
+		draft.pauseUntil = undefined;
+	}
+
+	async function confirmDelete() {
+		if (!habit || deleting) return;
+		deleting = true;
+		try {
+			haptic('warn');
+			await deleteHabit(habit.id);
+			(onDeleted ?? onClose)();
+		} catch (caught) {
+			reportActionError(caught, () => confirmDelete());
+		} finally {
+			deleting = false;
+		}
+	}
+
+	async function toggleArchive() {
+		if (!habit) return;
+		try {
+			await updateHabit(habit.id, { archived: !habit.archived });
+			onClose();
+		} catch (caught) {
+			reportActionError(caught, () => toggleArchive());
+		}
 	}
 
 	async function save() {
@@ -197,6 +238,27 @@
 					{/if}
 				</p>
 			</div>
+			{#if habit}
+				<div class="sunken space-y-2 rounded-2xl p-3">
+					<div>
+						<p class="text-sm font-medium">Take a pause</p>
+						<p class="dim mt-1 text-xs">Paused days won’t count against your streak. Your entries stay safe.</p>
+					</div>
+					<div class="flex items-center gap-2">
+						<input
+							type="date"
+							aria-label="Pause tracking through"
+							min={today()}
+							value={draft.pauseUntil ?? ''}
+							oninput={(event) => setPauseUntil(event.currentTarget.value)}
+							class="sunken min-h-11 min-w-0 flex-1 rounded-xl px-3 py-2.5 text-copy outline-none"
+						/>
+						{#if draft.pauseUntil}
+							<button type="button" class="tap dim min-h-11 shrink-0 px-2 text-xs font-medium" onclick={clearPause}>Resume now</button>
+						{/if}
+					</div>
+				</div>
+			{/if}
 			<div class="space-y-2">
 				<p class="text-sm font-medium">What’s your goal?</p>
 				<div class="sunken grid grid-cols-2 gap-1 rounded-xl p-1">
@@ -236,24 +298,31 @@
 					{saving ? 'Saving…' : habit ? 'Save changes' : 'Create habit'}
 				</button>
 				{#if habit}
-					<button
-						type="button"
-						use:hapticTap
-						onclick={() => {
-							haptic('warn');
-							deleteHabit(habit.id).then(() => (onDeleted ?? onClose)());
-						}}
-						class="tap sunken danger rounded-2xl px-5 py-3 text-sm font-semibold"
-					>
-						Delete
-					</button>
+					{#if confirmingDelete}
+						<div class="sunken flex-1 rounded-2xl p-3" role="alert">
+							<p class="danger text-xs font-medium">Delete “{habit.name}” and its journal entries?</p>
+							<div class="mt-2 flex gap-2">
+								<button type="button" class="tap danger-bg flex-1 rounded-xl px-3 py-2 text-xs font-semibold text-white disabled:opacity-40" disabled={deleting} onclick={() => void confirmDelete()}>{deleting ? 'Deleting…' : 'Delete permanently'}</button>
+								<button type="button" class="tap sunken rounded-xl px-3 py-2 text-xs font-medium" disabled={deleting} onclick={() => (confirmingDelete = false)}>Cancel</button>
+							</div>
+						</div>
+					{:else}
+						<button
+							type="button"
+							use:hapticTap
+							onclick={() => (confirmingDelete = true)}
+							class="tap sunken danger rounded-2xl px-5 py-3 text-sm font-semibold"
+						>
+							Delete
+						</button>
+					{/if}
 				{/if}
 			</div>
 
 			{#if habit}
 				<button
 					type="button"
-					onclick={() => updateHabit(habit.id, { archived: !habit.archived }).then(onClose)}
+					onclick={() => void toggleArchive()}
 					class="tap dim text-center text-[0.75rem] font-medium"
 				>
 					{habit.archived ? 'Unarchive habit' : 'Archive habit (keeps history)'}

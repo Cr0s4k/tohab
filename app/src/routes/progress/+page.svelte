@@ -3,7 +3,7 @@
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import type { Habit, HabitLog, HabitRevision } from '$lib/db/schemas';
-	import { groupLogs, habitStartDate, habitsQuery, isActiveOn, logsQuery, periodTarget, revisionsQuery } from '$lib/habits';
+	import { groupLogs, habitStartDate, habitsQuery, isActiveOn, isPausedOn, logsQuery, periodTarget, revisionsQuery } from '$lib/habits';
 	import { humanDay, today } from '$lib/dates';
 	import { habitOn, withHabitHistory } from '$lib/habitHistory';
 	import { buildHabitProgress, percentage } from '$lib/habitProgress';
@@ -11,6 +11,7 @@
 	import { haptic, hapticTap } from '$lib/haptics';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
+	import DataError from '$lib/components/DataError.svelte';
 
 	function plainDoc<T>(doc: T): T {
 		const candidate = doc as T & { toMutableJSON?: () => T };
@@ -35,6 +36,14 @@
 	let futureCount = $derived(
 		habits.filter((habit) => !isActiveOn(habit, todayKey, byHabit.get(habit.id))).length
 	);
+	let pausedCount = $derived(habits.filter((habit) => isPausedOn(habit, todayKey)).length);
+	let queryError = $derived(habitDocs.error ?? revisionDocs.error ?? logs.error);
+
+	function retryQueries() {
+		habitDocs.retry?.();
+		revisionDocs.retry?.();
+		logs.retry?.();
+	}
 </script>
 
 <header class="z-20 shrink-0 border-b pt-safe" style:border-color="var(--product-library-divider-secondary)">
@@ -69,6 +78,7 @@
 </header>
 
 <main class="measure flex-1 px-4 py-4 pb-20">
+	{#if queryError}<DataError label="progress" onRetry={retryQueries} />{/if}
 	{#if !habits.length}
 		<p class="dim measure px-8 py-14 text-center text-sm">
 			No habits yet. Add one from Habits to start tracking progress.
@@ -89,6 +99,9 @@
 					</p>
 					{#if futureCount}
 						<p class="dim mt-1 text-caption">{futureCount} future {futureCount === 1 ? 'habit' : 'habits'} are shown below.</p>
+					{/if}
+					{#if pausedCount}
+						<p class="dim mt-1 text-caption">{pausedCount} paused {pausedCount === 1 ? 'habit' : 'habits'} are shown below.</p>
 					{/if}
 					<p class="dim mt-1 text-caption">
 						Each scheduled day or week counts once.
@@ -141,10 +154,12 @@
 							</span>
 							<span class="dim mt-0.5 block text-xs">
 								{!active
-									? `Starts ${humanDay(habitStartDate(row.habit, habitLogs))}`
+									? isPausedOn(row.habit, todayKey)
+										? `Paused through ${humanDay(row.habit.pauseUntil!)}`
+										: `Starts ${humanDay(habitStartDate(row.habit, habitLogs))}`
 									: row.current > 0
-									? `🔥 ${row.current} ${displayHabit.scheduleKind === 'weekly' ? (row.current === 1 ? 'week' : 'weeks') : (row.current === 1 ? 'day' : 'days')}`
-									: 'Start your streak'}
+										? `🔥 ${row.current} ${displayHabit.scheduleKind === 'weekly' ? (row.current === 1 ? 'week' : 'weeks') : (row.current === 1 ? 'day' : 'days')}`
+										: 'Start your streak'}
 								{#if active} · Best {row.best} · {row.month}% this month{/if}
 							</span>
 						</span>

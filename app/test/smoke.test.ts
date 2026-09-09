@@ -104,8 +104,10 @@ try {
 	check('compose previews the priority', await evaluate<boolean>(`${bodyText}.includes('P1')`), true);
 
 	await evaluate(`document.querySelector('form button[type=submit]').click()`);
-	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'compose closes after add');
-	check('compose closes after adding the task', await evaluate<boolean>(`!document.querySelector('input[placeholder="What needs doing?"]')`), true);
+	await waitFor(`document.querySelector('input[placeholder="What needs doing?"]')?.value === ''`, 5000, 'compose resets after add');
+	check('compose stays open for another capture', await evaluate<boolean>(`document.querySelector('input[placeholder="What needs doing?"]')?.value === ''`), true);
+	await evaluate(`[...document.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Done')?.click()`);
+	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'compose closes from Done');
 
 	// The task is due tomorrow, so it belongs to Upcoming rather than Today.
 	await goto('/tasks?view=upcoming');
@@ -129,7 +131,9 @@ try {
 	})()`);
 	await waitFor(`${bodyText}.includes('#finance')`, 5000, 'compose picked up the project');
 	await evaluate(`document.querySelector('form button[type=submit]').click()`);
-	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'projected task added');
+	await waitFor(`document.querySelector('input[placeholder="What needs doing?"]')?.value === ''`, 5000, 'projected task added');
+	await evaluate(`[...document.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Done')?.click()`);
+	await waitFor(`!document.querySelector('input[placeholder="What needs doing?"]')`, 5000, 'project compose closed');
 
 	await goto('/tasks?view=inbox');
 	await waitFor(`${bodyText}.includes('buy oat milk')`, 8000, 'Inbox lists the unfiled task');

@@ -53,9 +53,17 @@ export function habitStartDate(habit: HabitView, logs?: LogMap): DayKey {
 	return start;
 }
 
+/** Whether a one-off pause window covers this calendar day. */
+export function isPausedOn(habit: HabitView, day: DayKey): boolean {
+	const until = habit.pauseUntil;
+	if (!until || !isValidKey(until)) return false;
+	const from = habit.pauseFrom && isValidKey(habit.pauseFrom) ? habit.pauseFrom : until;
+	return day >= from && day <= until;
+}
+
 /** Whether the habit exists for tracking on this calendar day. */
 export function isActiveOn(habit: HabitView, day: DayKey, logs?: LogMap): boolean {
-	return day >= habitStartDate(habit, logs);
+	return day >= habitStartDate(habit, logs) && !isPausedOn(habit, day);
 }
 
 /** Whether the habit's schedule asks for this day. Weekly habits have no fixed days. */

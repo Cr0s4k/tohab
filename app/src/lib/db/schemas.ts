@@ -37,6 +37,9 @@ export type Habit = {
 	id: string;
 	/** Local calendar day; absent on legacy records with inferred history. */
 	startDate?: string;
+	/** Optional one-off pause window. Paused days are intentionally skipped by streaks. */
+	pauseFrom?: string;
+	pauseUntil?: string;
 	/** Older clients must not overwrite habits with dated tracking rules. */
 	historyVersion?: number;
 	name: string;
@@ -165,12 +168,14 @@ export const projectSchema: RxJsonSchema<Project> = {
 
 export const habitSchema: RxJsonSchema<Habit> = {
 	title: 'habit',
-	version: 2,
+	version: 3,
 	primaryKey: 'id',
 	type: 'object',
 	properties: {
 		id: { type: 'string', maxLength: 40 },
 		startDate: { type: 'string', maxLength: 10, pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+		pauseFrom: { type: 'string', maxLength: 10, pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+		pauseUntil: { type: 'string', maxLength: 10, pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
 		historyVersion: { type: 'number', enum: [1] },
 		name: { type: 'string' },
 		emoji: { type: 'string', maxLength: 8 },

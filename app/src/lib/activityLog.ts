@@ -94,7 +94,9 @@ const FIELD_LABELS: Record<string, string> = {
 	timesPerWeek: 'schedule',
 	archived: 'archived',
 	value: 'value',
-	date: 'date'
+	date: 'date',
+	pauseFrom: 'pause start',
+	pauseUntil: 'pause end'
 };
 
 export function changedFields(before: Snapshot, after: Snapshot): string[] {

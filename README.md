@@ -1,7 +1,7 @@
 # Tohab
 
-Offline-first tasks and habit tracking. Mobile-only PWA, single account, syncs to a small
-self-hosted server.
+Offline-first daily action journal for tasks and habits. Mobile-only PWA, single account, syncs
+to a small self-hosted server.
 
 ```
 app/      SvelteKit 2 + Svelte 5 PWA, RxDB over IndexedDB
@@ -119,23 +119,23 @@ registration exactly as it found it.
 
 ## What's in it
 
-**Tasks** — a compose sheet behind the + button, natural-language parsing, due dates,
-recurrence, Today / Upcoming / All / Done views, four priorities, projects, notes, swipe to
-complete or delete.
+**Tasks** — quick capture with natural-language parsing, due dates, recurrence, Today / Upcoming /
+Inbox views, four priorities, projects, notes, overdue carry-over, and swipe to complete or
+delete. Completed work stays out of the daily list unless you turn on “Show completed tasks”.
 
 **Habits** — binary and quantity habits, three schedule kinds (daily, chosen weekdays,
 N× per week), schedule-aware streaks, a 12-week heatmap you can tap to backfill, per-habit
-stats, archiving.
+stats, archiving, and pause windows that skip planned time without breaking history.
 
 **Platform** — installable portrait PWA that works fully offline, sync status and recovery,
 dark mode, JSON export/import, haptics, optional Web Push reminders and app badging, and an
-activity history you can undo from.
+activity history with immediate undo for destructive actions.
 
 ### Adding a task
 
-The + button opens a bottom sheet: title, notes, and chips for date, priority and project,
-each expanding into a picker. It stays open after adding so several tasks can go in one
-after another, and Done or Escape dismisses it.
+The + button opens a quick-capture sheet with a title and chips for date, priority, project,
+repeat and reminders, each expanding into a picker. It stays open after adding so several tasks
+can go in one after another, and Done or Escape dismisses it.
 
 The chips are two views of the same fields, so typing quick-add syntax in the title fills
 them in live, and tapping a chip overrides whatever the parser found for that one field.
@@ -152,6 +152,17 @@ them in live, and tapping a chip overrides whatever the parser found for that on
 
 `buy oat milk tomorrow 5pm p1 #groceries` → title "buy oat milk", due tomorrow 17:00,
 priority 1, in the Groceries project.
+
+### A daily pass
+
+Today is the working surface: overdue tasks are called out with a one-tap “Move to tomorrow”
+action, Today also shows a compact habit completion summary, and the bottom “What remains today?”
+prompt gives a quick wrap-up without turning the app into a long-term archive. Every carry-over,
+delete, completion, and habit log can be undone immediately.
+
+To pause a habit, open it from Progress, choose a date under “Take a pause”, and save. The pause
+starts today and ends on the selected date; paused days are omitted from due counts and streak
+gaps, while earlier entries remain intact. “Resume now” clears the window.
 
 ### Activity history
 

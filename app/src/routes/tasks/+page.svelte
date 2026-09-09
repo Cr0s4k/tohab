@@ -4,11 +4,11 @@
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
 	import type { Task } from '$lib/db/schemas';
-	import { deleteTask, projectsQuery, tasksQuery, toggleTask } from '$lib/tasks';
+	import { carryOverOverdueTasks, deleteTask, projectsQuery, tasksQuery, toggleTask } from '$lib/tasks';
 	import { subtaskProgressByParent, tasksInView, type View } from '$lib/taskViews';
 	import { arrangeTasks } from '$lib/arrange';
 	import { isCustomised, viewOptions } from '$lib/viewOptions.svelte';
-	import { daysFromToday, today } from '$lib/dates';
+	import { daysFromToday, shiftKey, today } from '$lib/dates';
 	import Fab from '$lib/components/Fab.svelte';
 	import { taskCompose } from '$lib/compose.svelte';
 	import TaskCompose from '$lib/components/TaskCompose.svelte';
@@ -20,6 +20,9 @@
 	import { flip } from 'svelte/animate';
 	import { collapse, flipCfg, veil } from '$lib/motion';
 	import { shouldAnimateList } from '$lib/pwa';
+	import { reportActionError } from '$lib/actionError.svelte';
+	import DataError from '$lib/components/DataError.svelte';
+	import TodaySummary from '$lib/components/TodaySummary.svelte';
 
 	function viewFromUrl(): View {
 		const value = page.url.searchParams.get('view');
@@ -31,6 +34,7 @@
 	let tuning = $state(false);
 	let mainEl = $state<HTMLElement | null>(null);
 	let scrolled = $state(false);
+	let carryingOver = $state(false);
 
 	const viewTitles: Record<View, string> = {
 		inbox: 'Inbox',
@@ -60,6 +64,34 @@
 			? visibleTasks.filter((t) => !t.done && t.due && daysFromToday(t.due) < 0).length
 			: 0
 	);
+	let todayOpenCount = $derived(tasks.value.filter((task) => !task.parentId && !task.done && task.due && task.due <= today()).length);
+	let todayDoneCount = $derived(tasks.value.filter((task) => !task.parentId && task.done && task.due && task.due <= today()).length);
+	let queryError = $derived(tasks.error ?? projects.error);
+
+	function retryQueries() {
+		tasks.retry?.();
+		projects.retry?.();
+	}
+
+	function runTaskAction(action: () => Promise<void>) {
+		void action().catch((caught) => reportActionError(caught, action));
+	}
+
+	async function carryOver() {
+		if (carryingOver) return;
+		carryingOver = true;
+		const action = async () => {
+			const moved = await carryOverOverdueTasks(shiftKey(today(), 1));
+			if (moved) haptic('success');
+		};
+		try {
+			await action();
+		} catch (caught) {
+			reportActionError(caught, action);
+		} finally {
+			carryingOver = false;
+		}
+	}
 
 	const emptyCopy: Record<View, string> = {
 		inbox: 'Inbox is clear. Unfiled tasks land here.',
@@ -145,6 +177,21 @@
 </header>
 
 <main class="flex-1 pb-20" bind:this={mainEl} onscroll={() => (scrolled = (mainEl?.scrollTop ?? 0) > 0)}>
+	{#if queryError}<DataError label="tasks" onRetry={retryQueries} />{/if}
+	{#if view === 'today'}
+		<TodaySummary />
+	{/if}
+	{#if view === 'today' && overdueCount > 0}
+		<div class="sunken measure mx-4 my-3 flex items-center gap-3 rounded-2xl border px-4 py-3">
+			<div class="min-w-0 flex-1">
+				<p class="danger text-sm font-semibold">{overdueCount} overdue {overdueCount === 1 ? 'task' : 'tasks'}</p>
+				<p class="dim mt-0.5 text-xs">Move them to tomorrow to keep today actionable.</p>
+			</div>
+			<button type="button" class="tap accent-bg shrink-0 rounded-xl px-3 py-2 text-xs font-semibold disabled:opacity-40" disabled={carryingOver} onclick={() => void carryOver()}>
+				{carryingOver ? 'Moving…' : 'Move to tomorrow'}
+			</button>
+		</div>
+	{/if}
 	{#if tasks.loading && !tasks.value.length}
 		<p class="dim measure px-4 py-10 text-center text-sm">Loading…</p>
 	{:else if !count}
@@ -168,14 +215,30 @@
 						{task}
 						project={projectById.get(task.projectId)}
 						subtaskProgress={subtaskProgress.get(task.id)}
-						onToggle={() => toggleTask(task.id)}
-						onDelete={() => deleteTask(task.id)}
+						onToggle={() => runTaskAction(() => toggleTask(task.id))}
+						onDelete={() => runTaskAction(() => deleteTask(task.id))}
 						onOpen={() => (editing = task)}
 					/>
 				</div>
 			{/each}
 		{/each}
 		<p class="dim measure px-4 py-4 text-center text-caption md:hidden">Swipe a task right to complete, left to delete</p>
+	{/if}
+	{#if view === 'today' && !tasks.loading && (todayOpenCount > 0 || todayDoneCount > 0)}
+		<details class="hairline measure mx-4 mt-4 rounded-2xl border">
+			<summary class="tap flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 text-sm font-semibold">
+				<span class="min-w-0 flex-1">What remains today?</span>
+				<span class="dim text-xs font-normal tabular-nums">{todayOpenCount} open · {todayDoneCount} done</span>
+			</summary>
+			<div class="hairline border-t px-4 py-3 text-xs">
+				{#if todayOpenCount}
+					<p>{todayOpenCount} {todayOpenCount === 1 ? 'task is' : 'tasks are'} still open, including {overdueCount} overdue.</p>
+				{:else}
+					<p class="accent-fg">Your task list is clear.</p>
+				{/if}
+				<a href="/habits" class="accent-fg mt-2 inline-block font-semibold">Review today’s habits →</a>
+			</div>
+		</details>
 	{/if}
 </main>
 
