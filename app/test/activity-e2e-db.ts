@@ -9,6 +9,7 @@ import { migrateTaskV2, migrateTaskV3, migrateTaskV4 } from '../src/lib/db/migra
 import {
 	activitySchema,
 	habitLogSchema,
+	habitRevisionSchema,
 	habitSchema,
 	projectSchema,
 	taskSchema
@@ -31,7 +32,8 @@ async function create() {
 	await db.addCollections({
 		tasks: { schema: taskSchema, migrationStrategies: { 1: (doc) => doc, 2: migrateTaskV2, 3: migrateTaskV3, 4: migrateTaskV4 } },
 		projects: { schema: projectSchema },
-		habits: { schema: habitSchema },
+		habits: { schema: habitSchema, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
+		habitRevisions: { schema: habitRevisionSchema },
 		habitLogs: { schema: habitLogSchema },
 		activity: { schema: activitySchema }
 	});

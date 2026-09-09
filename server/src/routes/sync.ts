@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { streamSSE } from 'hono/streaming';
 import { requireAuth, type AuthedEnv } from '../auth.ts';
 import { transaction } from '../db.ts';
@@ -51,20 +52,40 @@ export function createSyncRoutes() {
 
 		const userId = c.get('userId');
 		const rows = body.rows ?? [];
+		const understandsHistory = c.req.header('x-tohab-habit-history') === '1';
+		if (collection === 'habitRevisions' && !understandsHistory) {
+			return c.json({ error: 'Update Tohab to sync habit history.' }, 426);
+		}
 		const conflicts = await transaction(async (tx) => {
 			const out: Record<string, unknown>[] = [];
 			for (const row of rows) {
 				const incoming = row.newDocumentState;
 				if (!incoming?.id) continue;
+				if (collection === 'habits' && incoming.historyVersion && !understandsHistory) {
+					throw new HTTPException(426, { message: 'Update Tohab to sync habit history.' });
+				}
+				if (collection === 'habitLogs' && !understandsHistory && incoming.habitId) {
+					const habit = await getDocForUpdate(tx, userId, 'habits', String(incoming.habitId));
+					if (habit?.data.historyVersion) throw new HTTPException(426, { message: 'Update Tohab to log habits with saved history.' });
+				}
 
 				const existing = await getDocForUpdate(tx, userId, collection, String(incoming.id));
 				if (existing) {
 					const master = rowToDoc(existing);
+					if (collection === 'habits' && !understandsHistory &&
+						(master.historyVersion || incoming.historyVersion || await getDocForUpdate(tx, userId, 'habitRevisions', String(incoming.id)))) {
+						throw new HTTPException(426, { message: 'Update Tohab to edit habits with saved history.' });
+					}
 					const assumed = row.assumedMasterState;
 					if (!assumed || Number(assumed.updatedAt ?? -1) !== Number(master.updatedAt ?? -2)) {
 						out.push(master);
 						continue;
 					}
+					// Older clients replace the whole document without knowing this field.
+					if (collection === 'habits' && incoming.startDate === undefined && master.startDate) {
+						incoming.startDate = master.startDate;
+					}
+					if (collection === 'habits' && master.historyVersion) incoming.historyVersion = master.historyVersion;
 				}
 
 				await writeDoc(tx, userId, collection, incoming);

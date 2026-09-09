@@ -159,6 +159,7 @@ eq('task b back in the project', (await db.tasks.findOne(b!.id).exec()).projectI
 
 // --- habits ---------------------------------------------------------------------------
 const h = await createHabit({
+	startDate: '2026-08-18',
 	name: 'Water',
 	emoji: '',
 	color: '',
@@ -215,7 +216,7 @@ eq('habit gone', await db.habits.findOne(h.id).exec(), null);
 eq('its logs gone', (await db.habitLogs.find({ selector: { habitId: h.id } }).exec()).length, 0);
 e = await pending('habit', 'delete');
 eq('habit delete recorded', [e.verb, e.subject], ['delete', 'Water']);
-eq('habit delete captured the habit and both logs', decodeChanges(e.changes).length, 3);
+eq('habit delete captured the habit, baseline and both logs', decodeChanges(e.changes).length, 4);
 eq('habit delete reverted', await revertActivity(e.id), true);
 eq('habit restored', (await db.habits.findOne(h.id).exec())?.name, 'Water');
 eq(

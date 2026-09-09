@@ -16,7 +16,7 @@ export function createApp() {
 		'*',
 		cors({
 			origin: (origin) => (ALLOWED_ORIGINS.includes(origin) ? origin : null),
-			allowHeaders: ['content-type'],
+			allowHeaders: ['content-type', 'x-tohab-habit-history'],
 			allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
 			credentials: true
 		})

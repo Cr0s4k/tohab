@@ -1,7 +1,8 @@
 <script lang="ts">
-	import type { Habit } from '$lib/db/schemas';
+	import type { HabitView } from '$lib/db/schemas';
 	import { humanDay, shiftKey, startOfWeekKey, today, WEEKDAY_LABELS } from '$lib/dates';
-	import { isDue, isWeeklyQuantity, valueOn, type LogMap } from '$lib/streaks';
+	import { habitOn } from '$lib/habitHistory';
+	import { habitStartDate, isActiveOn, isDue, isWeeklyQuantity, valueOn, type LogMap } from '$lib/streaks';
 	import { haptic, hapticTap } from '$lib/haptics';
 
 	let {
@@ -11,7 +12,7 @@
 		weekStartsOn = 1,
 		onToggleDay
 	}: {
-		habit: Habit;
+		habit: HabitView;
 		logs: LogMap;
 		weeks?: number;
 		weekStartsOn?: 0 | 1;
@@ -31,12 +32,14 @@
 		)
 	);
 
-	function fill(day: string): string {
+	function fill(day: string, dayHabit = habit): string {
 		const value = valueOn(logs, day);
 		if (value <= 0) return 'var(--surface-sunken)';
-		const ratio = Math.min(1, value / habit.target);
-		return `color-mix(in oklch, ${habit.color} ${Math.round(25 + ratio * 75)}%, var(--surface-sunken))`;
+		const ratio = Math.min(1, value / dayHabit.target);
+		return `color-mix(in oklch, ${dayHabit.color} ${Math.round(25 + ratio * 75)}%, var(--surface-sunken))`;
 	}
+
+	let startKey = $derived(habitStartDate(habit, logs));
 </script>
 
 <div class="flex gap-1.5">
@@ -53,26 +56,36 @@
 			<div class="flex flex-col gap-1">
 				{#each week as day (day)}
 					{@const future = day > todayKey}
-					{@const scheduled = isDue(habit, day)}
+					{@const dayHabit = habitOn(habit, day)}
+					{@const active = isActiveOn(dayHabit, day, logs)}
+					{@const scheduled = isDue(dayHabit, day, logs)}
+					{@const unavailable = future || !active}
 					<button
 						type="button"
 						use:hapticTap
-						disabled={future}
-						aria-label={isWeeklyQuantity(habit)
-							? `${humanDay(day)}: ${valueOn(logs, day)} ${habit.unit || 'times'} logged`
-							: habit.goal === 'break'
-							? `${humanDay(day)}: ${valueOn(logs, day)} slips, limit ${habit.target}`
-							: `${humanDay(day)}: ${valueOn(logs, day)} of ${habit.target}`}
+						disabled={unavailable}
+						aria-label={!active
+							? `${humanDay(day)}: before this habit starts`
+							: isWeeklyQuantity(dayHabit)
+							? `${humanDay(day)}: ${valueOn(logs, day)} ${dayHabit.unit || 'times'} logged`
+							: dayHabit.goal === 'break'
+							? `${humanDay(day)}: ${valueOn(logs, day)} slips, limit ${dayHabit.target}`
+							: `${humanDay(day)}: ${valueOn(logs, day)} of ${dayHabit.target}`}
 						onclick={() => {
 							haptic('tap');
 							onToggleDay(day);
 						}}
 						class="tap size-[1.1rem] shrink-0 rounded-[0.3rem] disabled:opacity-25"
 						class:ring-1={day === todayKey}
-						style="background: {fill(day)}; opacity: {future ? 0.2 : scheduled ? 1 : 0.45}; --tw-ring-color: var(--text)"
+						style="background: {fill(day, dayHabit)}; opacity: {unavailable ? 0.2 : scheduled ? 1 : 0.45}; --tw-ring-color: var(--text)"
 					></button>
 				{/each}
 			</div>
 		{/each}
 	</div>
 </div>
+{#if startKey > firstWeek}
+	<p class="dim mt-2 text-caption">
+		Days before {humanDay(startKey)} are unavailable. Edit the start date to backfill them.
+	</p>
+{/if}

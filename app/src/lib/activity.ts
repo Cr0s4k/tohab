@@ -128,9 +128,33 @@ export async function applyRevert(changes: DocChange[]) {
 	const db = await getDb();
 	const ts = now();
 	const plan = revertPlan(changes);
+	// Undo must obey the same start-date constraint as editing. Include logs restored
+	// by this action, and ignore logs the action is about to remove.
+	if (plan.restore.some(({ collection }) => collection === 'habits')) {
+		const logs = new Map((await db.habitLogs.find().exec()).map((log) => [log.id, log.toMutableJSON()]));
+		for (const item of plan.remove) if (item.collection === 'habitLogs') logs.delete(item.id);
+		for (const item of plan.restore) {
+			if (item.collection === 'habitLogs') logs.set(String(item.doc.id), item.doc as never);
+		}
+		for (const { collection, doc } of plan.restore) {
+			if (collection !== 'habits' || typeof doc.startDate !== 'string') continue;
+			if ([...logs.values()].some((log) => log.habitId === doc.id && log.date < String(doc.startDate))) {
+				throw new Error('Cannot undo this start date: an earlier day has an entry.');
+			}
+		}
+	}
 
 	for (const { collection, doc } of plan.restore) {
-		await db[collection].upsert({ ...doc, updatedAt: ts } as never);
+		const restored = { ...doc, updatedAt: ts };
+		if (collection === 'habits' && !('startDate' in doc)) {
+			const current = await db.habits.findOne(String(doc.id)).exec();
+			if (current?.startDate) Object.assign(restored, { startDate: current.startDate });
+		}
+		if (collection === 'habits' && !('historyVersion' in doc)) {
+			const current = await db.habits.findOne(String(doc.id)).exec();
+			if (current?.historyVersion) Object.assign(restored, { historyVersion: current.historyVersion });
+		}
+		await db[collection].upsert(restored as never);
 	}
 	for (const { collection, id } of plan.remove) {
 		const doc = await db[collection].findOne(id).exec();

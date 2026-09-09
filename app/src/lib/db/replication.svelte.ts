@@ -22,7 +22,7 @@ let subscriptions: Subscription[] = [];
 let listenersInstalled = false;
 
 function headers() {
-	return { 'content-type': 'application/json' };
+	return { 'content-type': 'application/json', 'x-tohab-habit-history': '1' };
 }
 
 /**
@@ -98,6 +98,7 @@ function replicate(name: CollectionName, collection: never) {
 					unauthorized();
 					throw new Error('unauthorized');
 				}
+				if (res.status === 426) throw new Error('Update Tohab on all devices to sync habit history.');
 				if (!res.ok) throw new Error(`push ${name} failed: ${res.status}`);
 				const conflicts = await res.json();
 				if (conflicts.length) sync.conflicts += conflicts.length;

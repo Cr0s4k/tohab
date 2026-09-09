@@ -14,12 +14,14 @@ import { migrateTaskV2, migrateTaskV3, migrateTaskV4 } from './migrations.ts';
 import {
 	activitySchema,
 	habitLogSchema,
+	habitRevisionSchema,
 	habitSchema,
 	projectSchema,
 	taskSchema,
 	type Activity,
 	type Habit,
 	type HabitLog,
+	type HabitRevision,
 	type Project,
 	type Task
 } from './schemas.ts';
@@ -29,6 +31,7 @@ export type Collections = {
 	projects: RxCollection<Project>;
 	habits: RxCollection<Habit>;
 	habitLogs: RxCollection<HabitLog>;
+	habitRevisions: RxCollection<HabitRevision>;
 	activity: RxCollection<Activity>;
 };
 
@@ -70,7 +73,8 @@ async function create(): Promise<Db> {
 			migrationStrategies: { 1: (doc) => doc, 2: migrateTaskV2, 3: migrateTaskV3, 4: migrateTaskV4 }
 		},
 		projects: { schema: projectSchema },
-		habits: { schema: habitSchema },
+		habits: { schema: habitSchema, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
+		habitRevisions: { schema: habitRevisionSchema },
 		habitLogs: { schema: habitLogSchema },
 		activity: { schema: activitySchema }
 	});

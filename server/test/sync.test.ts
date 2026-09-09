@@ -110,6 +110,22 @@ check('habits are a separate stream', (await pull(0, '', 100, 'habits')).documen
 check('tasks unaffected', (await pull(0, '', 100)).documents.some((d) => d.id === 'h1'), false);
 
 // 10. Unknown collections are rejected rather than silently stored.
+await push([{ assumedMasterState: { id: 'h1', updatedAt: 700 }, newDocumentState: { id: 'h1', name: 'Water', startDate: '2026-09-09', updatedAt: 701 } }], 'habits');
+await push([{ assumedMasterState: { id: 'h1', updatedAt: 701 }, newDocumentState: { id: 'h1', name: 'Water renamed on old client', updatedAt: 702 } }], 'habits');
+check('old client cannot erase explicit habit start', (await pull(0, '', 100, 'habits')).documents.find((d) => d.id === 'h1').startDate, '2026-09-09');
+
+const historyHeaders = { ...headers, 'x-tohab-habit-history': '1' };
+const historyHabit = { id: 'history-habit', name: 'Read', historyVersion: 1, updatedAt: 900 };
+await fetch(`${BASE}/push`, { method: 'POST', headers: historyHeaders, body: JSON.stringify({ collection: 'habits', rows: [{ newDocumentState: historyHabit }] }) });
+const oldEdit = await fetch(`${BASE}/push`, { method: 'POST', headers, body: JSON.stringify({ collection: 'habits', rows: [{ assumedMasterState: historyHabit, newDocumentState: { id: historyHabit.id, name: 'Old client', updatedAt: 901, target: 999 } }] }) });
+check('old client cannot overwrite historical rules', oldEdit.status, 426);
+const oldLog = await fetch(`${BASE}/push`, { method: 'POST', headers, body: JSON.stringify({ collection: 'habitLogs', rows: [{ newDocumentState: { id: 'history-log', habitId: historyHabit.id, date: '2026-09-09', value: 1, updatedAt: 901 } }] }) });
+check('old client cannot log against outdated rules', oldLog.status, 426);
+const revision = { id: 'revision-1', habitId: historyHabit.id, effectiveFrom: '2026-09-10', target: 20, updatedAt: 902 };
+const revisionPush = await fetch(`${BASE}/push`, { method: 'POST', headers: historyHeaders, body: JSON.stringify({ collection: 'habitRevisions', rows: [{ newDocumentState: revision }] }) });
+check('compatible client can sync revisions', revisionPush.status, 200);
+check('revision date round-trips', (await pull(0, '', 100, 'habitRevisions')).documents[0].effectiveFrom, '2026-09-10');
+
 const bad = await fetch(`${BASE}/pull?collection=evil`, { headers });
 check('unknown collection rejected', bad.status, 400);
 

@@ -2,23 +2,39 @@
 	import { goto } from '$app/navigation';
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
-	import type { Habit, HabitLog } from '$lib/db/schemas';
-	import { habitsQuery, logsQuery, periodTarget } from '$lib/habits';
-	import { today } from '$lib/dates';
+	import type { Habit, HabitLog, HabitRevision } from '$lib/db/schemas';
+	import { groupLogs, habitStartDate, habitsQuery, isActiveOn, logsQuery, periodTarget, revisionsQuery } from '$lib/habits';
+	import { humanDay, today } from '$lib/dates';
+	import { habitOn, withHabitHistory } from '$lib/habitHistory';
 	import { buildHabitProgress, percentage } from '$lib/habitProgress';
 	import { settings } from '$lib/settings.svelte';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import ProgressRing from '$lib/components/ProgressRing.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
 
+	function plainDoc<T>(doc: T): T {
+		const candidate = doc as T & { toMutableJSON?: () => T };
+		return typeof candidate.toMutableJSON === 'function' ? candidate.toMutableJSON() : doc;
+	}
+
 	let todayKey = $derived(today());
 
-	let habits = rx<Habit[]>(() => (live.db ? habitsQuery(live.db).$ : null), []);
+	let habitDocs = rx<Habit[]>(() => (live.db ? habitsQuery(live.db).$ : null), []);
+	let revisionDocs = rx<HabitRevision[]>(() => (live.db ? revisionsQuery(live.db).$ : null), []);
 	let logs = rx<HabitLog[]>(() => (live.db ? logsQuery(live.db).$ : null), []);
 
-	let progress = $derived(buildHabitProgress(habits.value, logs.value, settings.startOfWeek, todayKey));
+	let habits = $derived(
+		habitDocs.value.map((habit) =>
+			withHabitHistory(plainDoc(habit), revisionDocs.value.map((revision) => plainDoc(revision)))
+		)
+	);
+	let progress = $derived(buildHabitProgress(habits, logs.value, settings.startOfWeek, todayKey));
 	let overview = $derived(progress.overview);
 	let rows = $derived(progress.rows);
+	let byHabit = $derived(groupLogs(logs.value));
+	let futureCount = $derived(
+		habits.filter((habit) => !isActiveOn(habit, todayKey, byHabit.get(habit.id))).length
+	);
 </script>
 
 <header class="z-20 shrink-0 border-b pt-safe" style:border-color="var(--product-library-divider-secondary)">
@@ -53,7 +69,7 @@
 </header>
 
 <main class="measure flex-1 px-4 py-4 pb-20">
-	{#if !habits.value.length}
+	{#if !habits.length}
 		<p class="dim measure px-8 py-14 text-center text-sm">
 			No habits yet. Add one from Habits to start tracking progress.
 		</p>
@@ -71,6 +87,9 @@
 					<p class="dim text-xs">
 						{overview.doneToday} of {overview.dueToday} due habits complete
 					</p>
+					{#if futureCount}
+						<p class="dim mt-1 text-caption">{futureCount} future {futureCount === 1 ? 'habit' : 'habits'} are shown below.</p>
+					{/if}
 					<p class="dim mt-1 text-caption">
 						Each scheduled day or week counts once.
 					</p>
@@ -103,36 +122,41 @@
 			<h2 class="dim mb-2 text-caption font-semibold tracking-wide uppercase">Habits</h2>
 			<div class="raised hairline overflow-hidden rounded-2xl border">
 				{#each rows as row (row.habit.id)}
+					{@const habitLogs = byHabit.get(row.habit.id) ?? new Map()}
+					{@const active = isActiveOn(row.habit, todayKey, habitLogs)}
+					{@const displayHabit = habitOn(row.habit, todayKey)}
 					<a
 						href="/habits/{row.habit.id}"
 						class="hairline flex items-center gap-3 border-b px-4 py-3 last:border-b-0"
 					>
 						<span
 							class="grid size-10 shrink-0 place-items-center rounded-xl text-lg"
-							style="background: color-mix(in oklch, {row.habit.color} 18%, transparent)"
+							style="background: color-mix(in oklch, {displayHabit.color} 18%, transparent)"
 						>
-							{row.habit.emoji}
+							{displayHabit.emoji}
 						</span>
 						<span class="min-w-0 flex-1">
 							<span class="block truncate text-body leading-snug">
-								{row.habit.name}
+								{displayHabit.name}
 							</span>
 							<span class="dim mt-0.5 block text-xs">
-								{row.current > 0
-									? `🔥 ${row.current} ${row.habit.scheduleKind === 'weekly' ? (row.current === 1 ? 'week' : 'weeks') : (row.current === 1 ? 'day' : 'days')}`
+								{!active
+									? `Starts ${humanDay(habitStartDate(row.habit, habitLogs))}`
+									: row.current > 0
+									? `🔥 ${row.current} ${displayHabit.scheduleKind === 'weekly' ? (row.current === 1 ? 'week' : 'weeks') : (row.current === 1 ? 'day' : 'days')}`
 									: 'Start your streak'}
-								· Best {row.best} · {row.month}% this month
+								{#if active} · Best {row.best} · {row.month}% this month{/if}
 							</span>
 						</span>
 						<ProgressRing
 							value={row.value}
-							target={periodTarget(row.habit)}
-							color={row.habit.color}
+							target={periodTarget(displayHabit)}
+							color={displayHabit.color}
 							size={44}
-							label={row.habit.goal === 'break' || row.habit.kind === 'quantity' || row.habit.scheduleKind === 'weekly'
-								? `${row.value}/${periodTarget(row.habit)}`
+							label={displayHabit.goal === 'break' || displayHabit.kind === 'quantity' || displayHabit.scheduleKind === 'weekly'
+								? `${row.value}/${periodTarget(displayHabit)}`
 								: ''}
-							invert={row.habit.goal === 'break'}
+							invert={displayHabit.goal === 'break'}
 						/>
 					</a>
 				{/each}
