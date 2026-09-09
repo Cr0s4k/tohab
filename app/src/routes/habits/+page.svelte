@@ -2,20 +2,24 @@
 	import { goto } from '$app/navigation';
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
-	import type { Habit, HabitLog } from '$lib/db/schemas';
+	import type { Habit, HabitLog, HabitRevision, HabitView } from '$lib/db/schemas';
 	import {
 		currentStreak,
 		groupLogs,
 		habitsQuery,
+		isActiveOn,
 		isDue,
 		isComplete,
 		logsQuery,
 		tapLog,
 		periodValue,
+		revisionsQuery,
 		updateHabit,
 		valueOn
 	} from '$lib/habits';
 	import { humanDay, shiftKey, today } from '$lib/dates';
+	import { habitOn, withHabitHistory } from '$lib/habitHistory';
+	import type { LogMap } from '$lib/streaks';
 	import { settings } from '$lib/settings.svelte';
 	import { habitCompose } from '$lib/compose.svelte';
 	import HabitRow from '$lib/components/HabitRow.svelte';
@@ -29,11 +33,16 @@
 	import { collapse, flipCfg } from '$lib/motion';
 	import { shouldAnimateList } from '$lib/pwa';
 
+	function plainDoc<T>(doc: T): T {
+		const candidate = doc as T & { toMutableJSON?: () => T };
+		return typeof candidate.toMutableJSON === 'function' ? candidate.toMutableJSON() : doc;
+	}
+
 	let offset = $state(0);
 	let showArchived = $state(false);
 	let restoring = $state('');
 	let archiveError = $state('');
-	let logEntry = $state<{ habit: Habit; day: string; value: number } | null>(null);
+	let logEntry = $state<{ habit: HabitView; day: string; value: number; logs: LogMap } | null>(null);
 
 	async function restore(habit: Habit) {
 		if (restoring) return;
@@ -45,26 +54,33 @@
 	}
 
 	function logHabit(habit: Habit, value: number) {
-		if (habit.kind === 'quantity') logEntry = { habit, day, value };
+		if (habit.kind === 'quantity') logEntry = { habit, day, value, logs: byHabit.get(habit.id) ?? new Map() };
 		else void tapLog(habit, day, value);
 	}
 
 	let day = $derived(shiftKey(today(), offset));
 
-	let habits = rx<Habit[]>(() => (live.db ? habitsQuery(live.db, true).$ : null), []);
+	let habitDocs = rx<Habit[]>(() => (live.db ? habitsQuery(live.db, true).$ : null), []);
+	let revisionDocs = rx<HabitRevision[]>(() => (live.db ? revisionsQuery(live.db).$ : null), []);
 	let logs = rx<HabitLog[]>(() => (live.db ? logsQuery(live.db).$ : null), []);
 
+	let habits = $derived(
+		habitDocs.value.map((habit) =>
+			withHabitHistory(plainDoc(habit), revisionDocs.value.map((revision) => plainDoc(revision)))
+		)
+	);
 	let byHabit = $derived(groupLogs(logs.value));
 
-	let active = $derived(habits.value.filter((h) => !h.archived));
-	let archived = $derived(habits.value.filter((h) => h.archived));
-	let due = $derived(active.filter((h) => isDue(h, day)));
-	let rest = $derived(active.filter((h) => !isDue(h, day)));
+	let active = $derived(habits.filter((h) => !h.archived));
+	let available = $derived(active.map((h) => habitOn(h, day)).filter((h) => isActiveOn(h, day, byHabit.get(h.id))));
+	let archived = $derived(habits.filter((h) => h.archived));
+	let due = $derived(available.filter((h) => isDue(h, day, byHabit.get(h.id))));
+	let rest = $derived(available.filter((h) => !isDue(h, day, byHabit.get(h.id))));
 	let buildDue = $derived(due.filter((h) => h.goal !== 'break'));
 	let buildRest = $derived(rest.filter((h) => h.goal !== 'break'));
 	let breakDue = $derived(due.filter((h) => h.goal === 'break'));
 	let breakRest = $derived(rest.filter((h) => h.goal === 'break'));
-	let listFlipCfg = $derived(shouldAnimateList(habits.value.length) ? flipCfg : { duration: 0 });
+	let listFlipCfg = $derived(shouldAnimateList(habits.length) ? flipCfg : { duration: 0 });
 
 	let doneCount = $derived(
 		due.filter((h) => isComplete(h, byHabit.get(h.id) ?? new Map(), day, settings.startOfWeek)).length
@@ -180,6 +196,11 @@
 		<div class="measure px-8 py-14 text-center">
 			<p class="dim text-sm">No habits yet.</p>
 		</div>
+	{:else if !sections.length}
+		<div class="measure px-8 py-14 text-center">
+			<p class="dim text-sm">No habits scheduled for {humanDay(day)}.</p>
+			<p class="dim mt-2 text-xs">Future habits appear here when they start.</p>
+		</div>
 	{:else}
 		{#each sections as section}
 			<section
@@ -195,7 +216,7 @@
 
 				{#each section.due as habit (habit.id)}
 					{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
-					<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.value.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
+					<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
 						<HabitRow
 							{habit}
 							value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
@@ -215,7 +236,7 @@
 					</h3>
 					{#each section.rest as habit (habit.id)}
 						{@const habitLogs = byHabit.get(habit.id) ?? new Map()}
-						<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.value.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
+						<div data-list-item transition:collapse={{ duration: shouldAnimateList(habits.length) ? 240 : 0 }} animate:flip={listFlipCfg}>
 							<HabitRow
 								{habit}
 								value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
@@ -236,7 +257,7 @@
 
 <HabitEditor
 	open={habitCompose.open}
-	nextColor={habits.value.length}
+	nextColor={habits.length}
 	onClose={() => (habitCompose.open = false)}
 />
 

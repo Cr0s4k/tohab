@@ -35,6 +35,10 @@ export type HabitGoal = 'build' | 'break';
 
 export type Habit = {
 	id: string;
+	/** Local calendar day; absent on legacy records with inferred history. */
+	startDate?: string;
+	/** Older clients must not overwrite habits with dated tracking rules. */
+	historyVersion?: number;
 	name: string;
 	emoji: string;
 	color: string;
@@ -49,6 +53,17 @@ export type Habit = {
 	createdAt: number;
 	updatedAt: number;
 };
+
+export type HabitRules = Pick<Habit, 'goal' | 'kind' | 'target' | 'unit' | 'scheduleKind' | 'weekdays' | 'timesPerWeek'>;
+export type HabitRevision = HabitRules & {
+	id: string;
+	habitId: string;
+	effectiveFrom: string;
+	createdAt: number;
+	updatedAt: number;
+};
+/** Read model only: revisions are stored in their own collection. */
+export type HabitView = Habit & { revisions?: HabitRevision[] };
 
 /** One row per habit per local calendar day. id is `${habitId}:${date}`. */
 export type HabitLog = {
@@ -150,11 +165,13 @@ export const projectSchema: RxJsonSchema<Project> = {
 
 export const habitSchema: RxJsonSchema<Habit> = {
 	title: 'habit',
-	version: 0,
+	version: 2,
 	primaryKey: 'id',
 	type: 'object',
 	properties: {
 		id: { type: 'string', maxLength: 40 },
+		startDate: { type: 'string', maxLength: 10, pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+		historyVersion: { type: 'number', enum: [1] },
 		name: { type: 'string' },
 		emoji: { type: 'string', maxLength: 8 },
 		color: { type: 'string', maxLength: 24 },
@@ -203,6 +220,29 @@ export const habitLogSchema: RxJsonSchema<HabitLog> = {
 	indexes: [['habitId', 'date'], ['date'], ['updatedAt']]
 };
 
+export const habitRevisionSchema: RxJsonSchema<HabitRevision> = {
+	title: 'habit revision',
+	version: 0,
+	primaryKey: 'id',
+	type: 'object',
+	properties: {
+		id: { type: 'string', maxLength: 40 },
+		habitId: { type: 'string', maxLength: 40 },
+		effectiveFrom: { type: 'string', maxLength: 10, pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+		goal: { type: 'string', enum: ['build', 'break'], maxLength: 5 },
+		kind: { type: 'string', enum: ['binary', 'quantity'], maxLength: 10 },
+		target: { type: 'number', minimum: 0, maximum: 10000, multipleOf: 1 },
+		unit: { type: 'string', maxLength: 24 },
+		scheduleKind: { type: 'string', enum: ['daily', 'weekdays', 'weekly'], maxLength: 10 },
+		weekdays: { type: 'array', items: { type: 'number', minimum: 0, maximum: 6 } },
+		timesPerWeek: { type: 'number', minimum: 1, maximum: 7, multipleOf: 1 },
+		createdAt: TS,
+		updatedAt: TS
+	},
+	required: ['id', 'habitId', 'effectiveFrom', 'goal', 'kind', 'target', 'unit', 'scheduleKind', 'weekdays', 'timesPerWeek', 'createdAt', 'updatedAt'],
+	indexes: [['habitId', 'effectiveFrom'], ['updatedAt']]
+};
+
 export const activitySchema: RxJsonSchema<Activity> = {
 	title: 'activity',
 	version: 0,
@@ -244,7 +284,7 @@ export const activitySchema: RxJsonSchema<Activity> = {
 	indexes: [['at'], ['updatedAt']]
 };
 
-export const COLLECTION_NAMES = ['tasks', 'projects', 'habits', 'habitLogs', 'activity'] as const;
+export const COLLECTION_NAMES = ['tasks', 'projects', 'habits', 'habitRevisions', 'habitLogs', 'activity'] as const;
 export type CollectionName = (typeof COLLECTION_NAMES)[number];
 
 /** Every collection the activity log can restore a document into — that is, not itself. */

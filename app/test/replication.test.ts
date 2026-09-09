@@ -14,6 +14,7 @@ import { Subject } from 'rxjs';
 import {
 	activitySchema,
 	habitLogSchema,
+	habitRevisionSchema,
 	habitSchema,
 	projectSchema,
 	taskSchema,
@@ -21,6 +22,7 @@ import {
 } from '../src/lib/db/schemas.ts';
 import { migrateTaskV2, migrateTaskV3, migrateTaskV4 } from '../src/lib/db/migrations.ts';
 import { createReporter } from '../../test/assertions.ts';
+import { habitOn, withHabitHistory } from '../src/lib/habitHistory.ts';
 
 import { cleanup, signIn } from './auth.ts';
 
@@ -44,14 +46,15 @@ async function makeDb(name: string) {
 	await db.addCollections({
 		tasks: { schema: taskSchema, migrationStrategies: { 1: (doc) => doc, 2: migrateTaskV2, 3: migrateTaskV3, 4: migrateTaskV4 } },
 		projects: { schema: projectSchema },
-		habits: { schema: habitSchema },
+		habits: { schema: habitSchema, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
+		habitRevisions: { schema: habitRevisionSchema },
 		habitLogs: { schema: habitLogSchema },
 		activity: { schema: activitySchema }
 	});
 	return db;
 }
 
-const headers = { 'content-type': 'application/json', cookie: (await signIn('rxtest')).cookie };
+const headers = { 'content-type': 'application/json', 'x-tohab-habit-history': '1', cookie: (await signIn('rxtest')).cookie };
 
 function startReplication(db: any, name: string) {
 	const stream$ = new Subject<any>();
@@ -117,6 +120,8 @@ check('schemas accepted by RxDB dev-mode', COLLECTION_NAMES.every((n) => Boolean
 // A habit with every schema field exercised, so enum/index constraints are proven.
 await deviceA.habits.insert({
 	id: 'h1',
+	startDate: '2026-08-19',
+	historyVersion: 1,
 	name: 'Drink water',
 	emoji: '💧',
 	color: 'oklch(0.65 0.16 250)',
@@ -137,6 +142,14 @@ await deviceA.habitLogs.insert({
 	date: '2026-08-19',
 	value: 8,
 	updatedAt: Date.now()
+});
+await deviceA.habitRevisions.insert({
+	id: 'h1', habitId: 'h1', effectiveFrom: '0001-01-01', goal: 'build', kind: 'quantity', target: 8, unit: 'glasses',
+	scheduleKind: 'weekdays', weekdays: [1, 2, 3, 4, 5], timesPerWeek: 3, createdAt: 0, updatedAt: Date.now()
+});
+await deviceA.habitRevisions.insert({
+	id: 'h1-new-target', habitId: 'h1', effectiveFrom: '2026-08-20', goal: 'build', kind: 'quantity', target: 12, unit: 'glasses',
+	scheduleKind: 'weekdays', weekdays: [1, 2, 3, 4, 5], timesPerWeek: 3, createdAt: Date.now(), updatedAt: Date.now()
 });
 await deviceA.tasks.insert(task('a1', { title: 'From A', priority: 1, due: '2026-08-20' }));
 await deviceA.tasks.insert(task('a1-child', { title: 'Synced subtask', parentId: 'a1' }));
@@ -171,6 +184,9 @@ await Promise.all(replB.map((r) => r.state.awaitInSync()));
 check('B received the task', (await deviceB.tasks.find().exec()).map((d: any) => d.title).sort(), ['From A', 'Synced subtask']);
 check('B received parentId', (await deviceB.tasks.findOne('a1-child').exec())?.parentId, 'a1');
 check('B received the habit target', (await deviceB.habits.findOne('h1').exec())?.target, 8);
+check('B received the local habit start date', (await deviceB.habits.findOne('h1').exec())?.startDate, '2026-08-19');
+check('B received baseline and revised rules', (await deviceB.habitRevisions.find().exec()).length, 2);
+check('B received dated target', (await deviceB.habitRevisions.findOne('h1-new-target').exec())?.target, 12);
 check('B received the weekdays array', (await deviceB.habits.findOne('h1').exec())?.weekdays, [1, 2, 3, 4, 5]);
 check('B received the log', (await deviceB.habitLogs.findOne('h1:2026-08-19').exec())?.value, 8);
 
@@ -209,6 +225,27 @@ await Promise.all(replB.map((r) => r.state.awaitInSync()));
 check('queued offline write flushed after reconnect', (await deviceB.tasks.findOne('a3').exec())?.title, 'Written while offline');
 
 await Promise.all([...replA2, ...replB].map((r) => r.state.cancel()));
+
+// Concurrent offline rule edits have distinct ids, so both survive replication.
+// Their deterministic date/time/id order must select the same winner on both devices.
+const offlineRule = { habitId: 'h1', effectiveFrom: '2026-09-01', goal: 'build', kind: 'quantity', unit: 'glasses',
+	scheduleKind: 'daily', weekdays: [], timesPerWeek: 3, createdAt: Date.now() + 100, updatedAt: Date.now() + 100 };
+await deviceA.habitRevisions.insert({ ...offlineRule, id: 'offline-a', target: 16 });
+await deviceB.habitRevisions.insert({ ...offlineRule, id: 'offline-b', target: 20 });
+const historyA = startReplication(deviceA, 'habitRevisions');
+const historyB = startReplication(deviceB, 'habitRevisions');
+await Promise.all([historyA.state.awaitInSync(), historyB.state.awaitInSync()]);
+historyA.stream$.next('RESYNC');
+historyB.stream$.next('RESYNC');
+await Promise.all([historyA.state.awaitInSync(), historyB.state.awaitInSync()]);
+for (const [label, device] of [['A', deviceA], ['B', deviceB]] as const) {
+	const revisions = (await device.habitRevisions.find().exec()).map((revision: any) => revision.toMutableJSON());
+	const habit = (await device.habits.findOne('h1').exec())!.toMutableJSON();
+	check(`${label} retains both offline revisions`, revisions.length, 4);
+	check(`${label} selects the same offline target`, habitOn(withHabitHistory(habit, revisions), '2026-09-02').target, 20);
+	check(`${label} keeps the earlier historical target`, habitOn(withHabitHistory(habit, revisions), '2026-08-19').target, 8);
+}
+await Promise.all([historyA.state.cancel(), historyB.state.cancel()]);
 await deviceA.close();
 await deviceB.close();
 

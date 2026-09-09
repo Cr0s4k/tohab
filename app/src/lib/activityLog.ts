@@ -68,7 +68,7 @@ export function isRevertible(entry: Activity): boolean {
 	return entry.revertedAt === 0 && decodeChanges(entry.changes).length > 0;
 }
 
-const IGNORED_FIELDS = new Set(['createdAt', 'updatedAt']);
+const IGNORED_FIELDS = new Set(['createdAt', 'updatedAt', 'historyVersion']);
 
 const FIELD_LABELS: Record<string, string> = {
 	title: 'title',
@@ -82,6 +82,7 @@ const FIELD_LABELS: Record<string, string> = {
 	projectId: 'project',
 	parentId: 'parent',
 	name: 'name',
+	startDate: 'start date',
 	color: 'colour',
 	emoji: 'emoji',
 	goal: 'goal',

@@ -1,5 +1,5 @@
 import type { DayKey } from './dates.ts';
-import type { Habit, HabitLog } from './db/schemas.ts';
+import type { HabitLog, HabitView } from './db/schemas.ts';
 import {
 	bestStreak,
 	completionRate,
@@ -15,7 +15,7 @@ export function percentage(done: number, due: number) {
 	return due === 0 ? 0 : Math.round((done / due) * 100);
 }
 
-function windowStats(habits: Habit[], byHabit: Map<string, LogMap>, days: number, today: DayKey, weekStartsOn: 0 | 1) {
+function windowStats(habits: HabitView[], byHabit: Map<string, LogMap>, days: number, today: DayKey, weekStartsOn: 0 | 1) {
 	let due = 0;
 	let done = 0;
 	for (const habit of habits) {
@@ -38,13 +38,13 @@ function groupLogs(logs: HabitLog[]) {
 }
 
 export function buildHabitProgress(
-	habits: Habit[],
+	habits: HabitView[],
 	logs: HabitLog[],
 	weekStartsOn: 0 | 1,
 	today: DayKey
 ) {
 	const byHabit = groupLogs(logs);
-	const dueToday = habits.filter((habit) => isDue(habit, today));
+	const dueToday = habits.filter((habit) => isDue(habit, today, byHabit.get(habit.id)));
 	const doneToday = dueToday.filter((habit) =>
 		isComplete(habit, byHabit.get(habit.id) ?? new Map(), today, weekStartsOn)
 	).length;

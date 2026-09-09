@@ -2,7 +2,7 @@ import { and, asc, eq, gt, max, or, sql } from 'drizzle-orm';
 import { db, type Executor } from '../db.ts';
 import { docs, type DocRow } from '../schema.ts';
 
-export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitLogs', 'activity']);
+export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitRevisions', 'habitLogs', 'activity']);
 
 export async function liveDocs(userId: string, collection: string): Promise<DocRow[]> {
 	return db

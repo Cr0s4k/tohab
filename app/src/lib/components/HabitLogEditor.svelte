@@ -1,15 +1,17 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import type { Habit } from '$lib/db/schemas';
+	import type { HabitView } from '$lib/db/schemas';
 	import { setLog } from '$lib/habits';
 	import { humanDay } from '$lib/dates';
+	import { habitStartDate, isActiveOn, type LogMap } from '$lib/streaks';
 	import Sheet from './Sheet.svelte';
 
-	let { habit, day, value, onClose }: { habit: Habit; day: string; value: number; onClose: () => void } = $props();
+	let { habit, day, value, logs = new Map(), onClose }: { habit: HabitView; day: string; value: number; logs?: LogMap; onClose: () => void } = $props();
 	let draft = $state(untrack(() => value));
 	let saving = $state(false);
 	let error = $state('');
-	let valid = $derived(Number.isInteger(draft) && draft >= 0 && draft <= 10000);
+	let active = $derived(isActiveOn(habit, day, logs));
+	let valid = $derived(active && Number.isInteger(draft) && draft >= 0 && draft <= 10000);
 
 	async function save() {
 		if (!valid || saving) return;
@@ -18,8 +20,8 @@
 		try {
 			await setLog(habit, day, draft);
 			onClose();
-		} catch {
-			error = 'Could not save this entry. Please try again.';
+		} catch (caught) {
+			error = caught instanceof Error && caught.message ? caught.message : 'Could not save this entry. Please try again.';
 		} finally { saving = false; }
 	}
 </script>
@@ -27,7 +29,9 @@
 <Sheet open title={habit.name} confirmLabel="Cancel" onClose={() => { if (!saving) onClose(); }}>
 	<form onsubmit={(event) => { event.preventDefault(); save(); }} class="space-y-4">
 		<p class="text-sm font-semibold">{humanDay(day)}</p>
-		{#if habit.kind === 'binary'}
+		{#if !active}
+			<p class="dim text-sm">This habit starts on {humanDay(habitStartDate(habit, logs))}. Edit the start date to backfill this day.</p>
+		{:else if habit.kind === 'binary'}
 			<label class="flex min-h-11 items-center gap-3 text-sm">
 				<input type="checkbox" checked={draft >= habit.target} onchange={(event) => (draft = event.currentTarget.checked ? habit.target : 0)} />
 				Completed this day
