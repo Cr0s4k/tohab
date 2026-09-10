@@ -191,36 +191,35 @@
 		<TodaySummary />
 	{/if}
 	{#if view === 'today' && overdueCount > 0}
-		<div class="sunken measure mx-4 my-3 rounded-2xl border px-4 py-3">
-			<div class="flex items-start gap-3">
-				<div class="min-w-0 flex-1">
+		<div class="px-4">
+			<div class="sunken measure my-3 rounded-2xl border px-4 py-3">
+				<div class="min-w-0">
 					<p class="danger text-sm font-semibold">{overdueCount} overdue {overdueCount === 1 ? 'task' : 'tasks'}</p>
-					<p class="dim mt-0.5 text-xs">Move them out of today’s list to keep it actionable.</p>
+					<p class="dim mt-0.5 text-xs">Move them out of Today to keep this list actionable.</p>
+				</div>
+				<div class="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+					<label class="min-w-0 text-xs">
+						<span class="dim mb-1 block">Move overdue tasks to</span>
+						<input
+							type="date"
+							aria-label="Move overdue tasks to"
+							min={shiftKey(today(), 1)}
+							bind:value={carryOverTarget}
+							disabled={carryingOver}
+							class="sunken min-h-11 w-full min-w-0 rounded-xl px-3 py-2 text-copy outline-none disabled:opacity-50"
+						/>
+					</label>
+					<button
+						type="button"
+						class="tap accent-bg min-h-11 shrink-0 rounded-xl px-3 py-2 text-xs font-semibold disabled:opacity-40"
+						disabled={carryingOver || !isValidKey(carryOverTarget) || carryOverTarget <= today()}
+						aria-label={`Move ${overdueCount} overdue ${overdueCount === 1 ? 'task' : 'tasks'} to ${carryOverTargetLabel}`}
+						onclick={() => void carryOver()}
+					>
+						{carryingOver ? 'Moving…' : 'Move'}
+					</button>
 				</div>
 			</div>
-			<div class="mt-3 flex items-center gap-2">
-				<label class="dim flex min-w-0 flex-1 items-center gap-2 text-xs">
-					<span class="shrink-0">Move to</span>
-					<input
-						type="date"
-						aria-label="Move overdue tasks to"
-						min={shiftKey(today(), 1)}
-						bind:value={carryOverTarget}
-						disabled={carryingOver}
-						class="sunken min-h-11 min-w-0 flex-1 rounded-xl px-3 py-2 text-copy outline-none disabled:opacity-50"
-					/>
-				</label>
-				<button
-					type="button"
-					class="tap accent-bg shrink-0 rounded-xl px-3 py-2 text-xs font-semibold disabled:opacity-40"
-					disabled={carryingOver || !isValidKey(carryOverTarget) || carryOverTarget <= today()}
-					aria-label={`Move ${overdueCount} overdue ${overdueCount === 1 ? 'task' : 'tasks'} to ${carryOverTargetLabel}`}
-					onclick={() => void carryOver()}
-				>
-					{carryingOver ? 'Moving…' : 'Move'}
-				</button>
-			</div>
-			<p class="dim mt-1 text-xs">{carryOverTargetLabel}. Choose any date after today.</p>
 		</div>
 	{/if}
 	{#if tasks.loading && !tasks.value.length}
@@ -256,20 +255,22 @@
 		<p class="dim measure px-4 py-4 text-center text-caption md:hidden">Swipe a task right to complete, left to delete</p>
 	{/if}
 	{#if view === 'today' && !tasks.loading && (todayOpenCount > 0 || todayDoneCount > 0)}
-		<details class="hairline measure mx-4 mt-4 rounded-2xl border">
-			<summary class="tap flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 text-sm font-semibold">
-				<span class="min-w-0 flex-1">What remains today?</span>
-				<span class="dim text-xs font-normal tabular-nums">{todayOpenCount} open · {todayDoneCount} done</span>
-			</summary>
-			<div class="hairline border-t px-4 py-3 text-xs">
-				{#if todayOpenCount}
-					<p>{todayOpenCount} {todayOpenCount === 1 ? 'task is' : 'tasks are'} still open, including {overdueCount} overdue.</p>
-				{:else}
-					<p class="accent-fg">Your task list is clear.</p>
-				{/if}
-				<a href="/habits" class="accent-fg mt-2 inline-block font-semibold">Review today’s habits →</a>
-			</div>
-		</details>
+		<div class="px-4">
+			<details class="hairline measure mt-4 rounded-2xl border">
+				<summary class="tap flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 text-sm font-semibold">
+					<span class="min-w-0 flex-1">What remains today?</span>
+					<span class="dim shrink-0 text-xs font-normal tabular-nums">{todayOpenCount} open · {todayDoneCount} done</span>
+				</summary>
+				<div class="hairline border-t px-4 py-3 text-xs">
+					{#if todayOpenCount}
+						<p>{todayOpenCount} {todayOpenCount === 1 ? 'task is' : 'tasks are'} still open, including {overdueCount} overdue.</p>
+					{:else}
+						<p class="accent-fg">Your task list is clear.</p>
+					{/if}
+					<a href="/habits" class="accent-fg mt-2 inline-block font-semibold">Review today’s habits →</a>
+				</div>
+			</details>
+		</div>
 	{/if}
 </main>
 
