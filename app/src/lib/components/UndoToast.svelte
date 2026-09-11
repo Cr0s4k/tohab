@@ -48,7 +48,7 @@
 		</div>
 	{:else}
 		<div
-			class="absolute bottom-20 left-4 z-40 md:hidden"
+			class="undo-float absolute bottom-full z-40 mb-4 md:hidden"
 			role="status"
 			aria-live="polite"
 			transition:veil
@@ -56,14 +56,14 @@
 			<button
 				type="button"
 				onclick={runUndo}
-				class="tap raised hairline flex items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left shadow-lg"
+				class="tap raised hairline flex max-w-full items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left shadow-lg"
 			>
-				<span class="accent-fg grid size-7 place-items-center">
+				<span class="accent-fg grid size-7 shrink-0 place-items-center">
 					{@render icon()}
 				</span>
 				<span class="min-w-0">
 					<span class="block text-sm font-semibold">Undo</span>
-					<span class="dim block text-xs">{current.label}</span>
+					<span class="dim block text-xs break-words">{current.label}</span>
 				</span>
 			</button>
 		</div>
@@ -71,6 +71,11 @@
 {/if}
 
 <style>
+	.undo-float {
+		left: max(1rem, env(safe-area-inset-left, 0px));
+		right: max(1rem, env(safe-area-inset-right, 0px));
+	}
+
 	.undo-inline {
 		background: var(--surface-sunken);
 	}
