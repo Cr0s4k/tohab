@@ -4,13 +4,31 @@ import type { Habit, HabitGoal, HabitLog, HabitKind, HabitRevision, ScheduleKind
 import { markLocalWrite } from './db/syncState.svelte.ts';
 import { HABIT_COLORS, habitStartDate, isPausedOn, logId, type LogMap } from './streaks.ts';
 import { humanDay, isValidKey, today, type DayKey } from './dates.ts';
-import { applyRevert, changeSummary, record, revertActivity, type DocChange } from './activity.ts';
+import {
+	applyRevert,
+	changeSummary,
+	record,
+	revertActivity,
+	type DocChange,
+	type RecordInput
+} from './activity.ts';
 import { now, uid } from './ids.ts';
 import { queueUndo } from './undo.svelte.ts';
 import { habitForEdit, habitOn, habitRules, RULE_FIELDS, ruleChangeDate, rulesEqual, withHabitHistory } from './habitHistory.ts';
 
 export * from './streaks.ts';
 export * from './habitHistory.ts';
+
+async function recordWithUndo(input: RecordInput, label: string) {
+	const entryId = await record(input);
+	queueUndo({
+		label,
+		restore: async () => {
+			if (entryId) await revertActivity(entryId);
+			else await applyRevert(input.changes);
+		}
+	});
+}
 
 export function habitsQuery(db: Db, includeArchived = false) {
 	const selector = includeArchived ? {} : { archived: false };
@@ -111,16 +129,19 @@ export async function createHabit(input: HabitInput) {
 		throw error;
 	}
 	markLocalWrite();
-	await record({
-		entity: 'habit',
-		entityId: doc.id,
-		verb: 'create',
-		subject: doc.name,
-		changes: [
-			{ collection: 'habits', id: doc.id, before: null, after: doc },
-			{ collection: 'habitRevisions', id: baseline.id, before: null, after: baseline }
-		]
-	});
+	await recordWithUndo(
+		{
+			entity: 'habit',
+			entityId: doc.id,
+			verb: 'create',
+			subject: doc.name,
+			changes: [
+				{ collection: 'habits', id: doc.id, before: null, after: doc },
+				{ collection: 'habitRevisions', id: baseline.id, before: null, after: baseline }
+			]
+		},
+		`Habit created · ${doc.name}`
+	);
 	return doc;
 }
 
@@ -206,14 +227,17 @@ export async function updateHabit(id: string, patch: Partial<Habit>, options: { 
 	const detail = changeSummary({ ...before, ...previousRules }, { ...after, ...nextRules });
 	if (!detail) return;
 	const archiveToggled = before.archived !== after.archived;
-	await record({
-		entity: 'habit',
-		entityId: id,
-		verb: archiveToggled ? (after.archived ? 'archive' : 'restore') : 'update',
-		subject: after.name,
-		detail: archiveToggled ? '' : `${detail}${effectiveFrom ? ` · From ${humanDay(effectiveFrom)}` : ''}`,
-		changes: [{ collection: 'habits', id, before, after }, ...revisionChanges]
-	});
+	await recordWithUndo(
+		{
+			entity: 'habit',
+			entityId: id,
+			verb: archiveToggled ? (after.archived ? 'archive' : 'restore') : 'update',
+			subject: after.name,
+			detail: archiveToggled ? '' : `${detail}${effectiveFrom ? ` · From ${humanDay(effectiveFrom)}` : ''}`,
+			changes: [{ collection: 'habits', id, before, after }, ...revisionChanges]
+		},
+		`Habit ${archiveToggled ? (after.archived ? 'archived' : 'restored') : 'updated'} · ${after.name}`
+	);
 }
 
 export async function deleteHabit(id: string) {
@@ -241,23 +265,19 @@ export async function deleteHabit(id: string) {
 			after: null
 		}))
 	];
-	const entryId = await record({
-		entity: 'habit',
-		entityId: id,
-		verb: 'delete',
-		subject: habit.name,
-		detail: entries.length
-			? `${entries.length} logged day${entries.length === 1 ? '' : 's'} removed`
-			: '',
-		changes
-	});
-	queueUndo({
-		label: `Habit deleted · ${habit.name}`,
-		restore: async () => {
-			if (entryId) await revertActivity(entryId);
-			else await applyRevert(changes);
-		}
-	});
+	await recordWithUndo(
+		{
+			entity: 'habit',
+			entityId: id,
+			verb: 'delete',
+			subject: habit.name,
+			detail: entries.length
+				? `${entries.length} logged day${entries.length === 1 ? '' : 's'} removed`
+				: '',
+			changes
+		},
+		`Habit deleted · ${habit.name}`
+	);
 }
 
 function logDetail(habit: Habit, date: DayKey, value: number): string {
@@ -286,34 +306,41 @@ export async function setLog(habit: Habit, date: DayKey, value: number) {
 	const id = logId(habit.id, date);
 	const existing = await db.habitLogs.findOne(id).exec();
 	const before = existing?.toMutableJSON() ?? null;
+	if ((before?.value ?? 0) === clamped) return;
 
 	if (clamped === 0) {
 		if (!existing) return;
 		await existing.remove();
 		markLocalWrite();
-		await record({
-			entity: 'habitLog',
-			entityId: id,
-			verb: 'delete',
-			subject: habit.name,
-			detail: logDetail(habit, date, 0),
-			changes: [{ collection: 'habitLogs', id, before, after: null }]
-		});
+		await recordWithUndo(
+			{
+				entity: 'habitLog',
+				entityId: id,
+				verb: 'delete',
+				subject: habit.name,
+				detail: logDetail(habit, date, 0),
+				changes: [{ collection: 'habitLogs', id, before, after: null }]
+			},
+			`Entry cleared · ${habit.name}`
+		);
 		return;
 	}
 
 	const after = { id, habitId: habit.id, date, value: clamped, updatedAt: now() };
 	await db.habitLogs.upsert(after);
 	markLocalWrite();
-	await record({
-		entity: 'habitLog',
-		entityId: id,
-		verb: 'log',
-		subject: habit.name,
-		detail: logDetail(habit, date, clamped),
-		changes: [{ collection: 'habitLogs', id, before, after }],
-		coalesce: true
-	});
+	await recordWithUndo(
+		{
+			entity: 'habitLog',
+			entityId: id,
+			verb: 'log',
+			subject: habit.name,
+			detail: logDetail(habit, date, clamped),
+			changes: [{ collection: 'habitLogs', id, before, after }],
+			coalesce: true
+		},
+		`Entry recorded · ${habit.name}`
+	);
 }
 
 /**

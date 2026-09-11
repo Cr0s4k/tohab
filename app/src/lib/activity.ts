@@ -22,6 +22,10 @@ export const ACTIVITY_LIMIT = 200;
 /** Repeated taps on the same thing — a habit counter climbing — record as one entry. */
 const COALESCE_MS = 10_000;
 
+// RxDB has no insertion-order sort. Remember the last activity write so entries created in
+// the same millisecond still coalesce with the action immediately before them.
+let lastWrittenActivityId: string | null = null;
+
 export function activityQuery(db: Db, limit = ACTIVITY_LIMIT) {
 	return db.activity.find({ sort: [{ at: 'desc' }], limit });
 }
@@ -42,7 +46,11 @@ export type RecordInput = {
 
 async function coalesceTarget(db: Db, input: RecordInput, at: number) {
 	if (!input.coalesce) return null;
-	const [latest] = await db.activity.find({ sort: [{ at: 'desc' }], limit: 1 }).exec();
+	const remembered = lastWrittenActivityId
+		? await db.activity.findOne(lastWrittenActivityId).exec()
+		: null;
+	const [latestByTime] = await db.activity.find({ sort: [{ at: 'desc' }], limit: 1 }).exec();
+	const latest = remembered && (!latestByTime || remembered.at >= latestByTime.at) ? remembered : latestByTime;
 	if (!latest || latest.revertedAt !== 0) return null;
 	if (at - latest.at > COALESCE_MS) return null;
 	if (latest.entity !== input.entity) return null;
@@ -87,6 +95,7 @@ async function write(input: RecordInput): Promise<string> {
 			changes: encodeChanges(mergeChanges(decodeChanges(target.changes), input.changes)),
 			updatedAt: at
 		});
+		lastWrittenActivityId = target.id;
 		return target.id;
 	}
 
@@ -103,6 +112,7 @@ async function write(input: RecordInput): Promise<string> {
 		updatedAt: at
 	};
 	await db.activity.insert(doc);
+	lastWrittenActivityId = doc.id;
 	await prune(db);
 	return doc.id;
 }
@@ -168,5 +178,6 @@ export async function clearActivity() {
 	const db = await getDb();
 	const entries = await db.activity.find().exec();
 	await Promise.all(entries.map((d) => d.remove()));
+	lastWrittenActivityId = null;
 	if (entries.length) markLocalWrite();
 }
