@@ -5,7 +5,7 @@
 	import { playComplete } from '$lib/sound';
 	import { priorityClass } from '$lib/tasks';
 	import { describeRepeat, isRepeating } from '$lib/repeat';
-	import { isDesktop } from '$lib/viewport';
+	import { swipeRow } from '$lib/swipeRow';
 	import type { SubtaskProgress } from '$lib/taskViews';
 
 	let {
@@ -29,10 +29,7 @@
 	let dx = $state(0);
 	let dragging = $state(false);
 	let armed = $state(false);
-	let pointerId: number | undefined;
 	let returnFrame: number | undefined;
-	let start = { x: 0, y: 0 };
-	let axis = $state<'none' | 'x' | 'y'>('none');
 
 	let overdue = $derived(!task.done && !!task.due && daysFromToday(task.due) < 0);
 	let repeats = $derived(isRepeating(task.repeat));
@@ -44,34 +41,13 @@
 		onToggle();
 	}
 
-	function down(e: PointerEvent) {
-		if (isDesktop()) return;
+	function move(offset: number) {
 		if (returnFrame !== undefined) {
 			cancelAnimationFrame(returnFrame);
 			returnFrame = undefined;
-			dx = 0;
 		}
-		if (dragging) { cancel(); return; }
-		if (!e.isPrimary && e.isTrusted) return;
-		if (e.pointerType === 'mouse' && e.button !== 0) return;
-		pointerId = e.pointerId;
-		start = { x: e.clientX, y: e.clientY };
-		axis = 'none';
 		dragging = true;
-	}
-
-	function move(e: PointerEvent) {
-		if (!dragging || e.pointerId !== pointerId) return;
-		const mx = e.clientX - start.x;
-		const my = e.clientY - start.y;
-		if (axis === 'none') {
-			// Give scrolling priority; diagonal intent never becomes a swipe later.
-			if (Math.abs(my) >= 10 && Math.abs(mx) < Math.abs(my) * 2) axis = 'y';
-			else if (Math.abs(mx) >= 24 && Math.abs(mx) >= Math.abs(my) * 2) axis = 'x';
-			else return;
-		}
-		if (axis !== 'x') return;
-		dx = mx;
+		dx = offset;
 		const nowArmed = Math.abs(dx) > THRESHOLD;
 		if (nowArmed !== armed) {
 			armed = nowArmed;
@@ -82,10 +58,8 @@
 	function cancel(animate = true) {
 		const offset = dx;
 		const shouldAnimate = animate && dragging && offset !== 0;
-		pointerId = undefined;
 		dragging = false;
 		armed = false;
-		axis = 'none';
 		if (shouldAnimate) {
 			/*
 			 * Commit the released state with the current offset first. If the
@@ -101,18 +75,13 @@
 		}
 	}
 
-	function up(e: PointerEvent) {
-		if (!dragging || e.pointerId !== pointerId) return;
-		move(e);
-		const settled = dx;
-		const horizontal = axis === 'x';
-		const committed = horizontal && (settled > THRESHOLD || settled < -THRESHOLD);
+	function release(offset: number) {
+		const committed = Math.abs(offset) > THRESHOLD;
 		cancel(!committed);
-		if (!horizontal) return;
-		if (settled > THRESHOLD) {
+		if (offset > THRESHOLD) {
 			haptic('success');
 			complete();
-		} else if (settled < -THRESHOLD) {
+		} else if (offset < -THRESHOLD) {
 			haptic('warn');
 			onDelete();
 		}
@@ -144,10 +113,9 @@
 		style="transform: translateX({dx}px); transition: {dragging
 			? 'none'
 			: 'transform 200ms cubic-bezier(0.16,1,0.3,1), background-color 120ms ease'}; touch-action: pan-y pinch-zoom"
-		onpointerdown={down}
-		onpointermove={move}
-		onpointerup={up}
-		onpointercancel={() => cancel()}
+		use:swipeRow={{ move, release, cancel: () => cancel(), destroy: () => {
+			if (returnFrame !== undefined) cancelAnimationFrame(returnFrame);
+		} }}
 	>
 		<div
 			class="hairline measure flex gap-3 border-b pb-2.5"

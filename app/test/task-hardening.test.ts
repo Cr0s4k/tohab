@@ -24,13 +24,11 @@ try {
   })()`);
   assert.deepEqual(result, { complete: 0, delete: 0 });
  }
- await browser.evaluate(`(() => {
+ const released = await browser.evaluate<{ transform: string; transition: string }>(`(async () => {
   const row = document.querySelector('[role="group"]');
   for (const [type, x] of [['pointerdown',200], ['pointermove',260], ['pointerup',260]])
    row.dispatchEvent(new PointerEvent(type, { bubbles:true, pointerType:'touch', clientX:x, clientY:100 }));
- })()`);
- const released = await browser.evaluate<{ transform: string; transition: string }>(`(() => {
-  const row = document.querySelector('[role="group"]');
+  await Promise.resolve();
   return { transform: row.style.transform, transition: getComputedStyle(row).transition };
  })()`);
  assert.equal(released.transform, 'translateX(60px)', 'cancel keeps the dragged offset for the return transition');
