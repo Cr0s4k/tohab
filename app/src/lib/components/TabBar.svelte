@@ -26,7 +26,7 @@
 				style="transform: scale({active ? 1.06 : 1}); transition: transform 220ms cubic-bezier(0.22,1,0.36,1), stroke-width 180ms ease"
 				fill="none"
 				stroke="currentColor"
-				stroke-width={active ? 1.8 : 1.5}
+				stroke-width={active ? 1.5 : 1.25}
 				stroke-linecap="round"
 				stroke-linejoin="round"
 			>
