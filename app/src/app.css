@@ -33,6 +33,11 @@
 		--selected-bg: #ffefe5;
 		--selected-text: #a81f00;
 		--measure: 56rem;
+		--motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+		--motion-tap: 90ms;
+		--motion-feedback: 120ms;
+		--motion-state: 180ms;
+		--motion-surface: 260ms;
 		color-scheme: light;
 	}
 
@@ -55,6 +60,7 @@
 		--positive: #08a531;
 		--selected-bg: #472525;
 		--selected-text: #f07f75;
+		--motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 		--color-p1: #ff7066;
 		--color-p2: #ff9a13;
 		--color-p3: #5297ff;
@@ -233,8 +239,8 @@
 
 @utility tap {
 	transition:
-		transform 90ms ease,
-		opacity 90ms ease;
+		transform var(--motion-tap) ease,
+		opacity var(--motion-tap) ease;
 	&:active:not([data-scroll-tap-cancelled] *) {
 		transform: scale(0.96);
 		opacity: 0.75;
@@ -259,7 +265,7 @@
 
 @utility pressable {
 	@media (hover: none) and (pointer: coarse) {
-		transition: background-color 120ms ease;
+		transition: background-color var(--motion-feedback) ease;
 		&:active:not([data-scroll-tap-cancelled] *),
 		&:has(:active):not([data-scroll-tap-cancelled] *) {
 			background: var(--surface-hover);
@@ -292,8 +298,8 @@
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-	animation-duration: 220ms;
-	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	animation-duration: var(--motion-surface);
+	animation-timing-function: var(--motion-ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -303,5 +309,20 @@
 		animation-duration: 1ms !important;
 		animation-iteration-count: 1 !important;
 		transition-duration: 1ms !important;
+		transition-delay: 0s !important;
+	}
+
+	::view-transition-old(root),
+	::view-transition-new(root) {
+		animation: none !important;
+	}
+
+	/* Keep tactile confirmation legible while removing spatial press motion. */
+	.tap {
+		transition: opacity var(--motion-feedback) ease, background-color var(--motion-feedback) ease !important;
+	}
+
+	.tap:active:not([data-scroll-tap-cancelled] *) {
+		transform: none !important;
 	}
 }
