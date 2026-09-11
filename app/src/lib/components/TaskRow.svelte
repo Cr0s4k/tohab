@@ -30,6 +30,7 @@
 	let dragging = $state(false);
 	let armed = $state(false);
 	let pointerId: number | undefined;
+	let returnFrame: number | undefined;
 	let start = { x: 0, y: 0 };
 	let axis = $state<'none' | 'x' | 'y'>('none');
 
@@ -45,6 +46,11 @@
 
 	function down(e: PointerEvent) {
 		if (isDesktop()) return;
+		if (returnFrame !== undefined) {
+			cancelAnimationFrame(returnFrame);
+			returnFrame = undefined;
+			dx = 0;
+		}
 		if (dragging) { cancel(); return; }
 		if (!e.isPrimary && e.isTrusted) return;
 		if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -73,12 +79,26 @@
 		}
 	}
 
-	function cancel() {
+	function cancel(animate = true) {
+		const offset = dx;
+		const shouldAnimate = animate && dragging && offset !== 0;
 		pointerId = undefined;
 		dragging = false;
-		dx = 0;
 		armed = false;
 		axis = 'none';
+		if (shouldAnimate) {
+			/*
+			 * Commit the released state with the current offset first. If the
+			 * offset and transition are both changed in one update, browsers can
+			 * skip the transition and visibly jump straight back to zero.
+			 */
+			returnFrame = requestAnimationFrame(() => {
+				returnFrame = undefined;
+				dx = 0;
+			});
+		} else {
+			dx = 0;
+		}
 	}
 
 	function up(e: PointerEvent) {
@@ -86,7 +106,8 @@
 		move(e);
 		const settled = dx;
 		const horizontal = axis === 'x';
-		cancel();
+		const committed = horizontal && (settled > THRESHOLD || settled < -THRESHOLD);
+		cancel(!committed);
 		if (!horizontal) return;
 		if (settled > THRESHOLD) {
 			haptic('success');
@@ -103,13 +124,13 @@
 		<div class="measure flex h-full items-center justify-between">
 			<span
 				class="flex items-center gap-2"
-				style="color: var(--positive); opacity: {Math.min(1, Math.max(0, dx / THRESHOLD))}"
+				style="color: var(--positive); opacity: {Math.min(1, Math.max(0, dx / THRESHOLD))}; transition: opacity {dragging ? 'none' : '120ms ease'}"
 			>
 				✓ {task.done ? 'Reopen' : 'Complete'}
 			</span>
 			<span
 				class="flex items-center gap-2"
-				style="color: var(--danger); opacity: {Math.min(1, Math.max(0, -dx / THRESHOLD))}"
+				style="color: var(--danger); opacity: {Math.min(1, Math.max(0, -dx / THRESHOLD))}; transition: opacity {dragging ? 'none' : '120ms ease'}"
 			>
 				Delete
 			</span>
@@ -122,11 +143,11 @@
 		style:padding-left="1rem"
 		style="transform: translateX({dx}px); transition: {dragging
 			? 'none'
-			: 'transform 200ms cubic-bezier(0.22,1,0.36,1), background-color 120ms ease'}; touch-action: pan-y pinch-zoom"
+			: 'transform 200ms cubic-bezier(0.16,1,0.3,1), background-color 120ms ease'}; touch-action: pan-y pinch-zoom"
 		onpointerdown={down}
 		onpointermove={move}
 		onpointerup={up}
-		onpointercancel={cancel}
+		onpointercancel={() => cancel()}
 	>
 		<div
 			class="hairline measure flex gap-3 border-b pb-2.5"

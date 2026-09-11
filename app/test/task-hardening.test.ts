@@ -26,6 +26,22 @@ try {
  }
  await browser.evaluate(`(() => {
   const row = document.querySelector('[role="group"]');
+  for (const [type, x] of [['pointerdown',200], ['pointermove',260], ['pointerup',260]])
+   row.dispatchEvent(new PointerEvent(type, { bubbles:true, pointerType:'touch', clientX:x, clientY:100 }));
+ })()`);
+ const released = await browser.evaluate<{ transform: string; transition: string }>(`(() => {
+  const row = document.querySelector('[role="group"]');
+  return { transform: row.style.transform, transition: getComputedStyle(row).transition };
+ })()`);
+ assert.equal(released.transform, 'translateX(60px)', 'cancel keeps the dragged offset for the return transition');
+ assert.match(released.transition, /transform/, 'cancel enables the return transition before resetting');
+ await browser.evaluate('new Promise(resolve => setTimeout(resolve, 260))');
+ assert.ok(await browser.evaluate(`(() => {
+  const transform = getComputedStyle(document.querySelector('[role="group"]')).transform;
+  return transform === 'none' || Math.abs(new DOMMatrix(transform).m41) < 0.5;
+ })()`), 'cancel settles the row back at rest');
+ await browser.evaluate(`(() => {
+  const row = document.querySelector('[role="group"]');
   for (const [type,x] of [['pointerdown',200],['pointermove',320],['pointerup',320]])
    row.dispatchEvent(new PointerEvent(type, { bubbles:true, pointerType:'touch', clientX:x, clientY:100 }));
  })()`);
