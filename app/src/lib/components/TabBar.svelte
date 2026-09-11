@@ -2,12 +2,14 @@
 	import { page } from '$app/state';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { isNavItemActive, NAV_PATHS, TASK_NAV_ITEMS } from '$lib/navigation';
+	let activeIndex = $derived(TASK_NAV_ITEMS.findIndex((tab) => isNavItemActive(page.url, tab.href)));
 </script>
 
 <nav
-	class="raised hairline z-30 grid shrink-0 grid-cols-4 border-t pb-safe md:hidden"
+	class="raised hairline relative z-30 grid shrink-0 grid-cols-4 border-t pb-safe md:hidden"
 	style="view-transition-name: tabbar"
 >
+	<span class="mobile-nav__indicator" aria-hidden="true" style="view-transition-name: task-nav-indicator; --nav-count: {TASK_NAV_ITEMS.length}; --nav-index: {Math.max(0, activeIndex)}; opacity: {activeIndex < 0 ? 0 : 1}"></span>
 	{#each TASK_NAV_ITEMS as tab (tab.href)}
 		{@const active = isNavItemActive(page.url, tab.href)}
 		<a

@@ -261,8 +261,9 @@
 	{/if}
 	{#if view === 'today' && !tasks.loading && (todayOpenCount > 0 || todayDoneCount > 0)}
 		<div class="px-4">
-			<details class="hairline measure mt-4 rounded-2xl border">
+			<details class="motion-disclosure hairline measure mt-4 rounded-2xl border">
 				<summary class="tap flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 text-sm font-semibold">
+					<svg class="motion-disclosure__chevron size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
 					<span class="min-w-0 flex-1">What remains today?</span>
 					<span class="dim shrink-0 text-xs font-normal tabular-nums">{todayOpenCount} open · {todayDoneCount} done</span>
 				</summary>

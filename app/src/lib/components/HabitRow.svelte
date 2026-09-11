@@ -2,6 +2,7 @@
 	import type { Habit } from '$lib/db/schemas';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { periodTarget } from '$lib/streaks';
+	import { veil } from '$lib/motion';
 	import ProgressRing from './ProgressRing.svelte';
 
 	let {
@@ -40,22 +41,24 @@
 				{habit.emoji}
 			</span>
 			<span class="min-w-0 flex-1">
-				<span class="block truncate text-body leading-snug" class:dim={complete}>{habit.name}</span>
-				<span class="dim mt-0.5 block text-xs">
-					{#if !due}
-						Rest day
-					{:else if habit.scheduleKind === 'weekly'}
-						{value} / {periodTarget(habit)} {habit.kind === 'binary' ? 'days' : habit.unit || 'times'} this week{habit.goal === 'break' ? ' · max' : ''}
-					{:else if streak > 0}
-						🔥 {streak} {streak === 1 ? 'day' : 'days'}
-					{:else if habit.goal === 'break'}
-						{value === 0 ? 'Clean today' : `${value} ${value === 1 ? 'slip' : 'slips'} today`}
-					{:else if habit.kind === 'quantity'}
-						{value} of {habit.target}{habit.unit ? ` ${habit.unit}` : ''}
-					{:else}
-						Not done yet
-					{/if}
-				</span>
+				<span class="habit-name block truncate text-body leading-snug" class:dim={complete}>{habit.name}</span>
+				{#key `${value}:${streak}:${due}`}
+					<span in:veil={{ duration: 160 }} class="dim mt-0.5 block text-xs">
+						{#if !due}
+							Rest day
+						{:else if habit.scheduleKind === 'weekly'}
+							{value} / {periodTarget(habit)} {habit.kind === 'binary' ? 'days' : habit.unit || 'times'} this week{habit.goal === 'break' ? ' · max' : ''}
+						{:else if streak > 0}
+							🔥 {streak} {streak === 1 ? 'day' : 'days'}
+						{:else if habit.goal === 'break'}
+							{value === 0 ? 'Clean today' : `${value} ${value === 1 ? 'slip' : 'slips'} today`}
+						{:else if habit.kind === 'quantity'}
+							{value} of {habit.target}{habit.unit ? ` ${habit.unit}` : ''}
+						{:else}
+							Not done yet
+						{/if}
+					</span>
+				{/key}
 			</span>
 		</a>
 
@@ -94,3 +97,9 @@
 		</button>
 	</div>
 </div>
+
+<style>
+	.habit-name {
+		transition: color var(--motion-state) ease;
+	}
+</style>

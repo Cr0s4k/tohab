@@ -2,12 +2,14 @@
 	import { page } from '$app/state';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { HABIT_NAV_ITEMS, isNavItemActive, NAV_PATHS } from '$lib/navigation';
+	let activeIndex = $derived(HABIT_NAV_ITEMS.findIndex((tab) => isNavItemActive(page.url, tab.href)));
 </script>
 
 <nav
-	class="raised hairline z-30 grid shrink-0 grid-cols-2 border-t pb-safe md:hidden"
+	class="raised hairline relative z-30 grid shrink-0 grid-cols-2 border-t pb-safe md:hidden"
 	style="view-transition-name: habitnav"
 >
+	<span class="mobile-nav__indicator" aria-hidden="true" style="view-transition-name: habit-nav-indicator; --nav-count: {HABIT_NAV_ITEMS.length}; --nav-index: {Math.max(0, activeIndex)}; opacity: {activeIndex < 0 ? 0 : 1}"></span>
 	{#each HABIT_NAV_ITEMS as tab (tab.href)}
 		{@const active = isNavItemActive(page.url, tab.href)}
 		<a

@@ -297,9 +297,49 @@
 }
 
 ::view-transition-old(root),
-::view-transition-new(root) {
+::view-transition-new(root),
+::view-transition-group(task-nav-indicator),
+::view-transition-group(habit-nav-indicator) {
 	animation-duration: var(--motion-surface);
 	animation-timing-function: var(--motion-ease-out);
+}
+
+/* A single marker preserves position as mobile navigation changes. */
+.mobile-nav__indicator {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: calc(100% / var(--nav-count));
+	height: 2px;
+	pointer-events: none;
+	transform: translateX(calc(var(--nav-index) * 100%));
+	transition: transform var(--motion-surface) var(--motion-ease-out), opacity var(--motion-feedback) ease;
+}
+.mobile-nav__indicator::after {
+	content: '';
+	display: block;
+	width: 24px;
+	height: 100%;
+	margin-inline: auto;
+	border-radius: 0 0 2px 2px;
+	background: var(--accent);
+}
+
+.motion-disclosure__chevron {
+	transition: transform var(--motion-state) var(--motion-ease-out);
+}
+.motion-disclosure[open] .motion-disclosure__chevron {
+	transform: rotate(90deg);
+}
+/* Unsupported browsers retain the native, immediately usable disclosure. */
+@supports (transition-behavior: allow-discrete) {
+	.motion-disclosure::details-content {
+		opacity: 0;
+		transition: opacity var(--motion-state) ease, content-visibility var(--motion-state) allow-discrete;
+	}
+	.motion-disclosure[open]::details-content {
+		opacity: 1;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
