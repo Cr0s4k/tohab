@@ -115,30 +115,35 @@
 	style:border-color="var(--product-library-divider-secondary)"
 	class:border-b={scrolled}
 >
-	<div class="measure relative flex items-center justify-between px-4 pt-2 pb-2">
-		<div class="flex items-center gap-2">
+	<!-- Equal side tracks center the compact title; actions keep their space on narrow screens. -->
+	<div
+		class="measure grid grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(max-content,1fr)] items-center gap-x-2 px-4 pt-2 pb-2"
+	>
+		<div
+			class="col-start-1 col-span-2 row-start-1 flex min-w-0 items-center gap-2 overflow-hidden transition-opacity duration-200"
+			class:opacity-0={scrolled}
+		>
 			<h1
-				class="min-w-0 truncate text-header md:text-header-large font-bold tracking-tight transition-opacity duration-200"
-				class:opacity-0={scrolled}
+				class="min-w-0 truncate text-header md:text-header-large font-bold tracking-tight"
 			>
 				{viewTitles[view]}
 			</h1>
 			{#if overdueCount > 0}
-				<p class="danger text-xs font-medium">
+				<p class="danger shrink-0 text-xs font-medium">
 					{overdueCount} overdue
 				</p>
 			{/if}
 		</div>
 		<div
-			class="pointer-events-none absolute inset-x-0 top-0 bottom-0 flex items-center justify-center transition-opacity duration-200"
+			class="pointer-events-none col-start-2 row-start-1 min-w-0 truncate text-center text-lg md:text-header font-bold tracking-tight transition-opacity duration-200"
 			class:opacity-0={!scrolled}
-			aria-hidden={!scrolled}
+			aria-hidden="true"
 		>
-			<span class="text-header md:text-header-large font-bold tracking-tight">
-				{viewTitles[view]}
-			</span>
+			{viewTitles[view]}
 		</div>
-		<div class="flex items-center gap-2">
+		<div
+			class="col-start-3 row-start-1 flex shrink-0 items-center justify-self-end gap-2 [&>button]:shrink-0"
+		>
 			<button
 				type="button"
 				use:hapticTap
