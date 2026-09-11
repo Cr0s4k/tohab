@@ -128,7 +128,14 @@
 
 </script>
 
-<Sheet {open} covered={panel !== 'none'} title="Quick capture" confirmLabel="Done" showHeader={true} onClose={onClose}>
+<Sheet
+	{open}
+	covered={panel !== 'none'}
+	title="Add task"
+	showHeader={false}
+	safeAreaBottom={false}
+	{onClose}
+>
 	{#snippet children()}
 		<form onsubmit={submit} class="flex flex-col gap-3">
 			<div class="flex items-center gap-2">
@@ -226,7 +233,7 @@
 				{#if parsed?.matched.length}
 					Understood: {parsed.matched.join(' · ')}
 				{:else}
-					Add another task, or tap Done when you’re finished. Typing “every friday 5pm !!1 #work” fills these in too
+					Typing “every friday 5pm !!1 #work” fills these in too
 				{/if}
 			</p>
 		</form>

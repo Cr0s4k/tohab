@@ -11,6 +11,7 @@
 		confirmLabel = 'Done',
 		showHeader = true,
 		showCloseButton = true,
+		safeAreaBottom = true,
 		onClose,
 		onConfirm = onClose,
 		children
@@ -22,6 +23,7 @@
 		confirmLabel?: string;
 		showHeader?: boolean;
 		showCloseButton?: boolean;
+		safeAreaBottom?: boolean;
 		onClose: () => void;
 		onConfirm?: () => void;
 		children: Snippet;
@@ -82,7 +84,8 @@
 			aria-labelledby={titleId}
 			tabindex="-1"
 			onkeydown={trapFocus}
-			class="raised hairline relative max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl pb-safe md:max-h-[80dvh] md:max-w-lg md:rounded-3xl md:border md:shadow-2xl"
+			class="raised hairline relative max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl md:max-h-[80dvh] md:max-w-lg md:rounded-3xl md:border md:shadow-2xl"
+			class:pb-safe={safeAreaBottom}
 			transition:sheet
 		>
 			{#if showHeader}
