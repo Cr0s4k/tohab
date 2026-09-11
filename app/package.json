@@ -16,6 +16,7 @@
 		"test:habit-data": "node --import ./test/activity-e2e.hooks.mjs test/habit-dates-persistence.test.ts && node --import ./test/activity-e2e.hooks.mjs test/habit-history-persistence.test.ts",
 		"test:browser": "node test/smoke.test.ts",
 		"test:hardening": "node test/task-hardening.test.ts",
+		"test:quick-capture": "node test/quick-capture.test.ts",
 		"test:offline": "node test/offline.test.ts",
 		"test:lie-fi": "node test/lie-fi.test.ts",
 		"test:sw-update": "node test/service-worker-update.test.ts"

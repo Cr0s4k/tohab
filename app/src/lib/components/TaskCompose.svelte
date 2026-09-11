@@ -6,7 +6,6 @@
 	import { describeRepeat, firstDue } from '$lib/repeat';
 	import { haptic, hapticTap } from '$lib/haptics';
 	import { reportActionError } from '$lib/actionError.svelte';
-	import { collapse } from '$lib/motion';
 	import Sheet from './Sheet.svelte';
 	import TaskDueControls from './task/TaskDueControls.svelte';
 	import TaskPriorityPicker from './task/TaskPriorityPicker.svelte';
@@ -26,7 +25,14 @@
 		onClose: () => void;
 	} = $props();
 
-	type Panel = 'none' | 'date' | 'repeat' | 'priority' | 'project' | 'reminder';
+	const panelTitles = {
+		date: 'Date',
+		repeat: 'Repeat',
+		priority: 'Priority',
+		project: 'Project',
+		reminder: 'Reminders'
+	};
+	type Panel = 'none' | keyof typeof panelTitles;
 
 	let raw = $state('');
 	let inputEl: HTMLInputElement | null = $state(null);
@@ -70,9 +76,9 @@
 	);
 	let repeatLabel = $derived(repeat ? describeRepeat(repeat) : 'Repeat');
 
-	function toggle(next: Panel) {
+	function openPanel(next: Exclude<Panel, 'none'>) {
 		haptic('tap');
-		panel = panel === next ? 'none' : next;
+		panel = next;
 	}
 
 	function reset() {
@@ -122,7 +128,7 @@
 
 </script>
 
-<Sheet {open} title="Quick capture" confirmLabel="Done" showHeader={true} onClose={onClose}>
+<Sheet {open} covered={panel !== 'none'} title="Quick capture" confirmLabel="Done" showHeader={true} onClose={onClose}>
 	{#snippet children()}
 		<form onsubmit={submit} class="flex flex-col gap-3">
 			<div class="flex items-center gap-2">
@@ -163,11 +169,12 @@
 				<button
 					type="button"
 					use:hapticTap
-					onclick={() => toggle('date')}
+					onclick={() => openPanel('date')}
 					class="tap hairline min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium"
 					class:accent-fg={Boolean(due)}
 					class:dim={!due}
-					aria-pressed={panel === 'date'}
+					aria-haspopup="dialog"
+					aria-expanded={panel === 'date'}
 					class:sunken={panel === 'date'}
 				>
 					{dateLabel}
@@ -175,11 +182,12 @@
 				<button
 					type="button"
 					use:hapticTap
-					onclick={() => toggle('repeat')}
+					onclick={() => openPanel('repeat')}
 					class="tap hairline min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium"
 					class:accent-fg={Boolean(repeat)}
 					class:dim={!repeat}
-					aria-pressed={panel === 'repeat'}
+					aria-haspopup="dialog"
+					aria-expanded={panel === 'repeat'}
 					class:sunken={panel === 'repeat'}
 				>
 					{repeatLabel}
@@ -187,12 +195,13 @@
 				<button
 					type="button"
 					use:hapticTap
-					onclick={() => toggle('priority')}
+					onclick={() => openPanel('priority')}
 					class="tap hairline min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium {priority <
 					4
 						? priorityClass(priority)
 						: 'dim'}"
-					aria-pressed={panel === 'priority'}
+					aria-haspopup="dialog"
+					aria-expanded={panel === 'priority'}
 					class:sunken={panel === 'priority'}
 				>
 					{priority < 4 ? `P${priority}` : 'Priority'}
@@ -200,52 +209,18 @@
 				<button
 					type="button"
 					use:hapticTap
-					onclick={() => toggle('project')}
+					onclick={() => openPanel('project')}
 					class="tap hairline dim min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium"
-					aria-pressed={panel === 'project'}
+					aria-haspopup="dialog"
+					aria-expanded={panel === 'project'}
 					class:sunken={panel === 'project'}
 				>
 					{projectLabel}
 				</button>
-				<button type="button" use:hapticTap onclick={() => toggle('reminder')} aria-pressed={panel === 'reminder'} class="tap hairline min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium" class:accent-fg={reminders.length > 0} class:dim={!reminders.length} class:sunken={panel === 'reminder'}>
+				<button type="button" use:hapticTap onclick={() => openPanel('reminder')} aria-haspopup="dialog" aria-expanded={panel === 'reminder'} class="tap hairline min-h-11 rounded-full border px-3 py-1.5 text-caption font-medium" class:accent-fg={reminders.length > 0} class:dim={!reminders.length} class:sunken={panel === 'reminder'}>
 					{reminders.length ? `Reminders · ${reminders.length}` : 'Reminders'}
 				</button>
 			</div>
-
-			{#if panel === 'date'}
-				<div transition:collapse={{ duration: 200 }}>
-					<TaskDueControls
-						{due}
-						{dueTime}
-						onDue={(value) => (picked.due = value)}
-						onDueTime={(value) => (picked.dueTime = value)}
-					/>
-				</div>
-			{/if}
-
-			{#if panel === 'reminder'}
-				<div transition:collapse={{ duration: 200 }}>
-					<TaskReminderPicker value={reminderMinutes} {dueTime} onSelect={(value) => (reminderMinutes = value)} {reminders} onReminders={(value) => (picked.reminders = value)} />
-				</div>
-			{/if}
-
-			{#if panel === 'repeat'}
-				<div transition:collapse={{ duration: 200 }}>
-					<TaskRepeatPicker value={repeat} onSelect={(value) => (picked.repeat = value)} />
-				</div>
-			{/if}
-
-			{#if panel === 'priority'}
-				<div transition:collapse={{ duration: 200 }}>
-					<TaskPriorityPicker value={priority} onSelect={(value) => (picked.priority = value)} />
-				</div>
-			{/if}
-
-			{#if panel === 'project'}
-				<div transition:collapse={{ duration: 200 }}>
-					<TaskProjectPicker {projects} value={projectId} onSelect={(value) => (picked.projectId = value)} />
-				</div>
-			{/if}
 
 			<p class="dim text-center text-caption">
 				{#if parsed?.matched.length}
@@ -257,3 +232,38 @@
 		</form>
 	{/snippet}
 </Sheet>
+
+{#if panel !== 'none'}
+	<Sheet
+		{open}
+		title={panelTitles[panel]}
+		onClose={() => (panel = 'none')}
+	>
+		{#if panel === 'date'}
+			<TaskDueControls
+				{due}
+				{dueTime}
+				onDue={(value) => (picked.due = value)}
+				onDueTime={(value) => (picked.dueTime = value)}
+			/>
+		{:else if panel === 'reminder'}
+			<TaskReminderPicker
+				value={reminderMinutes}
+				{dueTime}
+				onSelect={(value) => (reminderMinutes = value)}
+				{reminders}
+				onReminders={(value) => (picked.reminders = value)}
+			/>
+		{:else if panel === 'repeat'}
+			<TaskRepeatPicker value={repeat} onSelect={(value) => (picked.repeat = value)} />
+		{:else if panel === 'priority'}
+			<TaskPriorityPicker value={priority} onSelect={(value) => (picked.priority = value)} />
+		{:else if panel === 'project'}
+			<TaskProjectPicker
+				{projects}
+				value={projectId}
+				onSelect={(value) => (picked.projectId = value)}
+			/>
+		{/if}
+	</Sheet>
+{/if}
