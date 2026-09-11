@@ -26,7 +26,11 @@
 	let complete = $derived(invert ? value <= target : ratio >= 1);
 </script>
 
-<div class="relative grid shrink-0 place-items-center" style="width: {size}px; height: {size}px">
+<div
+	class="progress-ring relative grid shrink-0 place-items-center"
+	class:progress-ring--complete={complete}
+	style="width: {size}px; height: {size}px"
+>
 	<svg viewBox="0 0 {size} {size}" class="absolute inset-0 -rotate-90" style="width: {size}px; height: {size}px">
 		<circle
 			cx={size / 2}
@@ -50,11 +54,73 @@
 		/>
 	</svg>
 
-	{#if complete}
-		<svg viewBox="0 0 24 24" class="size-5" fill="none" stroke={color} stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-			<path d="M4 12.5l5 5L20 6.5" />
-		</svg>
-	{:else}
-		<span class="text-[0.7rem] font-semibold tabular-nums" class:dim={value === 0}>{label}</span>
-	{/if}
+	<span class="progress-ring__label text-[0.7rem] font-semibold tabular-nums" class:dim={value === 0} aria-hidden={complete ? 'true' : undefined}>{label}</span>
+	<svg
+		viewBox="0 0 24 24"
+		class="progress-ring__check size-5"
+		fill="none"
+		stroke={color}
+		stroke-width="3.2"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+		aria-hidden="true"
+	>
+		<path pathLength="1" d="M4 12.5l5 5L20 6.5" />
+	</svg>
 </div>
+
+<style>
+	.progress-ring__label,
+	.progress-ring__check {
+		transition:
+			opacity var(--motion-feedback) ease,
+			transform var(--motion-state) var(--motion-ease-out);
+	}
+
+	.progress-ring__label {
+		position: relative;
+		transform: scale(1);
+	}
+
+	.progress-ring__check {
+		position: absolute;
+		opacity: 0;
+		transform: scale(0.72);
+		transform-box: fill-box;
+		transform-origin: center;
+	}
+
+	.progress-ring__check path {
+		stroke-dasharray: 1;
+		stroke-dashoffset: 1;
+		transition: stroke-dashoffset var(--motion-state) var(--motion-ease-out);
+	}
+
+	.progress-ring--complete .progress-ring__label {
+		opacity: 0;
+		transform: scale(0.82);
+	}
+
+	.progress-ring--complete .progress-ring__check {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	.progress-ring--complete .progress-ring__check path {
+		stroke-dashoffset: 0;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.progress-ring__label,
+		.progress-ring__check {
+			transform: none;
+			transition: opacity var(--motion-feedback) ease !important;
+		}
+
+		.progress-ring__check path {
+			stroke-dasharray: none;
+			stroke-dashoffset: 0;
+			transition: none !important;
+		}
+	}
+</style>

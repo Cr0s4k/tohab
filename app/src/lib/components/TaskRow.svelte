@@ -170,7 +170,7 @@
 				style="border-color: currentColor"
 			>
 				<svg viewBox="0 0 24 24" class="task-check__tick size-3" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M4 12.5l5 5L20 6.5" />
+					<path pathLength="1" d="M4 12.5l5 5L20 6.5" />
 				</svg>
 			</button>
 
@@ -259,16 +259,37 @@
 
 	.task-check__tick {
 		opacity: 0;
-		transition: opacity 160ms ease;
+		stroke-dasharray: 1;
+		stroke-dashoffset: 1;
+		transform: scale(0.72);
+		transform-box: fill-box;
+		transform-origin: center;
+		transition:
+			opacity var(--motion-feedback) ease,
+			stroke-dashoffset var(--motion-state) var(--motion-ease-out),
+			transform var(--motion-state) var(--motion-ease-out);
 	}
 
 	.task-check[aria-checked='true'] .task-check__tick {
 		opacity: 1;
+		stroke-dashoffset: 0;
+		transform: scale(1);
 	}
 
 	@media (hover: hover) and (pointer: fine) {
 		.task-check:hover:not(:global([data-scroll-tap-cancelled]) *) .task-check__tick {
 			opacity: 1;
+			stroke-dashoffset: 0;
+			transform: scale(1);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.task-check__tick {
+			stroke-dasharray: none;
+			stroke-dashoffset: 0;
+			transform: none;
+			transition: opacity var(--motion-feedback) ease !important;
 		}
 	}
 
