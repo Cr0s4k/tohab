@@ -3,30 +3,43 @@ export function scrollTap(node: HTMLElement) {
 	let start: { id: number; x: number; y: number } | undefined;
 	let cancelled = false;
 	let origin: Node | null = null;
+	const setCancelled = (value: boolean) => {
+		cancelled = value;
+		// Native :active can outlive pointer cancellation while the browser scrolls.
+		node.toggleAttribute('data-scroll-tap-cancelled', value);
+	};
 	const down = (event: PointerEvent) => {
-		if (start) { cancelled = true; return; }
+		if (start) { setCancelled(true); return; }
 		origin = event.target as Node;
 		start = { id: event.pointerId, x: event.clientX, y: event.clientY };
-		cancelled = false;
+		setCancelled(false);
 	};
 	const move = (event: PointerEvent) => {
+		// A fresh mouse hover may restore feedback without re-enabling a cancelled click.
+		if (!start && event.pointerType === 'mouse' && event.buttons === 0) {
+			node.removeAttribute('data-scroll-tap-cancelled');
+		}
 		if (!start || event.pointerId !== start.id) return;
-		if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) cancelled = true;
+		if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) setCancelled(true);
 	};
 	const up = (event: PointerEvent) => {
 		move(event);
-		if (event.pointerId === start?.id) start = undefined;
+		if (event.pointerId === start?.id) {
+			start = undefined;
+			origin = null;
+		}
 	};
 	const cancel = (event: PointerEvent) => {
 		if (event.pointerId !== start?.id) return;
-		cancelled = true;
+		setCancelled(true);
 		start = undefined;
+		origin = null;
 	};
 	const scroll = (event: Event) => {
 		// Scroll does not bubble. Watch ancestors in capture, including modal scrollers.
-		if (origin && event.target instanceof Node && event.target.contains(origin)) cancelled = true;
+		if (origin && event.target instanceof Node && event.target.contains(origin)) setCancelled(true);
 	};
-	const keydown = () => { cancelled = false; origin = null; };
+	const keydown = () => { setCancelled(false); origin = null; };
 	const click = (event: MouseEvent) => {
 		// Label activation can produce a zero-detail click on the iOS haptic input.
 		// Only exempt zero-detail activation when it did not come from that overlay
@@ -45,6 +58,7 @@ export function scrollTap(node: HTMLElement) {
 	node.addEventListener('keydown', keydown, true);
 	node.addEventListener('click', click, true);
 	return { destroy() {
+		node.removeAttribute('data-scroll-tap-cancelled');
 		node.removeEventListener('pointerdown', down, true);
 		window.removeEventListener('pointermove', move, true);
 		window.removeEventListener('pointerup', up, true);

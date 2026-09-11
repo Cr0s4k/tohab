@@ -117,6 +117,16 @@ try {
   assert.equal(await browser.evaluate('window.sheetClicks'), 0, `${gesture} does not activate editor button`);
  }
  await browser.evaluate(`(() => {
+  const pane = document.querySelector('[role=dialog]');
+  const button = pane.querySelector('button');
+  button.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true,pointerType:'touch',clientX:200,clientY:100}));
+  button.dispatchEvent(new PointerEvent('pointerup', {bubbles:true,pointerType:'touch',clientX:200,clientY:100}));
+  pane.dispatchEvent(new Event('scroll'));
+  button.dispatchEvent(new MouseEvent('click', {bubbles:true,cancelable:true,detail:0}));
+ })()`);
+ assert.equal(await browser.evaluate('window.sheetClicks'), 1, 'a completed tap does not leave a stale scroll origin');
+ await browser.evaluate('window.sheetClicks = 0');
+ await browser.evaluate(`(() => {
   const button = document.querySelector('[role=dialog] button');
   button.dispatchEvent(new KeyboardEvent('keydown', {bubbles:true,key:'Enter'}));
   button.click();
