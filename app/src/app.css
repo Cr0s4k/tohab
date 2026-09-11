@@ -235,7 +235,7 @@
 	transition:
 		transform 90ms ease,
 		opacity 90ms ease;
-	&:active {
+	&:active:not([data-scroll-tap-cancelled] *) {
 		transform: scale(0.96);
 		opacity: 0.75;
 	}
@@ -260,8 +260,8 @@
 @utility pressable {
 	@media (hover: none) and (pointer: coarse) {
 		transition: background-color 120ms ease;
-		&:active,
-		&:has(:active) {
+		&:active:not([data-scroll-tap-cancelled] *),
+		&:has(:active):not([data-scroll-tap-cancelled] *) {
 			background: var(--surface-hover);
 		}
 	}
