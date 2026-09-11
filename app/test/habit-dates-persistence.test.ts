@@ -59,7 +59,7 @@ await oldDb.habits.insert(legacy);
 await oldDb.close();
 const upgraded = await createRxDatabase({ name: 'habitdatemigration', storage, multiInstance: false });
 try {
-	await upgraded.addCollections({ habits: { schema: habitSchema, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc, 3: (doc) => doc } } });
+	await upgraded.addCollections({ habits: { schema: habitSchema, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc, 3: (doc) => doc, 4: (doc) => doc } } });
 	assert.deepEqual((await upgraded.habits.findOne('legacy').exec())?.toJSON(), legacy);
 } finally {
 	await upgraded.remove();

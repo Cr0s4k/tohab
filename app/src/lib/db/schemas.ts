@@ -168,7 +168,7 @@ export const projectSchema: RxJsonSchema<Project> = {
 
 export const habitSchema: RxJsonSchema<Habit> = {
 	title: 'habit',
-	version: 3,
+	version: 4,
 	primaryKey: 'id',
 	type: 'object',
 	properties: {
@@ -178,7 +178,8 @@ export const habitSchema: RxJsonSchema<Habit> = {
 		pauseUntil: { type: 'string', maxLength: 10, pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
 		historyVersion: { type: 'number', enum: [1] },
 		name: { type: 'string' },
-		emoji: { type: 'string', maxLength: 8 },
+		// Grapheme limits are enforced by habitEmoji; code-point limits split valid emoji.
+		emoji: { type: 'string' },
 		color: { type: 'string', maxLength: 24 },
 		goal: { type: 'string', enum: ['build', 'break'], maxLength: 5 },
 		kind: { type: 'string', enum: ['binary', 'quantity'], maxLength: 10 },
