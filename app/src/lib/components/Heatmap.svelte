@@ -21,6 +21,22 @@
 
 	let todayKey = $derived(today());
 	let firstWeek = $derived(shiftKey(startOfWeekKey(todayKey, weekStartsOn), -7 * (weeks - 1)));
+	let scroller = $state<HTMLDivElement | null>(null);
+
+	$effect(() => {
+		// Start with recent history, including after a habit or week-boundary change.
+		habit.id;
+		firstWeek;
+		const node = scroller;
+		if (!node) return;
+		const showRecent = () => { node.scrollLeft = node.scrollWidth; };
+		const observer = new ResizeObserver(showRecent);
+		observer.observe(node);
+		// Touch targets can grow without the scrollport itself changing width.
+		if (node.firstElementChild) observer.observe(node.firstElementChild);
+		showRecent();
+		return () => observer.disconnect();
+	});
 
 	let rowOrder = $derived(
 		Array.from({ length: 7 }, (_, i) => (weekStartsOn + i) % 7)
@@ -42,18 +58,18 @@
 	let startKey = $derived(habitStartDate(habit, logs));
 </script>
 
-<div class="flex gap-1.5">
-	<div class="flex flex-col gap-1 pt-0.5">
+<div class="heatmap flex gap-1.5">
+	<div class="flex shrink-0 flex-col gap-1">
 		{#each rowOrder as weekday (weekday)}
-			<span class="dim grid h-[var(--cell)] place-items-center text-[0.6rem]" style="--cell: 1.1rem; width: 0.8rem">
+			<span class="dim grid h-[var(--cell)] place-items-center text-[0.6rem]" style="width: 0.8rem">
 				{WEEKDAY_LABELS[weekday]}
 			</span>
 		{/each}
 	</div>
 
-	<div class="flex flex-1 gap-1 overflow-x-auto pb-1">
+	<div bind:this={scroller} class="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-1">
 		{#each grid as week, wi (wi)}
-			<div class="flex flex-col gap-1">
+			<div class="flex shrink-0 flex-col gap-1">
 				{#each week as day (day)}
 					{@const future = day > todayKey}
 					{@const dayHabit = habitOn(habit, day)}
@@ -75,7 +91,7 @@
 							haptic('tap');
 							onToggleDay(day);
 						}}
-						class="tap size-[1.1rem] shrink-0 rounded-[0.3rem] disabled:opacity-25"
+						class="tap size-[var(--cell)] shrink-0 rounded-[0.3rem] disabled:opacity-25"
 						class:ring-1={day === todayKey}
 						style="background: {fill(day, dayHabit)}; opacity: {unavailable ? 0.2 : scheduled ? 1 : 0.45}; --tw-ring-color: var(--text)"
 					></button>
@@ -89,3 +105,16 @@
 		Days before {humanDay(startKey)} are unavailable. Edit the start date to backfill them.
 	</p>
 {/if}
+
+<style>
+	.heatmap {
+		--cell: 1.1rem;
+	}
+
+	@media (hover: none) and (pointer: coarse) {
+		.heatmap {
+			/* Match the app's minimum touch target for cells and weekday labels. */
+			--cell: max(1.1rem, 44px);
+		}
+	}
+</style>

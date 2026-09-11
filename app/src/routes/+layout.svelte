@@ -29,6 +29,8 @@
 	import { preventEdgeNavigation } from '$lib/navigationGestures';
 
 	let { children } = $props();
+	let showHabitNav = $derived(page.url.pathname === '/habits' || page.url.pathname === '/progress');
+	let showTaskNav = $derived(!page.url.pathname.startsWith('/habits') && !showHabitNav);
 
 	onNavigate((navigation) => {
 		taskCompose.open = false;
@@ -104,13 +106,16 @@
 			{@render children()}
 			<SettingsSheet open={settingsSheet.open} onClose={() => (settingsSheet.open = false)} />
 			<ConnectivityAlert />
-			<UndoToast />
 			<ActionError />
-			{#if page.url.pathname === '/habits' || page.url.pathname === '/progress'}
-				<HabitNav />
-			{:else if !page.url.pathname.startsWith('/habits')}
-				<TabBar />
-			{/if}
+			<!-- Anchor undo to the navigation's full height, including its safe-area padding. -->
+			<div class="relative shrink-0 md:hidden" class:pb-safe={!showHabitNav && !showTaskNav}>
+				<UndoToast />
+				{#if showHabitNav}
+					<HabitNav />
+				{:else if showTaskNav}
+					<TabBar />
+				{/if}
+			</div>
 		</div>
 	{/if}
 </div>

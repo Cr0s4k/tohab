@@ -146,140 +146,142 @@
 	</div>
 </header>
 
-<main class="measure flex-1 px-4 py-4">
-	{#if queryError}<DataError label="habit details" onRetry={retryQueries} />{/if}
-	{#if !habit}
-		<p class="dim py-14 text-center text-sm">
-			{habitBox.loading ? 'Loading…' : 'This habit no longer exists.'}
-		</p>
-	{:else}
-		{@const currentHabit = todayHabit!}
-		<section class="raised hairline mb-4 flex items-center gap-4 rounded-2xl border p-4">
-			<button
-				type="button"
-				use:hapticTap
+<main class="min-w-0 flex-1">
+	<div class="measure px-4 py-4" style="padding-bottom: max(1rem, env(safe-area-inset-bottom))">
+		{#if queryError}<DataError label="habit details" onRetry={retryQueries} />{/if}
+		{#if !habit}
+			<p class="dim py-14 text-center text-sm">
+				{habitBox.loading ? 'Loading…' : 'This habit no longer exists.'}
+			</p>
+		{:else}
+			{@const currentHabit = todayHabit!}
+			<section class="raised hairline mb-4 flex items-center gap-4 rounded-2xl border p-4">
+				<button
+					type="button"
+					use:hapticTap
 					aria-label={activeToday ? (currentHabit.kind === 'quantity' ? 'Edit today’s entry' : 'Log today') : pausedToday ? `Paused through ${humanDay(currentHabit.pauseUntil!)}` : `Starts ${humanDay(startDate)}`}
-				disabled={!activeToday}
-				onclick={() => {
-					haptic(currentHabit.goal === 'break' ? 'warn' : 'success');
-					if (currentHabit.kind === 'quantity') logDay = todayKey;
+					disabled={!activeToday}
+					onclick={() => {
+						haptic(currentHabit.goal === 'break' ? 'warn' : 'success');
+						if (currentHabit.kind === 'quantity') logDay = todayKey;
 						else runLog(() => tapLog(currentHabit, todayKey, valueOn(logs, todayKey)));
-				}}
-				class="tap disabled:opacity-50"
-			>
-				<ProgressRing
-					value={periodValue(currentHabit, logs, todayKey, settings.startOfWeek)}
-					target={periodTarget(currentHabit)}
-					color={currentHabit.color}
-					size={64}
-					label={currentHabit.goal === 'break' || currentHabit.kind === 'quantity' || currentHabit.scheduleKind === 'weekly'
-						? `${periodValue(currentHabit, logs, todayKey, settings.startOfWeek)}/${periodTarget(currentHabit)}`
-						: ''}
-					invert={currentHabit.goal === 'break'}
-				/>
-			</button>
-			<div class="min-w-0 flex-1">
-				<p class="text-sm font-semibold">{activeToday ? (currentHabit.scheduleKind === 'weekly' ? 'This week' : 'Today') : pausedToday ? `Paused through ${humanDay(currentHabit.pauseUntil!)}` : `Starts ${humanDay(startDate)}`}</p>
-				<p class="dim text-xs">
-					{currentHabit.goal === 'break' ? 'Break a bad habit' : 'Build a good habit'} · {scheduleLabel}
-				</p>
-							<p class="dim mt-1 text-caption">{pausedToday ? 'Entries before the pause are still included.' : `Starts ${humanDay(startDate)}`}</p>
-				{#if pendingRevision}
-					<p class="dim mt-1 text-caption">Tracking changes start {humanDay(pendingRevision.effectiveFrom)}.</p>
-				{/if}
-				{#if currentHabit.kind === 'quantity'}
-					<div class="mt-2 flex items-center gap-2">
-						<button
-							type="button"
-							aria-label="Decrease"
-							disabled={!activeToday}
+					}}
+					class="tap disabled:opacity-50"
+				>
+					<ProgressRing
+						value={periodValue(currentHabit, logs, todayKey, settings.startOfWeek)}
+						target={periodTarget(currentHabit)}
+						color={currentHabit.color}
+						size={64}
+						label={currentHabit.goal === 'break' || currentHabit.kind === 'quantity' || currentHabit.scheduleKind === 'weekly'
+							? `${periodValue(currentHabit, logs, todayKey, settings.startOfWeek)}/${periodTarget(currentHabit)}`
+							: ''}
+						invert={currentHabit.goal === 'break'}
+					/>
+				</button>
+				<div class="min-w-0 flex-1">
+					<p class="text-sm font-semibold">{activeToday ? (currentHabit.scheduleKind === 'weekly' ? 'This week' : 'Today') : pausedToday ? `Paused through ${humanDay(currentHabit.pauseUntil!)}` : `Starts ${humanDay(startDate)}`}</p>
+					<p class="dim text-xs">
+						{currentHabit.goal === 'break' ? 'Break a bad habit' : 'Build a good habit'} · {scheduleLabel}
+					</p>
+					<p class="dim mt-1 text-caption">{pausedToday ? 'Entries before the pause are still included.' : `Starts ${humanDay(startDate)}`}</p>
+					{#if pendingRevision}
+						<p class="dim mt-1 text-caption">Tracking changes start {humanDay(pendingRevision.effectiveFrom)}.</p>
+					{/if}
+					{#if currentHabit.kind === 'quantity'}
+						<div class="mt-2 flex items-center gap-2">
+							<button
+								type="button"
+								aria-label="Decrease"
+								disabled={!activeToday}
 								onclick={() => runLog(() => setLog(currentHabit, todayKey, valueOn(logs, todayKey) - 1))}
-							class="tap sunken grid size-8 place-items-center rounded-lg text-lg font-semibold disabled:opacity-50"
-						>
-							−
-						</button>
-						<button type="button" aria-label="Edit today’s amount" disabled={!activeToday} onclick={() => (logDay = todayKey)} class="tap min-h-11 px-2 text-sm tabular-nums underline underline-offset-4 disabled:opacity-50">
-							{valueOn(logs, todayKey)}{currentHabit.goal === 'break'
-								? (isWeeklyQuantity(currentHabit) ? ' today' : `/${currentHabit.target}`)
-								: currentHabit.unit
-									? ` ${currentHabit.unit}`
-									: ''}
-						</button>
-						<button
-							type="button"
-							aria-label="Increase"
-							disabled={!activeToday}
+								class="tap sunken grid size-8 place-items-center rounded-lg text-lg font-semibold disabled:opacity-50"
+							>
+								−
+							</button>
+							<button type="button" aria-label="Edit today’s amount" disabled={!activeToday} onclick={() => (logDay = todayKey)} class="tap min-h-11 px-2 text-sm tabular-nums underline underline-offset-4 disabled:opacity-50">
+								{valueOn(logs, todayKey)}{currentHabit.goal === 'break'
+									? (isWeeklyQuantity(currentHabit) ? ' today' : `/${currentHabit.target}`)
+									: currentHabit.unit
+										? ` ${currentHabit.unit}`
+										: ''}
+							</button>
+							<button
+								type="button"
+								aria-label="Increase"
+								disabled={!activeToday}
 								onclick={() => runLog(() => setLog(currentHabit, todayKey, valueOn(logs, todayKey) + 1))}
-							class="tap sunken grid size-8 place-items-center rounded-lg text-lg font-semibold disabled:opacity-50"
-						>
-							+
-						</button>
-					</div>
-				{/if}
-			</div>
-		</section>
+								class="tap sunken grid size-8 place-items-center rounded-lg text-lg font-semibold disabled:opacity-50"
+							>
+								+
+							</button>
+						</div>
+					{/if}
+				</div>
+			</section>
 
-		{#if stats}
-			<section class="mb-5 grid grid-cols-4 gap-2">
-				{#each [
-						{ label: 'Streak', value: stats.current, sub: streakUnit },
-						{ label: 'Best', value: stats.best, sub: streakUnit },
-						{ label: '30 days', value: `${stats.month}%`, sub: 'done' },
-						totalStat
-					] as stat (stat.label)}
-					<div class="raised hairline rounded-2xl border px-2 py-3 text-center">
-						<p class="text-lg font-bold tabular-nums" style="color: {currentHabit.color}">{stat.value}</p>
-						<p class="dim text-caption leading-tight">{stat.label}</p>
-						<p class="dim text-caption opacity-70">{stat.sub}</p>
-					</div>
-				{/each}
+			{#if stats}
+				<section class="mb-5 grid grid-cols-4 gap-2">
+					{#each [
+							{ label: 'Streak', value: stats.current, sub: streakUnit },
+							{ label: 'Best', value: stats.best, sub: streakUnit },
+							{ label: '30 days', value: `${stats.month}%`, sub: 'done' },
+							totalStat
+						] as stat (stat.label)}
+						<div class="raised hairline rounded-2xl border px-2 py-3 text-center">
+							<p class="text-lg font-bold tabular-nums" style="color: {currentHabit.color}">{stat.value}</p>
+							<p class="dim text-caption leading-tight">{stat.label}</p>
+							<p class="dim text-caption opacity-70">{stat.sub}</p>
+						</div>
+					{/each}
+				</section>
+			{/if}
+			{#if cadenceSwitch}
+				<p class="dim mb-4 text-caption">Streaks count from the latest switch between daily and weekly tracking.</p>
+			{/if}
+
+			<section class="mb-4">
+				<div class="mb-2 flex items-baseline justify-between">
+					<h2 class="text-sm font-semibold">Last 12 weeks</h2>
+					<p class="dim text-caption">Tap a day to edit</p>
+				</div>
+				<Heatmap
+					{habit}
+					{logs}
+					weekStartsOn={settings.startOfWeek}
+					onToggleDay={(day) => (logDay = day)}
+				/>
+			</section>
+
+			<section>
+				<h2 class="mb-2 text-sm font-semibold">Recent</h2>
+				<div class="raised hairline overflow-hidden rounded-2xl border">
+					{#each logBox.value.filter((log) => log.date >= startDate && log.date <= todayKey).slice().sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 10) as log (log.id)}
+						{@const entryHabit = habitOn(habit, log.date)}
+						<div class="hairline flex items-center justify-between border-b px-4 py-2.5 last:border-b-0">
+							<span class="text-sm">{humanDay(log.date)}</span>
+							<span class="dim text-sm tabular-nums">
+								{isWeeklyQuantity(entryHabit) ? '' : entryHabit.goal === 'break'
+									? log.value <= entryHabit.target
+										? '✓'
+										: ''
+									: log.value >= entryHabit.target
+										? '✓'
+										: ''}
+								{entryHabit.goal === 'break' || entryHabit.kind === 'quantity'
+									? (isWeeklyQuantity(entryHabit) ? `${log.value} ${entryHabit.unit || 'times'}` : `${log.value}/${entryHabit.target}`)
+									: ''}
+							</span>
+						</div>
+					{:else}
+						<p class="dim px-4 py-6 text-center text-sm">
+							{activeToday ? 'No entries yet.' : `Starts on ${humanDay(startDate)}. Entries will appear here.`}
+						</p>
+					{/each}
+				</div>
 			</section>
 		{/if}
-		{#if cadenceSwitch}
-			<p class="dim mb-4 text-caption">Streaks count from the latest switch between daily and weekly tracking.</p>
-		{/if}
-
-		<section class="mb-4">
-			<div class="mb-2 flex items-baseline justify-between">
-				<h2 class="text-sm font-semibold">Last 12 weeks</h2>
-				<p class="dim text-caption">Tap a day to edit</p>
-			</div>
-			<Heatmap
-				{habit}
-				{logs}
-				weekStartsOn={settings.startOfWeek}
-				onToggleDay={(day) => (logDay = day)}
-			/>
-		</section>
-
-		<section>
-			<h2 class="mb-2 text-sm font-semibold">Recent</h2>
-			<div class="raised hairline overflow-hidden rounded-2xl border">
-				{#each logBox.value.filter((log) => log.date >= startDate && log.date <= todayKey).slice().sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 10) as log (log.id)}
-					{@const entryHabit = habitOn(habit, log.date)}
-					<div class="hairline flex items-center justify-between border-b px-4 py-2.5 last:border-b-0">
-						<span class="text-sm">{humanDay(log.date)}</span>
-						<span class="dim text-sm tabular-nums">
-							{isWeeklyQuantity(entryHabit) ? '' : entryHabit.goal === 'break'
-								? log.value <= entryHabit.target
-									? '✓'
-									: ''
-								: log.value >= entryHabit.target
-									? '✓'
-									: ''}
-							{entryHabit.goal === 'break' || entryHabit.kind === 'quantity'
-								? (isWeeklyQuantity(entryHabit) ? `${log.value} ${entryHabit.unit || 'times'}` : `${log.value}/${entryHabit.target}`)
-								: ''}
-						</span>
-					</div>
-				{:else}
-					<p class="dim px-4 py-6 text-center text-sm">
-						{activeToday ? 'No entries yet.' : `Starts on ${humanDay(startDate)}. Entries will appear here.`}
-					</p>
-				{/each}
-			</div>
-		</section>
-	{/if}
+	</div>
 </main>
 
 <HabitEditor

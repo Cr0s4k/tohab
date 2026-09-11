@@ -108,7 +108,8 @@ assert.match(html, /apple-mobile-web-app-status-bar-style/);
 
 const sheet = read('src/lib/components/Sheet.svelte');
 assert.match(sheet, /role="dialog"/);
-assert.match(sheet, /aria-modal="true"/);
+assert.match(sheet, /aria-modal=\{covered \? undefined : 'true'\}/);
+assert.match(sheet, /inert=\{covered\}/);
 assert.match(sheet, /aria-labelledby/);
 assert.match(sheet, /focusable/);
 assert.match(sheet, /onConfirm = onClose/);

@@ -13,6 +13,7 @@ import {
 	type RecordInput
 } from './activity.ts';
 import { now, uid } from './ids.ts';
+import { habitEmoji } from './habitEmoji.ts';
 import { queueUndo } from './undo.svelte.ts';
 import { habitForEdit, habitOn, habitRules, RULE_FIELDS, ruleChangeDate, rulesEqual, withHabitHistory } from './habitHistory.ts';
 
@@ -102,6 +103,7 @@ export async function createHabit(input: HabitInput) {
 		startDate,
 		historyVersion: 1,
 		name: input.name.trim(),
+		emoji: habitEmoji(input.emoji),
 		color: input.color || HABIT_COLORS[count % HABIT_COLORS.length],
 		goal: input.goal ?? 'build',
 		kind: input.goal === 'break' ? 'quantity' : input.kind,
@@ -151,6 +153,7 @@ export async function updateHabit(id: string, patch: Partial<Habit>, options: { 
 	if (!doc) return;
 	const before = doc.toMutableJSON();
 	const next = { ...patch, updatedAt: now() };
+	if (patch.emoji !== undefined) next.emoji = habitEmoji(patch.emoji);
 	let clearPause = false;
 	if ('pauseFrom' in patch || 'pauseUntil' in patch) {
 		const pause = normalizedPause(patch.pauseUntil, patch.pauseFrom ?? before.pauseFrom);

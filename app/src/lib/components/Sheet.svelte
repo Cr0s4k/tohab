@@ -2,35 +2,40 @@
 	import type { Snippet } from 'svelte';
 	import { tick } from 'svelte';
 	import { sheet, veil } from '$lib/motion';
-	import { lockScroll, unlockScroll } from '$lib/scrollLock';
+	import { lockScroll } from '$lib/scrollLock';
 
 	let {
 		open = false,
+		covered = false,
 		title = '',
 		confirmLabel = 'Done',
 		showHeader = true,
 		showCloseButton = true,
+		safeAreaBottom = true,
 		onClose,
 		onConfirm = onClose,
 		children
 	}: {
 		open?: boolean;
+		/** Keep this sheet mounted but inactive while a sibling sheet is above it. */
+		covered?: boolean;
 		title?: string;
 		confirmLabel?: string;
 		showHeader?: boolean;
 		showCloseButton?: boolean;
+		safeAreaBottom?: boolean;
 		onClose: () => void;
 		onConfirm?: () => void;
 		children: Snippet;
 	} = $props();
 
 	let pane = $state<HTMLElement | null>(null);
-	// Only one sheet is exposed at a time; a deterministic id avoids SSR hydration drift.
-	const titleId = 'active-sheet-title';
+	const sheetId = $props.id();
+	const titleId = `${sheetId}-title`;
 	const focusable = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
 	function trapFocus(event: KeyboardEvent) {
-		if (event.key !== 'Tab' || !pane) return;
+		if (covered || event.key !== 'Tab' || !pane) return;
 		const items = [...pane.querySelectorAll<HTMLElement>(focusable)].filter((item) => item.getClientRects().length > 0);
 		if (!items.length) {
 			event.preventDefault();
@@ -39,7 +44,7 @@
 		}
 		const first = items[0];
 		const last = items.at(-1)!;
-		if (event.shiftKey && document.activeElement === first) {
+		if (event.shiftKey && (document.activeElement === first || document.activeElement === pane)) {
 			event.preventDefault();
 			last.focus();
 		} else if (!event.shiftKey && document.activeElement === last) {
@@ -51,29 +56,36 @@
 	$effect(() => {
 		if (!open) return;
 		const previous = document.activeElement as HTMLElement | null;
-		lockScroll(() => pane);
+		const releaseScroll = lockScroll(() => pane);
+		let cancelled = false;
 		void tick().then(() => {
+			if (cancelled || pane?.closest('[inert], [aria-hidden="true"]')) return;
 			const target = pane?.querySelector<HTMLElement>('[autofocus]') ?? pane?.querySelector<HTMLElement>(focusable);
 			(target ?? pane)?.focus();
 		});
 		return () => {
-			unlockScroll();
-			if (previous?.isConnected) previous.focus();
+			cancelled = true;
+			releaseScroll();
+			// Wait for the underlying sheet to become exposed before restoring focus.
+			void tick().then(() => {
+				if (previous?.isConnected && !previous.closest('[inert], [aria-hidden="true"]')) previous.focus();
+			});
 		};
 	});
 </script>
 
 {#if open}
-	<div class="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center md:p-8">
+	<div inert={covered} aria-hidden={covered ? 'true' : undefined} class="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center md:p-8">
 		<button type="button" tabindex="-1" aria-label="Close" onclick={onClose} transition:veil class="absolute inset-0 touch-none bg-black/45"></button>
 		<div
 			bind:this={pane}
 			role="dialog"
-			aria-modal="true"
+			aria-modal={covered ? undefined : 'true'}
 			aria-labelledby={titleId}
 			tabindex="-1"
 			onkeydown={trapFocus}
-			class="raised hairline relative max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl pb-safe md:max-h-[80dvh] md:max-w-lg md:rounded-3xl md:border md:shadow-2xl"
+			class="raised hairline relative max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl md:max-h-[80dvh] md:max-w-lg md:rounded-3xl md:border md:shadow-2xl"
+			class:pb-safe={safeAreaBottom}
 			transition:sheet
 		>
 			{#if showHeader}
@@ -92,4 +104,4 @@
 	</div>
 {/if}
 
-<svelte:window onkeydown={(event) => { if (open && event.key === 'Escape') onClose(); }} />
+<svelte:window onkeydown={(event) => { if (open && !covered && !event.defaultPrevented && event.key === 'Escape') { event.preventDefault(); onClose(); } }} />
