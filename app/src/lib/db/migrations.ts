@@ -17,3 +17,8 @@ export function migrateTaskV4<T extends Record<string, unknown>>(doc: T): T {
 export function migrateHabitV3<T extends Record<string, unknown>>(doc: T): T {
 	return doc;
 }
+
+/** Removing the emoji length cap needs no data rewrite; preserve existing habit history. */
+export function migrateHabitV4<T extends Record<string, unknown>>(doc: T): T {
+	return doc;
+}

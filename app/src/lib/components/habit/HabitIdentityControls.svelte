@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { HABIT_COLORS } from '$lib/habits';
 	import { haptic } from '$lib/haptics';
+	import { habitEmoji } from '$lib/habitEmoji';
 	import Sheet from '../Sheet.svelte';
 
 	let { name = $bindable(), emoji = $bindable(), color = $bindable() }: {
@@ -96,6 +97,7 @@
 	let pickerOpen = $state(false);
 	let search = $state('');
 	let customEmoji = $state('');
+	let composingEmoji = $state(false);
 	let detailsOpen = $state(false);
 
 	let visibleGroups = $derived.by(() => {
@@ -122,9 +124,23 @@
 	}
 
 	function useCustomEmoji() {
-		const value = customEmoji.trim();
+		if (composingEmoji) return;
+		const value = habitEmoji(customEmoji);
 		if (!value) return;
 		chooseIcon(value);
+	}
+
+	function limitCustomEmoji(input: HTMLInputElement) {
+		const value = habitEmoji(input.value);
+		if (input.value !== value) {
+			const leadingSpace = input.value.length - input.value.trimStart().length;
+			const start = Math.max(0, (input.selectionStart ?? 0) - leadingSpace);
+			const end = Math.max(0, (input.selectionEnd ?? 0) - leadingSpace);
+			const direction = input.selectionDirection ?? undefined;
+			input.value = value;
+			input.setSelectionRange(Math.min(start, value.length), Math.min(end, value.length), direction);
+		}
+		customEmoji = value;
 	}
 </script>
 
@@ -196,8 +212,15 @@
 				<label class="block">
 					<span class="mb-2 block text-sm font-medium">Or use an emoji</span>
 					<div class="flex gap-2">
-						<input bind:value={customEmoji} maxlength="8" placeholder="Paste an emoji" class="sunken min-h-11 min-w-0 flex-1 rounded-xl px-3 text-base outline-none placeholder:opacity-50" />
-						<button type="button" onclick={useCustomEmoji} disabled={!customEmoji.trim()} class="tap accent-bg min-h-11 rounded-xl px-4 text-sm font-semibold disabled:opacity-30">Use</button>
+						<input
+							value={customEmoji}
+							oninput={(event) => { if (!composingEmoji && !(event instanceof InputEvent && event.isComposing)) limitCustomEmoji(event.currentTarget); }}
+							oncompositionstart={() => (composingEmoji = true)}
+							oncompositionend={(event) => { composingEmoji = false; limitCustomEmoji(event.currentTarget); }}
+							placeholder="Paste an emoji"
+							class="sunken min-h-11 min-w-0 flex-1 rounded-xl px-3 text-base outline-none placeholder:opacity-50"
+						/>
+						<button type="button" onclick={useCustomEmoji} disabled={composingEmoji || !customEmoji.trim()} class="tap accent-bg min-h-11 rounded-xl px-4 text-sm font-semibold disabled:opacity-30">Use</button>
 					</div>
 				</label>
 			</div>
