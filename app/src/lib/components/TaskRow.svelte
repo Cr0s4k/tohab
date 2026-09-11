@@ -241,9 +241,14 @@
 		transition: opacity 160ms ease;
 	}
 
-	.task-check:hover .task-check__tick,
 	.task-check[aria-checked='true'] .task-check__tick {
 		opacity: 1;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.task-check:hover:not(:global([data-scroll-tap-cancelled]) *) .task-check__tick {
+			opacity: 1;
+		}
 	}
 
 	.task-check[aria-checked='true'] .task-check__tick {
