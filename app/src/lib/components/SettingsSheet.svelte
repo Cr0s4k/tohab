@@ -11,7 +11,7 @@
 	});
 </script>
 
-<Sheet {open} title="Settings" confirmLabel="Done" {onClose}>
+<Sheet {open} title="Settings" confirmLabel="Done" focusTarget="dialog" {onClose}>
 	{#await content then loaded}
 		{#if loaded}
 			<loaded.default />
