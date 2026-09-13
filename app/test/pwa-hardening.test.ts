@@ -112,6 +112,8 @@ assert.match(sheet, /aria-modal=\{covered \? undefined : 'true'\}/);
 assert.match(sheet, /inert=\{covered\}/);
 assert.match(sheet, /aria-labelledby/);
 assert.match(sheet, /focusable/);
+assert.match(sheet, /focusTarget/);
+assert.match(sheet, /sheet-dialog:focus/);
 assert.match(sheet, /onConfirm = onClose/);
 assert.match(sheet, /onclick=\{onConfirm\}/);
 

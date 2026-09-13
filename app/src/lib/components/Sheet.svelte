@@ -12,6 +12,7 @@
 		showHeader = true,
 		showCloseButton = true,
 		safeAreaBottom = true,
+		focusTarget = 'first',
 		onClose,
 		onConfirm = onClose,
 		children
@@ -24,6 +25,8 @@
 		showHeader?: boolean;
 		showCloseButton?: boolean;
 		safeAreaBottom?: boolean;
+		/** Where focus lands when the sheet opens. The dialog surface is useful for read-heavy sheets. */
+		focusTarget?: 'first' | 'dialog';
 		onClose: () => void;
 		onConfirm?: () => void;
 		children: Snippet;
@@ -60,7 +63,9 @@
 		let cancelled = false;
 		void tick().then(() => {
 			if (cancelled || pane?.closest('[inert], [aria-hidden="true"]')) return;
-			const target = pane?.querySelector<HTMLElement>('[autofocus]') ?? pane?.querySelector<HTMLElement>(focusable);
+			const target = focusTarget === 'dialog'
+				? pane
+				: pane?.querySelector<HTMLElement>('[autofocus]') ?? pane?.querySelector<HTMLElement>(focusable);
 			(target ?? pane)?.focus();
 		});
 		return () => {
@@ -84,7 +89,7 @@
 			aria-labelledby={titleId}
 			tabindex="-1"
 			onkeydown={trapFocus}
-			class="raised hairline relative max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl md:max-h-[80dvh] md:max-w-lg md:rounded-3xl md:border md:shadow-2xl"
+			class="sheet-dialog raised hairline relative max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl md:max-h-[80dvh] md:max-w-lg md:rounded-3xl md:border md:shadow-2xl"
 			class:pb-safe={safeAreaBottom}
 			transition:sheet
 		>
@@ -105,3 +110,10 @@
 {/if}
 
 <svelte:window onkeydown={(event) => { if (open && !covered && !event.defaultPrevented && event.key === 'Escape') { event.preventDefault(); onClose(); } }} />
+
+<style>
+	/* The dialog surface is a focus landing point, not an action. Interactive controls retain their rings. */
+	.sheet-dialog:focus {
+		outline: none;
+	}
+</style>
