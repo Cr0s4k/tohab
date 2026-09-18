@@ -7,7 +7,7 @@ import {
 	type DocRow
 } from '../schema.ts';
 
-export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitRevisions', 'habitLogs', 'activity']);
+export const COLLECTIONS = new Set(['tasks', 'projects', 'habits', 'habitRevisions', 'habitLogs', 'habitEntryActions', 'activity']);
 
 export async function liveDocs(userId: string, collection: string): Promise<DocRow[]> {
 	return db

@@ -3,19 +3,21 @@
 	import { page } from '$app/state';
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
-	import type { Habit, HabitLog, HabitRevision, HabitView } from '$lib/db/schemas';
+	import type { Habit, HabitEntryAction, HabitLog, HabitRevision, HabitView } from '$lib/db/schemas';
 	import {
 		bestStreak,
 		completionRate,
 		currentStreak,
 		habitStartDate,
 		habitQuery,
+		entryActionsQuery,
 		isActiveOn,
 		isPausedOn,
 		logsQuery,
 		revisionsQuery,
 		setLog,
 		tapLog,
+		touchEntry,
 		toLogMap,
 		isWeeklyQuantity,
 		periodValue,
@@ -46,6 +48,7 @@
 	let habitBox = rx<Habit | null>(() => (live.db ? habitQuery(live.db, id).$ : null), null);
 	let revisionBox = rx<HabitRevision[]>(() => (live.db ? revisionsQuery(live.db, id).$ : null), []);
 	let logBox = rx<HabitLog[]>(() => (live.db ? logsQuery(live.db, id).$ : null), []);
+	let actionBox = rx<HabitEntryAction[]>(() => (live.db ? entryActionsQuery(live.db, id).$ : null), []);
 
 	let habit = $derived(
 		habitBox.value
@@ -53,23 +56,32 @@
 			: null
 	);
 	let logs = $derived(toLogMap(logBox.value));
-	let selectedLastEditedAt = $derived(logDay ? logBox.value.find((log) => log.date === logDay)?.editedAt : undefined);
 	let todayKey = $derived(today());
 	let todayHabit = $derived(habit ? habitOn(habit, todayKey) : null);
 	let startDate = $derived(habit ? habitStartDate(habit, logs) : '');
 	let activeToday = $derived(todayHabit ? isActiveOn(todayHabit, todayKey, logs) : false);
 	let pausedToday = $derived(todayHabit ? isPausedOn(todayHabit, todayKey) : false);
-	let queryError = $derived(habitBox.error ?? revisionBox.error ?? logBox.error);
+	let queryError = $derived(habitBox.error ?? revisionBox.error ?? logBox.error ?? actionBox.error);
 
 	function retryQueries() {
 		habitBox.retry?.();
 		revisionBox.retry?.();
 		logBox.retry?.();
+		actionBox.retry?.();
 	}
 
 	function runLog(action: () => Promise<void>) {
 		void action().catch((caught) => reportActionError(caught, action));
 	}
+
+	function openLogEditor(date: string) {
+		logDay = date;
+		if (!habit) return;
+		const selectedHabit = habitOn(habit, date);
+		if (isActiveOn(selectedHabit, date, logs)) runLog(() => touchEntry(selectedHabit, date));
+	}
+
+	let lastActionAt = $derived(logDay ? actionBox.value.find((action) => action.date === logDay)?.lastActionAt : undefined);
 
 	let stats = $derived.by(() => {
 		if (!habit) return null;
@@ -164,7 +176,7 @@
 					disabled={!activeToday}
 					onclick={() => {
 						haptic(currentHabit.goal === 'break' ? 'warn' : 'success');
-						if (currentHabit.kind === 'quantity') logDay = todayKey;
+						if (currentHabit.kind === 'quantity') openLogEditor(todayKey);
 						else runLog(() => tapLog(currentHabit, todayKey, valueOn(logs, todayKey)));
 					}}
 					class="tap disabled:opacity-50"
@@ -200,7 +212,7 @@
 							>
 								−
 							</button>
-							<button type="button" aria-label="Edit today’s amount" disabled={!activeToday} onclick={() => (logDay = todayKey)} class="tap min-h-11 px-2 text-sm tabular-nums underline underline-offset-4 disabled:opacity-50">
+							<button type="button" aria-label="Edit today’s amount" disabled={!activeToday} onclick={() => openLogEditor(todayKey)} class="tap min-h-11 px-2 text-sm tabular-nums underline underline-offset-4 disabled:opacity-50">
 								{valueOn(logs, todayKey)}{currentHabit.goal === 'break'
 									? (isWeeklyQuantity(currentHabit) ? ' today' : `/${currentHabit.target}`)
 									: currentHabit.unit
@@ -250,7 +262,7 @@
 					{habit}
 					{logs}
 					weekStartsOn={settings.startOfWeek}
-					onToggleDay={(day) => (logDay = day)}
+					onToggleDay={openLogEditor}
 				/>
 			</section>
 
@@ -294,5 +306,5 @@
 />
 
 {#if logDay && habit}
-	<HabitLogEditor habit={habitOn(habit, logDay)} day={logDay} value={valueOn(logs, logDay)} lastEditedAt={selectedLastEditedAt} {logs} onClose={() => (logDay = null)} />
+	<HabitLogEditor habit={habitOn(habit, logDay)} day={logDay} value={valueOn(logs, logDay)} {lastActionAt} {logs} onClose={() => (logDay = null)} />
 {/if}

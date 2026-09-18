@@ -13,6 +13,7 @@ import { replicateRxCollection } from 'rxdb/plugins/replication';
 import { Subject } from 'rxjs';
 import {
 	activitySchema,
+	habitEntryActionSchema,
 	habitLogSchema,
 	habitRevisionSchema,
 	habitSchema,
@@ -20,7 +21,7 @@ import {
 	taskSchema,
 	COLLECTION_NAMES
 } from '../src/lib/db/schemas.ts';
-import { migrateHabitLogV1, migrateHabitV3, migrateHabitV4, migrateTaskV2, migrateTaskV3, migrateTaskV4 } from '../src/lib/db/migrations.ts';
+import { migrateHabitV3, migrateHabitV4, migrateTaskV2, migrateTaskV3, migrateTaskV4 } from '../src/lib/db/migrations.ts';
 import { createReporter } from '../../test/assertions.ts';
 import { habitOn, withHabitHistory } from '../src/lib/habitHistory.ts';
 
@@ -48,7 +49,8 @@ async function makeDb(name: string) {
 		projects: { schema: projectSchema },
 		habits: { schema: habitSchema, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc, 3: migrateHabitV3, 4: migrateHabitV4 } },
 		habitRevisions: { schema: habitRevisionSchema },
-		habitLogs: { schema: habitLogSchema, migrationStrategies: { 1: migrateHabitLogV1 } },
+		habitLogs: { schema: habitLogSchema },
+		habitEntryActions: { schema: habitEntryActionSchema },
 		activity: { schema: activitySchema }
 	});
 	return db;
@@ -141,7 +143,13 @@ await deviceA.habitLogs.insert({
 	habitId: 'h1',
 	date: '2026-08-19',
 	value: 8,
-	editedAt: Date.now(),
+	updatedAt: Date.now()
+});
+await deviceA.habitEntryActions.insert({
+	id: 'h1:2026-08-19',
+	habitId: 'h1',
+	date: '2026-08-19',
+	lastActionAt: Date.now(),
 	updatedAt: Date.now()
 });
 await deviceA.habitRevisions.insert({
@@ -190,7 +198,7 @@ check('B received baseline and revised rules', (await deviceB.habitRevisions.fin
 check('B received dated target', (await deviceB.habitRevisions.findOne('h1-new-target').exec())?.target, 12);
 check('B received the weekdays array', (await deviceB.habits.findOne('h1').exec())?.weekdays, [1, 2, 3, 4, 5]);
 check('B received the log', (await deviceB.habitLogs.findOne('h1:2026-08-19').exec())?.value, 8);
-check('B received the log edit marker', typeof (await deviceB.habitLogs.findOne('h1:2026-08-19').exec())?.editedAt, 'number');
+check('B received the entry action', Boolean(await deviceB.habitEntryActions.findOne('h1:2026-08-19').exec()), true);
 
 // --- an edit on B converges back to A ---
 const onB = await deviceB.tasks.findOne('a1').exec();

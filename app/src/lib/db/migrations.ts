@@ -22,8 +22,3 @@ export function migrateHabitV3<T extends Record<string, unknown>>(doc: T): T {
 export function migrateHabitV4<T extends Record<string, unknown>>(doc: T): T {
 	return doc;
 }
-
-/** Edited-entry metadata is optional, so existing logs keep their first-recorded state. */
-export function migrateHabitLogV1<T extends Record<string, unknown>>(doc: T): T {
-	return doc;
-}

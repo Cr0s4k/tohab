@@ -6,7 +6,7 @@
 	import { habitStartDate, isActiveOn, isPausedOn, type LogMap } from '$lib/streaks';
 	import Sheet from './Sheet.svelte';
 
-	let { habit, day, value, lastEditedAt, logs = new Map(), onClose }: { habit: HabitView; day: string; value: number; lastEditedAt?: number; logs?: LogMap; onClose: () => void } = $props();
+	let { habit, day, value, lastActionAt, logs = new Map(), onClose }: { habit: HabitView; day: string; value: number; lastActionAt?: number; logs?: LogMap; onClose: () => void } = $props();
 	let draft = $state(untrack(() => value));
 	let saving = $state(false);
 	let error = $state('');
@@ -30,8 +30,8 @@
 <Sheet open title={habit.name} confirmLabel="Cancel" onClose={() => { if (!saving) onClose(); }}>
 	<form onsubmit={(event) => { event.preventDefault(); save(); }} class="space-y-4">
 		<p class="text-sm font-semibold">{humanDay(day)}</p>
-		{#if lastEditedAt}
-			<p class="dim text-xs">Last changed <time datetime={new Date(lastEditedAt).toISOString()}>{humanDateTime(lastEditedAt)}</time></p>
+		{#if lastActionAt}
+			<p class="dim text-xs">Last action <time datetime={new Date(lastActionAt).toISOString()}>{humanDateTime(lastActionAt)}</time></p>
 		{/if}
 		{#if !active}
 			{#if paused}

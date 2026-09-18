@@ -74,8 +74,15 @@ export type HabitLog = {
 	habitId: string;
 	date: string;
 	value: number;
-	/** Set only after an existing entry's value actually changes. */
-	editedAt?: number;
+	updatedAt: number;
+};
+
+/** One durable marker per habit/day for any submitted entry action, including a clear. */
+export type HabitEntryAction = {
+	id: string;
+	habitId: string;
+	date: string;
+	lastActionAt: number;
 	updatedAt: number;
 };
 
@@ -214,7 +221,7 @@ export const habitSchema: RxJsonSchema<Habit> = {
 
 export const habitLogSchema: RxJsonSchema<HabitLog> = {
 	title: 'habitLog',
-	version: 1,
+	version: 0,
 	primaryKey: 'id',
 	type: 'object',
 	properties: {
@@ -222,10 +229,25 @@ export const habitLogSchema: RxJsonSchema<HabitLog> = {
 		habitId: { type: 'string', maxLength: 40 },
 		date: { type: 'string', maxLength: 10 },
 		value: { type: 'number', minimum: 0, maximum: 10000, multipleOf: 1 },
-		editedAt: TS,
 		updatedAt: TS
 	},
 	required: ['id', 'habitId', 'date', 'value', 'updatedAt'],
+	indexes: [['habitId', 'date'], ['date'], ['updatedAt']]
+};
+
+export const habitEntryActionSchema: RxJsonSchema<HabitEntryAction> = {
+	title: 'habitEntryAction',
+	version: 0,
+	primaryKey: 'id',
+	type: 'object',
+	properties: {
+		id: { type: 'string', maxLength: 51 },
+		habitId: { type: 'string', maxLength: 40 },
+		date: { type: 'string', maxLength: 10 },
+		lastActionAt: TS,
+		updatedAt: TS
+	},
+	required: ['id', 'habitId', 'date', 'lastActionAt', 'updatedAt'],
 	indexes: [['habitId', 'date'], ['date'], ['updatedAt']]
 };
 
@@ -293,7 +315,7 @@ export const activitySchema: RxJsonSchema<Activity> = {
 	indexes: [['at'], ['updatedAt']]
 };
 
-export const COLLECTION_NAMES = ['tasks', 'projects', 'habits', 'habitRevisions', 'habitLogs', 'activity'] as const;
+export const COLLECTION_NAMES = ['tasks', 'projects', 'habits', 'habitRevisions', 'habitLogs', 'habitEntryActions', 'activity'] as const;
 export type CollectionName = (typeof COLLECTION_NAMES)[number];
 
 /** Every collection the activity log can restore a document into — that is, not itself. */

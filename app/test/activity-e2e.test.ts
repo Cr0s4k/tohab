@@ -243,9 +243,10 @@ await setLog(habit, '2026-08-18', 4);
 await deleteHabit(h.id);
 eq('habit gone', await db.habits.findOne(h.id).exec(), null);
 eq('its logs gone', (await db.habitLogs.find({ selector: { habitId: h.id } }).exec()).length, 0);
+eq('its entry actions gone', (await db.habitEntryActions.find({ selector: { habitId: h.id } }).exec()).length, 0);
 e = await pending('habit', 'delete');
 eq('habit delete recorded', [e.verb, e.subject], ['delete', 'Water']);
-eq('habit delete captured the habit, baseline and both logs', decodeChanges(e.changes).length, 4);
+eq('habit delete captured the habit, baseline, logs and action markers', decodeChanges(e.changes).length, 7);
 eq('habit delete queues immediate undo', undoState.current?.label, 'Habit deleted · Water');
 eq('habit delete reverted', await revertActivity(e.id), true);
 eq('habit restored', (await db.habits.findOne(h.id).exec())?.name, 'Water');
@@ -253,6 +254,11 @@ eq(
 	'its logs restored',
 	(await db.habitLogs.find({ selector: { habitId: h.id } }).exec()).length,
 	2
+);
+eq(
+	'its entry actions restored',
+	(await db.habitEntryActions.find({ selector: { habitId: h.id } }).exec()).length,
+	3
 );
 
 // Optional task reminders can return to inheriting the automatic default.

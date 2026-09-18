@@ -1,6 +1,6 @@
 import { getDb } from './db/lazy.ts';
 import type { Db } from './db/index.ts';
-import type { Habit, HabitGoal, HabitLog, HabitKind, HabitRevision, ScheduleKind } from './db/schemas.ts';
+import type { Habit, HabitEntryAction, HabitGoal, HabitLog, HabitKind, HabitRevision, ScheduleKind } from './db/schemas.ts';
 import { markLocalWrite } from './db/syncState.svelte.ts';
 import { HABIT_COLORS, habitStartDate, isPausedOn, logId, type LogMap } from './streaks.ts';
 import { humanDay, isValidKey, today, type DayKey } from './dates.ts';
@@ -44,6 +44,10 @@ export function logsQuery(db: Db, habitId?: string) {
 	return db.habitLogs.find(habitId ? { selector: { habitId } } : {});
 }
 
+export function entryActionsQuery(db: Db, habitId?: string) {
+	return db.habitEntryActions.find(habitId ? { selector: { habitId } } : {});
+}
+
 export function revisionsQuery(db: Db, habitId?: string) {
 	return db.habitRevisions.find(habitId ? { selector: { habitId } } : {});
 }
@@ -62,18 +66,27 @@ export function groupLogs(logs: HabitLog[]): Map<string, LogMap> {
 	return out;
 }
 
-export type EditedLogMap = Map<DayKey, number>;
+export type EntryActionMap = Map<string, number>;
 
-/** Keep edit metadata separate from value maps so streak and progress calculations stay numeric. */
-export function groupEditedLogs(logs: HabitLog[]): Map<string, EditedLogMap> {
-	const out = new Map<string, EditedLogMap>();
-	for (const log of logs) {
-		if (typeof log.editedAt !== 'number' || log.editedAt <= 0) continue;
-		let dates = out.get(log.habitId);
-		if (!dates) out.set(log.habitId, (dates = new Map()));
-		dates.set(log.date, log.editedAt);
+/** Groups durable interaction markers by habit and local calendar day. */
+export function groupEntryActions(actions: HabitEntryAction[]): Map<string, EntryActionMap> {
+	const out = new Map<string, EntryActionMap>();
+	for (const action of actions) {
+		let days = out.get(action.habitId);
+		if (!days) out.set(action.habitId, (days = new Map()));
+		days.set(action.date, action.lastActionAt);
 	}
 	return out;
+}
+
+async function recordEntryAction(db: Db, habitId: string, date: DayKey, at: number) {
+	await db.habitEntryActions.upsert({
+		id: logId(habitId, date),
+		habitId,
+		date,
+		lastActionAt: at,
+		updatedAt: at
+	});
 }
 
 export type HabitInput = {
@@ -265,9 +278,12 @@ export async function deleteHabit(id: string) {
 
 	const logs = await db.habitLogs.find({ selector: { habitId: id } }).exec();
 	const entries = logs.map((l) => l.toMutableJSON());
+	const actionDocs = await db.habitEntryActions.find({ selector: { habitId: id } }).exec();
+	const actionEntries = actionDocs.map((action) => action.toMutableJSON());
 	const revisions = await revisionsQuery(db, id).exec();
 	const revisionEntries = revisions.map((revision) => revision.toMutableJSON());
 	await Promise.all(logs.map((l) => l.remove()));
+	await Promise.all(actionDocs.map((action) => action.remove()));
 	await Promise.all(revisions.map((revision) => revision.remove()));
 	await doc.remove();
 	markLocalWrite();
@@ -277,6 +293,12 @@ export async function deleteHabit(id: string) {
 		...revisionEntries.map((revision) => ({ collection: 'habitRevisions' as const, id: revision.id, before: revision, after: null })),
 		...entries.map((entry) => ({
 			collection: 'habitLogs' as const,
+			id: entry.id,
+			before: entry,
+			after: null
+		})),
+		...actionEntries.map((entry) => ({
+			collection: 'habitEntryActions' as const,
 			id: entry.id,
 			before: entry,
 			after: null
@@ -323,12 +345,14 @@ export async function setLog(habit: Habit, date: DayKey, value: number) {
 	const id = logId(habit.id, date);
 	const existing = await db.habitLogs.findOne(id).exec();
 	const before = existing?.toMutableJSON() ?? null;
+	const actionAt = now();
+	await recordEntryAction(db, habit.id, date, actionAt);
+	markLocalWrite();
 	if ((before?.value ?? 0) === clamped) return;
 
 	if (clamped === 0) {
 		if (!existing) return;
 		await existing.remove();
-		markLocalWrite();
 		await recordWithUndo(
 			{
 				entity: 'habitLog',
@@ -343,17 +367,8 @@ export async function setLog(habit: Habit, date: DayKey, value: number) {
 		return;
 	}
 
-	const updatedAt = now();
-	const after: HabitLog = {
-		id,
-		habitId: habit.id,
-		date,
-		value: clamped,
-		updatedAt,
-		...(before ? { editedAt: updatedAt } : {})
-	};
+	const after = { id, habitId: habit.id, date, value: clamped, updatedAt: actionAt };
 	await db.habitLogs.upsert(after);
-	markLocalWrite();
 	await recordWithUndo(
 		{
 			entity: 'habitLog',
@@ -366,6 +381,25 @@ export async function setLog(habit: Habit, date: DayKey, value: number) {
 		},
 		`Entry recorded · ${habit.name}`
 	);
+}
+
+/** Persists the fact that an entry control was opened, even if the person backs out unchanged. */
+export async function touchEntry(habit: Habit, date: DayKey) {
+	const db = await getDb();
+	if (!isValidKey(date)) throw new Error('Choose a valid date.');
+	const current = await db.habits.findOne(habit.id).exec();
+	if (!current) throw new Error('This habit no longer exists.');
+	const currentView = current.toMutableJSON();
+	if (isPausedOn(currentView, date)) {
+		throw new Error(`This habit is paused through ${humanDay(currentView.pauseUntil!)}.`);
+	}
+	const logs = (await logsQuery(db, habit.id).exec()).map((log) => log.toMutableJSON());
+	if (date < habitStartDate(currentView, toLogMap(logs))) {
+		throw new Error('Change the habit’s start date before logging an earlier day.');
+	}
+	const at = now();
+	await recordEntryAction(db, habit.id, date, at);
+	markLocalWrite();
 }
 
 /**
