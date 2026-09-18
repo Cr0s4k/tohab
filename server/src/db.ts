@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import {
 	calendarPreferences,
+	calendarPublications,
 	docs,
 	pushReminders,
 	pushSubscriptions,
@@ -11,7 +12,7 @@ import {
 
 const CONNECTION = process.env.DATABASE_URL ?? 'postgresql://tohab:tohab@localhost:5432/tohab';
 const pool = new Pool({ connectionString: CONNECTION, max: 10 });
-const schema = { calendarPreferences, docs, pushReminders, pushSubscriptions, secrets, users };
+const schema = { calendarPreferences, calendarPublications, docs, pushReminders, pushSubscriptions, secrets, users };
 
 export const db = drizzle(pool, { schema });
 export type Executor =
@@ -22,6 +23,7 @@ export type Executor =
 export async function ensureSchema() {
 	const { rows } = await pool.query(
 		`SELECT to_regclass('public.docs') IS NOT NULL
+		    AND to_regclass('public.calendar_publications') IS NOT NULL
 		    AND to_regclass('public.calendar_preferences') IS NOT NULL
 		    AND to_regclass('public.secrets') IS NOT NULL
 		    AND to_regclass('public.users') IS NOT NULL

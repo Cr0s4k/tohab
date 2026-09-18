@@ -43,6 +43,34 @@ export const docs = pgTable(
 
 export type DocRow = typeof docs.$inferSelect;
 
+/** Server-owned publication history for calendar events and their retained cancellations. */
+export const calendarPublications = pgTable(
+	'calendar_publications',
+	{
+		userId: text('user_id').notNull(),
+		taskId: text('task_id').notNull(),
+		active: boolean('active').notNull(),
+		/** The docs revision that produced this event version and its SEQUENCE value. */
+		sequence: bigint('sequence', { mode: 'number' }).notNull(),
+		/** First server receipt at which this task became calendar eligible. */
+		publishedAt: bigint('published_at', { mode: 'number' }).notNull(),
+		/** Server receipt time of the current active/cancelled version. */
+		changedAt: bigint('changed_at', { mode: 'number' }).notNull(),
+		/** Zero for active entries; set when the cancellation is created. */
+		cancelledAt: bigint('cancelled_at', { mode: 'number' }).notNull().default(0),
+		/** Client document timestamp retained for LAST-MODIFIED compatibility. */
+		lastModified: bigint('last_modified', { mode: 'number' }).notNull(),
+		/** The last calendar-eligible task shape, including its date and recurrence. */
+		data: jsonb('data').notNull().$type<Record<string, unknown>>()
+	},
+	(t) => [
+		primaryKey({ columns: [t.userId, t.taskId] }),
+		index('calendar_publications_retention').on(t.userId, t.cancelledAt)
+	]
+);
+
+export type CalendarPublicationRow = typeof calendarPublications.$inferSelect;
+
 /**
  * Accounts. `docs.user_id` points here by convention rather than a foreign key: sync writes
  * must not be able to fail on a constraint the client cannot see or repair.

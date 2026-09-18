@@ -34,6 +34,8 @@ check('all-day end is exclusive next day', allDay.includes('DTEND;VALUE=DATE:202
 check('calendar feed does not own reminders', allDay.includes('BEGIN:VALARM'), false);
 check('summary', allDay.includes('SUMMARY:Pay rent'), true);
 check('no priority for p4', allDay.some((l) => l.startsWith('PRIORITY')), false);
+check('read-only feed remains a publish snapshot', allDay.includes('METHOD:PUBLISH'), true);
+check('feed does not switch to iTIP cancellation method', allDay.includes('METHOD:CANCEL'), false);
 check('wrapped in vcalendar', [allDay[0], allDay.at(-2)], ['BEGIN:VCALENDAR', 'END:VCALENDAR']);
 check('crlf terminated', buildCalendar([task()], opts).endsWith('\r\n'), true);
 
@@ -42,6 +44,72 @@ check('floating local start', timed.includes('DTSTART:20260820T173000'), true);
 check('30 minute block', timed.includes('DTEND:20260820T180000'), true);
 check('p1 maps to icalendar 1', timed.includes('PRIORITY:1'), true);
 check('timed events do not embed alarms', timed.includes('BEGIN:VALARM'), false);
+
+const firstRevision = buildCalendar([task({ sequence: 41 } as FeedTask)], opts);
+const secondRevision = buildCalendar([task({ title: 'Pay rent updated', sequence: 42 } as FeedTask)], opts);
+check('active event has a server sequence', firstRevision.includes('SEQUENCE:41'), true);
+check('updated event keeps its stable UID', secondRevision.includes('UID:task-a1@tohab'), true);
+check('updated event has a higher sequence', secondRevision.includes('SEQUENCE:42'), true);
+
+const cancelled = (over: Partial<FeedTask> = {}) =>
+	({
+		...task(),
+		done: true,
+		status: 'CANCELLED',
+		sequence: 43,
+		dtstamp: NOW,
+		cancelledAt: NOW,
+		...over
+	} as FeedTask);
+
+const deletedEvent = buildCalendar([cancelled({ id: 'deleted' })], opts);
+check('deleted published event is cancelled', deletedEvent.includes('STATUS:CANCELLED'), true);
+check('completed published event is cancelled', buildCalendar([cancelled({ id: 'completed' })], opts).includes('STATUS:CANCELLED'), true);
+check('cancellation uses the exact original UID', deletedEvent.includes('UID:task-deleted@tohab'), true);
+
+const recurringCancellation = buildCalendar(
+	[
+		cancelled({
+			id: 'cleared-due',
+			due: '2026-08-20',
+			dueTime: '09:15',
+			repeat: 'week:1:1,3',
+			recurrenceId: '20260820T091500'
+		})
+	],
+	opts
+);
+check('cleared due date keeps the original start', recurringCancellation.includes('DTSTART:20260820T091500'), true);
+check('cleared due date keeps the original end', recurringCancellation.includes('DTEND:20260820T094500'), true);
+check('cancellation keeps the original recurrence rule', recurringCancellation.includes('RRULE:FREQ=WEEKLY;BYDAY=MO,WE'), true);
+check('cancellation keeps the original recurrence id', recurringCancellation.includes('RECURRENCE-ID:20260820T091500'), true);
+const zuluRecurrenceCancellation = buildCalendar(
+	[
+		cancelled({
+			id: 'zulu-recurrence',
+			due: '2026-08-20',
+			dueTime: '09:15',
+			recurrenceId: '20260820T091500Z'
+		})
+	],
+	opts
+);
+check(
+	'cancellation preserves the exact original recurrence id value',
+	zuluRecurrenceCancellation.includes('RECURRENCE-ID:20260820T091500Z'),
+	true
+);
+
+const oldCancellation = buildCalendar(
+	[cancelled({ id: 'old', cancelledAt: NOW - 91 * 24 * 60 * 60 * 1000 })],
+	opts
+);
+check('old cancellation tombstone is retained only for the configured period', oldCancellation.includes('UID:task-old@tohab'), false);
+check(
+	'never-published undated task has no cancellation',
+	buildCalendar([cancelled({ id: 'never-published', due: '' })], opts).includes('STATUS:CANCELLED'),
+	false
+);
 
 const rollover = buildCalendar([task({ dueTime: '23:45' })], opts);
 check('duration crosses midnight', rollover.includes('DTEND:20260821T001500'), true);

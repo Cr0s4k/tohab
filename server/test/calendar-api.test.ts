@@ -7,12 +7,7 @@ const ROOT = (process.env.BASE ?? 'http://localhost:5178/sync').replace(/\/sync\
 const session = await signIn('calendar-api');
 const headers = { 'content-type': 'application/json', cookie: session.cookie };
 
-try {
-	const tokenResponse = await fetch(`${ROOT}/calendar/token`, { headers });
-	assert.equal(tokenResponse.status, 200);
-	const { token, feedUrl } = await tokenResponse.json() as { token: string; feedUrl?: string };
-	assert.ok(token);
-	assert.ok(feedUrl === undefined || feedUrl.endsWith(`/${token}/tohab.ics`));
+async function writeTask(over: Record<string, unknown>) {
 	await transaction((tx) => writeDoc(tx, session.userId, 'tasks', {
 		id: 'calendar-task',
 		title: 'Calendar task',
@@ -23,13 +18,138 @@ try {
 		priority: 4,
 		projectId: '',
 		updatedAt: Date.now(),
-		_deleted: false
+		_deleted: false,
+		...over
 	}));
+}
+
+async function feedBody(url: string) {
+	const response = await fetch(url);
+	assert.equal(response.status, 200);
+	return { response, body: await response.text() };
+}
+
+function event(body: string, uid: string) {
+	const block = body
+		.split('BEGIN:VEVENT\r\n')
+		.find((candidate) => candidate.includes(`UID:${uid}\r\n`));
+	assert.ok(block, `missing event ${uid}`);
+	return `BEGIN:VEVENT\r\n${block}`;
+}
+
+function sequence(block: string) {
+	const value = block.match(/\r\nSEQUENCE:(\d+)\r\n/)?.[1];
+	assert.ok(value, 'event has no sequence');
+	return Number(value);
+}
+
+try {
+	const tokenResponse = await fetch(`${ROOT}/calendar/token`, { headers });
+	assert.equal(tokenResponse.status, 200);
+	const { token, feedUrl } = await tokenResponse.json() as { token: string; feedUrl?: string };
+	assert.ok(token);
+	assert.ok(feedUrl === undefined || feedUrl.endsWith(`/${token}/tohab.ics`));
+	await writeTask({});
 
 	const stableUrl = `${ROOT}/calendar/${token}/tohab.ics`;
-	const feed = await fetch(stableUrl);
-	assert.equal(feed.status, 200);
-	assert.doesNotMatch(await feed.text(), /BEGIN:VALARM/);
+	const first = await feedBody(stableUrl);
+	assert.doesNotMatch(first.body, /BEGIN:VALARM/);
+	const firstEvent = event(first.body, 'task-calendar-task@tohab');
+	assert.doesNotMatch(firstEvent, /STATUS:CANCELLED/);
+	const firstSequence = sequence(firstEvent);
+	assert.match(firstEvent, /DTSTART:20260825T090000/);
+	assert.ok(first.response.headers.get('etag'));
+
+	await writeTask({
+		title: 'Calendar task updated',
+		notes: 'changed',
+		due: '2026-08-26',
+		dueTime: '10:30',
+		repeat: 'day:1',
+		updatedAt: Date.now() + 1
+	});
+	const updated = await feedBody(stableUrl);
+	const updatedEvent = event(updated.body, 'task-calendar-task@tohab');
+	assert.equal(sequence(updatedEvent) > firstSequence, true);
+	assert.match(updatedEvent, /SUMMARY:Calendar task updated/);
+	assert.match(updatedEvent, /DTSTART:20260826T103000/);
+	assert.match(updatedEvent, /RRULE:FREQ=DAILY/);
+
+	await writeTask({
+		done: true,
+		completedAt: Date.now(),
+		due: '2026-08-26',
+		dueTime: '10:30',
+		repeat: 'day:1',
+		updatedAt: Date.now() + 2
+	});
+	const completed = await feedBody(stableUrl);
+	const completedEvent = event(completed.body, 'task-calendar-task@tohab');
+	assert.match(completedEvent, /STATUS:CANCELLED/);
+	assert.match(completedEvent, /DTSTART:20260826T103000/);
+	assert.equal(completed.body.match(/UID:task-calendar-task@tohab\r\n/g)?.length, 1);
+	assert.equal(sequence(completedEvent) > sequence(updatedEvent), true);
+
+	await writeTask({
+		id: 'cleared-calendar',
+		title: 'Cleared date',
+		due: '2026-08-27',
+		dueTime: '11:15',
+		repeat: 'week:1:1,3',
+		recurrenceId: '20260827T111500',
+		updatedAt: Date.now() + 3
+	});
+	const beforeClear = await feedBody(stableUrl);
+	assert.match(beforeClear.body, /UID:task-cleared-calendar@tohab/);
+	await writeTask({
+		id: 'cleared-calendar',
+		due: '',
+		dueTime: '',
+		repeat: '',
+		recurrenceId: '',
+		updatedAt: Date.now() + 4
+	});
+	const afterClear = await feedBody(stableUrl);
+	const clearedEvent = event(afterClear.body, 'task-cleared-calendar@tohab');
+	assert.match(clearedEvent, /STATUS:CANCELLED/);
+	assert.match(clearedEvent, /DTSTART:20260827T111500/);
+	assert.match(clearedEvent, /DTEND:20260827T114500/);
+	assert.match(clearedEvent, /RRULE:FREQ=WEEKLY;BYDAY=MO,WE/);
+	assert.match(clearedEvent, /RECURRENCE-ID:20260827T111500/);
+
+	for (const [id, title] of [['test-30', 'Test 30'], ['do-that', 'Do that']] as const) {
+		await writeTask({ id, title, due: '2026-08-28', updatedAt: Date.now() + 5 });
+		await feedBody(stableUrl);
+		await writeTask({ id, _deleted: true, updatedAt: Date.now() + 6 });
+	}
+	const deleted = await feedBody(stableUrl);
+	for (const [id, title] of [['test-30', 'Test 30'], ['do-that', 'Do that']] as const) {
+		const deletedEvent = event(deleted.body, `task-${id}@tohab`);
+		assert.match(deletedEvent, /STATUS:CANCELLED/);
+		assert.match(deletedEvent, new RegExp(`SUMMARY:${title}`));
+	}
+
+	await writeTask({ id: 'never-undated', due: '', _deleted: false, updatedAt: Date.now() + 7 });
+	await writeTask({ id: 'never-undated', due: '', _deleted: true, updatedAt: Date.now() + 8 });
+	await writeTask({ id: 'still-active', title: 'Still active', due: '2026-08-29', updatedAt: Date.now() + 9 });
+	const final = await feedBody(stableUrl);
+	assert.doesNotMatch(final.body, /UID:task-never-undated@tohab/);
+	assert.match(final.body, /UID:task-calendar-task@tohab/);
+	assert.match(final.body, /UID:task-cleared-calendar@tohab/);
+	const activeEvent = event(final.body, 'task-still-active@tohab');
+	assert.doesNotMatch(activeEvent, /STATUS:CANCELLED/);
+	const uids = final.body.match(/UID:[^\r\n]+/g) ?? [];
+	assert.equal(uids.length, new Set(uids).size);
+	assert.equal(final.body.startsWith('BEGIN:VCALENDAR\r\n'), true);
+	assert.equal(final.body.endsWith('END:VCALENDAR\r\n'), true);
+	assert.equal(final.body.split('\r\n').filter(Boolean).every((line) => Buffer.byteLength(line) <= 75), true);
+
+	const repeat = await feedBody(stableUrl);
+	assert.equal(repeat.response.headers.get('etag'), final.response.headers.get('etag'));
+	const cached = await fetch(stableUrl, {
+		headers: { 'if-none-match': final.response.headers.get('etag')! }
+	});
+	assert.equal(cached.status, 304);
 
 	const tokenAgain = await fetch(`${ROOT}/calendar/token`, { headers });
 	assert.equal((await tokenAgain.json() as { token: string }).token, token);

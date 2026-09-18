@@ -1,4 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import ical, {
+	ICalCalendarMethod,
+	ICalEventStatus,
+	type ICalEventData
+} from 'ical-generator';
 
 export type FeedTask = {
 	id: string;
@@ -11,13 +16,28 @@ export type FeedTask = {
 	projectId: string;
 	repeat?: string;
 	updatedAt: number;
+	/** Server-owned event revision. It is the document revision, not the client clock. */
+	sequence?: number;
+	/** Server receipt time used to keep DTSTAMP stable between feed requests. */
+	dtstamp?: number;
+	/** Optional event modification time override used by cancellation snapshots. */
+	lastModified?: number;
+	/** The original recurrence instance, when a publication snapshot has one. */
+	recurrenceId?: string;
+	/** A cancelled entry is a retained tombstone for a formerly published event. */
+	status?: 'CANCELLED';
+	cancelledAt?: number;
+	_deleted?: boolean;
 };
 
 export type FeedOptions = {
 	name?: string;
 	projects?: Map<string, string>;
 	now?: number;
+	tombstoneRetentionMs?: number;
 };
+
+export const DEFAULT_TOMBSTONE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 /**
  * Feed URLs are handed to third parties (Google fetches them anonymously, and they end up in
@@ -63,56 +83,40 @@ export function resolveFeedToken(
 	});
 }
 
-function escape(value: string): string {
-	return value
-		.replace(/\\/g, '\\\\')
-		.replace(/;/g, '\\;')
-		.replace(/,/g, '\\,')
-		.replace(/\r?\n/g, '\\n');
-}
-
-/** RFC 5545 caps content lines at 75 octets, continued by a leading space. */
-function fold(line: string): string {
-	const bytes = Buffer.from(line, 'utf8');
-	if (bytes.length <= 75) return line;
-
-	const parts: string[] = [];
-	let cut = 0;
-	while (cut < bytes.length) {
-		let take = Math.min(parts.length ? 74 : 75, bytes.length - cut);
-		// Never split a multi-byte character: 0b10xxxxxx bytes are continuations.
-		while (take > 1 && cut + take < bytes.length && (bytes[cut + take] & 0xc0) === 0x80) take--;
-		parts.push(bytes.subarray(cut, cut + take).toString('utf8'));
-		cut += take;
-	}
-	return parts.join('\r\n ');
-}
-
-function stampUtc(ms: number): string {
-	return `${new Date(ms).toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`;
-}
-
-function dateOnly(due: string): string {
-	return due.replace(/-/g, '');
-}
-
-function shiftDate(due: string, days: number): string {
-	const [y, m, d] = due.split('-').map(Number);
-	const shifted = new Date(Date.UTC(y, m - 1, d + days));
-	return shifted.toISOString().slice(0, 10).replace(/-/g, '');
-}
-
 /**
  * Local wall-clock, deliberately without a TZID or trailing Z. Tohab stores `due`/`dueTime` as
  * whatever the device's calendar showed, with no zone attached, so a floating time is the
  * honest translation: the calendar client renders it in its own zone, and 9am stays 9am after
  * the reader travels.
  */
-function floating(due: string, time: string, addMinutes = 0): string {
+function calendarDate(due: string, time = ''): Date {
 	const [y, m, d] = due.split('-').map(Number);
-	const [hh, mm] = time.split(':').map(Number);
-	const at = new Date(Date.UTC(y, m - 1, d, hh, mm + addMinutes));
-	return at.toISOString().replace(/[-:]/g, '').slice(0, 15);
+	const [hh, mm] = time ? time.split(':').map(Number) : [0, 0];
+	return new Date(Date.UTC(y, m - 1, d, hh, mm));
+}
+
+function recurrenceDate(value: string): Date {
+	const basic = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z?)?$/.exec(value);
+	if (basic) {
+		return new Date(
+			Date.UTC(
+				Number(basic[1]),
+				Number(basic[2]) - 1,
+				Number(basic[3]),
+				Number(basic[4] ?? 0),
+				Number(basic[5] ?? 0),
+				Number(basic[6] ?? 0)
+			)
+		);
+	}
+
+	const parsed = new Date(value);
+	if (Number.isNaN(parsed.getTime())) throw new Error('Invalid calendar recurrence ID');
+	return parsed;
+}
+
+function exactRecurrenceId(value: string): string | undefined {
+	return /^\d{8}(?:T\d{6}Z?)?$/.test(value) ? value : undefined;
 }
 
 const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
@@ -156,55 +160,104 @@ const PRIORITY: Record<number, number> = { 1: 1, 2: 3, 3: 6 };
 
 const TASK_DURATION_MINUTES = 30;
 
-export function taskToEvent(task: FeedTask, options: FeedOptions = {}): string[] {
+function eventData(task: FeedTask, options: FeedOptions = {}): ICalEventData {
 	const { projects, now = Date.now() } = options;
-	const lines: string[] = ['BEGIN:VEVENT', `UID:task-${task.id}@tohab`, `DTSTAMP:${stampUtc(now)}`];
-
-	if (task.dueTime) {
-		lines.push(`DTSTART:${floating(task.due, task.dueTime)}`);
-		lines.push(`DTEND:${floating(task.due, task.dueTime, TASK_DURATION_MINUTES)}`);
-	} else {
-		lines.push(`DTSTART;VALUE=DATE:${dateOnly(task.due)}`);
-		lines.push(`DTEND;VALUE=DATE:${shiftDate(task.due, 1)}`);
-	}
-
+	const start = calendarDate(task.due, task.dueTime);
+	const allDay = !task.dueTime;
+	const end = new Date(
+		start.getTime() + (allDay ? 24 * 60 : TASK_DURATION_MINUTES) * 60 * 1000
+	);
 	const rrule = toRrule(task.repeat);
-	if (rrule) lines.push(`RRULE:${rrule}`);
-
-	lines.push(`SUMMARY:${escape(task.title || 'Untitled task')}`);
-	if (task.notes) lines.push(`DESCRIPTION:${escape(task.notes)}`);
-
 	const project = task.projectId ? projects?.get(task.projectId) : undefined;
-	if (project) lines.push(`CATEGORIES:${escape(project)}`);
+	const lastModified = task.lastModified ?? task.updatedAt;
 
-	const priority = PRIORITY[task.priority];
-	if (priority) lines.push(`PRIORITY:${priority}`);
+	return {
+		id: `task-${task.id}@tohab`,
+		sequence: Number.isInteger(task.sequence) && task.sequence! >= 0 ? task.sequence : 0,
+		stamp: new Date(task.dtstamp ?? now),
+		start,
+		end,
+		allDay,
+		floating: !allDay,
+		recurrenceId: task.recurrenceId ? recurrenceDate(task.recurrenceId) : null,
+		repeating: rrule ? `RRULE:${rrule}` : null,
+		summary: task.title || 'Untitled task',
+		description: task.notes || null,
+		categories: project ? [{ name: project }] : undefined,
+		priority: PRIORITY[task.priority] ?? null,
+		lastModified: lastModified ? new Date(lastModified) : null,
+		status: task.status === 'CANCELLED' ? ICalEventStatus.CANCELLED : null
+	};
+}
 
-	if (task.updatedAt) lines.push(`LAST-MODIFIED:${stampUtc(task.updatedAt)}`);
+function calendarFor(options: FeedOptions = {}) {
+	return ical({
+		name: options.name ?? 'Tohab',
+		prodId: '//tohab//calendar//EN',
+		scale: 'GREGORIAN',
+		method: ICalCalendarMethod.PUBLISH
+	}).ttl(60 * 60);
+}
 
-	lines.push('END:VEVENT');
+export function taskToEvent(task: FeedTask, options: FeedOptions = {}): string[] {
+	const calendar = calendarFor(options);
+	const event = calendar.createEvent(eventData(task, options));
+	const lines = event.toString().trimEnd().split('\r\n');
+
+	// Keep the exact stored RECURRENCE-ID spelling/value, including a possible trailing Z.
+	const recurrenceId = task.recurrenceId ? exactRecurrenceId(task.recurrenceId) : undefined;
+	if (recurrenceId) {
+		const index = lines.findIndex((line) => line.startsWith('RECURRENCE-ID:'));
+		if (index >= 0) lines[index] = `RECURRENCE-ID:${recurrenceId}`;
+	}
 	return lines;
 }
 
 export function buildCalendar(tasks: FeedTask[], options: FeedOptions = {}): string {
-	const { name = 'Tohab' } = options;
+	const {
+		name = 'Tohab',
+		now = Date.now(),
+		tombstoneRetentionMs = DEFAULT_TOMBSTONE_RETENTION_MS
+	} = options;
 
-	const due = tasks
-		.filter((task) => task.due && !task.done)
-		.sort((a, b) => `${a.due}${a.dueTime}`.localeCompare(`${b.due}${b.dueTime}`));
+	const byUid = new Map<string, FeedTask>();
+	for (const task of tasks) {
+		const cancelled = task.status === 'CANCELLED';
+		if (!task.due || (!cancelled && (task.done || task._deleted))) continue;
+		if (
+			cancelled &&
+			task.cancelledAt !== undefined &&
+			now - task.cancelledAt > tombstoneRetentionMs
+		) {
+			continue;
+		}
 
-	const lines = [
-		'BEGIN:VCALENDAR',
-		'VERSION:2.0',
-		'PRODID:-//tohab//calendar//EN',
-		'CALSCALE:GREGORIAN',
-		'METHOD:PUBLISH',
-		`X-WR-CALNAME:${escape(name)}`,
-		'REFRESH-INTERVAL;VALUE=DURATION:PT1H',
-		'X-PUBLISHED-TTL:PT1H',
-		...due.flatMap((task) => taskToEvent(task, options)),
-		'END:VCALENDAR'
-	];
+		const uid = `task-${task.id}@tohab`;
+		const existing = byUid.get(uid);
+		if (!existing || eventWins(task, existing)) byUid.set(uid, task);
+	}
 
-	return `${lines.map(fold).join('\r\n')}\r\n`;
+	const due = [...byUid.values()].sort((a, b) => {
+		const dateOrder = `${a.due}${a.dueTime}`.localeCompare(`${b.due}${b.dueTime}`);
+		return dateOrder || `task-${a.id}@tohab`.localeCompare(`task-${b.id}@tohab`);
+	});
+
+	const calendar = calendarFor({ ...options, name });
+	for (const task of due) calendar.createEvent(eventData(task, options));
+	let body = calendar.toString();
+	let recurrenceIndex = 0;
+	body = body.replace(/RECURRENCE-ID:[^\r\n]*/g, (line) => {
+		while (recurrenceIndex < due.length && !due[recurrenceIndex].recurrenceId) recurrenceIndex++;
+		const recurrenceId = due[recurrenceIndex++]?.recurrenceId;
+		const exact = recurrenceId ? exactRecurrenceId(recurrenceId) : undefined;
+		return exact ? `RECURRENCE-ID:${exact}` : line;
+	});
+	return `${body}\r\n`;
+}
+
+function eventWins(candidate: FeedTask, existing: FeedTask): boolean {
+	const candidateSequence = Number.isInteger(candidate.sequence) ? candidate.sequence! : -1;
+	const existingSequence = Number.isInteger(existing.sequence) ? existing.sequence! : -1;
+	if (candidateSequence !== existingSequence) return candidateSequence > existingSequence;
+	return candidate.status === 'CANCELLED' && existing.status !== 'CANCELLED';
 }

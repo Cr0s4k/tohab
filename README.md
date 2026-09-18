@@ -99,6 +99,7 @@ compile and any managed Postgres works.
 ## Tests
 
 ```bash
+pnpm test:unit          # server calendar and push unit tests
 pnpm test               # pure logic: streak math, quick-add parser, recurrence,
                         # task arranging, activity log and undo, calendar feed
 pnpm test:integration   # sync protocol, concurrency, RxDB replication, browser smoke test
@@ -224,9 +225,10 @@ a next occurrence (bins, rent, filters), Habits are for things measured as a str
 
 Settings → Calendar feed reveals a subscription URL you can add to Google Calendar (Other
 calendars → From URL) or iOS Calendar. Open tasks with a due date become events: timed tasks
-get a 30-minute block and date-only tasks become all-day events. Completed tasks are excluded,
-and a task's project becomes the event's category. A repeating task becomes one event with an
-`RRULE`, so the whole series shows up rather than only its next occurrence. The feed is
+get a 30-minute block and date-only tasks become all-day events. Completed or deleted events
+remain as short-lived cancellation tombstones so polling calendar clients remove their prior
+copies, and a task's project becomes the event's category. A repeating task becomes one event
+with an `RRULE`, so the whole series shows up rather than only its next occurrence. The feed is
 schedule-only; Tohab Web Push owns reminders so calendar clients do not produce duplicates.
 
 ```
@@ -241,6 +243,8 @@ GET /calendar/<token>/tohab.ics
 - Set `CALENDAR_PUBLIC_BASE_URL` when the private application origin cannot be reached by a
   hosted calendar service. For example, `https://calendar.example.com/calendar` makes the
   authenticated token endpoint return that public origin while the application stays private.
+- `CALENDAR_TOMBSTONE_RETENTION_DAYS` controls how long deleted or completed events remain in
+  the polling feed as `STATUS:CANCELLED`; it defaults to 90 days.
 - `every!` rules deliberately get no `RRULE`. They count from whenever the task is actually
   completed, so no fixed schedule describes them and only the current due date is known.
 - Times are emitted as floating local wall-clock — no `TZID`, no `Z`. Tohab stores what the

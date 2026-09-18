@@ -6,7 +6,14 @@
 import { and, eq, like } from 'drizzle-orm';
 import { closeDb, db } from '../src/db.ts';
 import { createUser } from '../src/repositories/users.ts';
-import { calendarPreferences, docs, pushReminders, pushSubscriptions, users } from '../src/schema.ts';
+import {
+	calendarPreferences,
+	calendarPublications,
+	docs,
+	pushReminders,
+	pushSubscriptions,
+	users
+} from '../src/schema.ts';
 import { hashPassword } from '../src/auth.ts';
 
 const EMAIL_SUFFIX = '@test.invalid';
@@ -46,6 +53,7 @@ export async function cleanup() {
 
 	for (const row of rows) {
 		await db.delete(calendarPreferences).where(eq(calendarPreferences.userId, row.id));
+		await db.delete(calendarPublications).where(eq(calendarPublications.userId, row.id));
 		const subscriptions = await db
 			.select({ id: pushSubscriptions.id })
 			.from(pushSubscriptions)
