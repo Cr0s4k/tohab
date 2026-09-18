@@ -80,12 +80,16 @@ try {
 	await click('Save entry');
 	await waitFor("!document.querySelector('[role=dialog]')");
 	assert.equal(await evaluate(`(async () => (await window.db.habitLogs.findOne(window.habit.id+':'+window.yesterday).exec()).value)()`), 12);
+	await waitFor("document.querySelector('[aria-label=\"Entry edited\"]')");
+	assert.equal(await evaluate(`Boolean(document.querySelector('[aria-label="Entry edited"]'))`), true);
 	await evaluate(`document.querySelector('button[aria-label="Edit entry for Read"]').click()`);
 	await waitFor("document.querySelector('[role=dialog] input[type=number]')");
+	assert.equal(await evaluate(`document.querySelector('[role=dialog]').innerText.includes('Last changed')`), true);
 	await evaluate(`(() => {const input=document.querySelector('[role=dialog] input[type=number]');input.value='0';input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
 	await click('Save entry');
 	await waitFor("!document.querySelector('[role=dialog]')");
 	assert.equal(await evaluate(`(async () => !!(await window.db.habitLogs.findOne(window.habit.id+':'+window.yesterday).exec()))()`), false);
+	assert.equal(await evaluate(`Boolean(document.querySelector('[aria-label="Entry edited"]'))`), false);
 	await evaluate('window.archiveHabit()');
 	await waitFor("!document.querySelector('button[aria-label=\"Edit entry for Read\"]')");
 	await evaluate(`document.querySelector('button[aria-label="Archived habits"]').click()`);
