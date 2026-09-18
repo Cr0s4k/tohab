@@ -1,5 +1,4 @@
 import { browser } from '$app/environment';
-import { syncThemeColor } from './themeColor';
 
 export type Theme = 'system' | 'light' | 'dark';
 
@@ -37,7 +36,6 @@ export function applyTheme() {
 		settings.theme === 'dark' ||
 		(settings.theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
 	document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-	syncThemeColor();
 }
 
 export function setTheme(theme: Theme) {
