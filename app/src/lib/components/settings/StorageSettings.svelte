@@ -33,8 +33,8 @@
 	});
 </script>
 
-<section class="mb-6">
-	<h2 class="dim mb-2 text-caption font-semibold tracking-wide uppercase">Storage</h2>
+<section>
+	<h3 class="mb-3 text-sm font-semibold">Storage</h3>
 	<div class="raised hairline rounded-2xl border p-4">
 		<p class="text-sm">{storageStatus}</p>
 		{#if !storagePersistent}

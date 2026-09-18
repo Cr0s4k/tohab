@@ -89,8 +89,8 @@
 	});
 </script>
 
-<section class="mb-6">
-	<h2 class="dim mb-2 text-caption font-semibold tracking-wide uppercase">Task notifications</h2>
+<section>
+	<h3 class="mb-3 text-sm font-semibold">Task notifications</h3>
 	<div class="raised hairline rounded-2xl border">
 		{#if !notificationSupport.supported}
 			<p class="px-4 py-3 text-sm">{notificationSupport.reason}</p>

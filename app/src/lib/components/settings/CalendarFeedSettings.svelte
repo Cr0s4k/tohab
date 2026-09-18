@@ -31,8 +31,8 @@
 	}
 </script>
 
-<section class="mb-6">
-	<h2 class="dim mb-2 text-caption font-semibold tracking-wide uppercase">Calendar feed</h2>
+<section>
+	<h3 class="mb-3 text-sm font-semibold">Calendar feed</h3>
 	<div class="raised hairline rounded-2xl border">
 		{#if feed}
 			<div class="hairline border-b px-4 py-3">
@@ -40,7 +40,7 @@
 				<button type="button" use:hapticTap onclick={copyFeed} class="tap accent-bg mt-2 w-full rounded-xl py-2 text-[0.8rem] font-semibold">Copy URL</button>
 			</div>
 		{:else}
-			<button type="button" onclick={revealFeed} disabled={feedBusy} class="tap hairline w-full border-b px-4 py-3 text-left text-sm disabled:opacity-50">{feedBusy ? 'Asking the server…' : 'Show subscription URL'}</button>
+			<button type="button" onclick={revealFeed} disabled={feedBusy} class="tap hairline min-h-11 w-full border-b px-4 py-3 text-left text-sm disabled:opacity-50">{feedBusy ? 'Asking the server…' : 'Show subscription URL'}</button>
 		{/if}
 		<div class="px-4 py-3 text-caption">
 			{#if feedError}

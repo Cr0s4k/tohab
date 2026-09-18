@@ -39,7 +39,7 @@
 
 	function trapFocus(event: KeyboardEvent) {
 		if (covered || event.key !== 'Tab' || !pane) return;
-		const items = [...pane.querySelectorAll<HTMLElement>(focusable)].filter((item) => item.getClientRects().length > 0);
+		const items = [...pane.querySelectorAll<HTMLElement>(focusable)].filter((item) => item.getClientRects().length > 0 && !item.closest('details:not([open]) > :not(summary)'));
 		if (!items.length) {
 			event.preventDefault();
 			pane.focus();
