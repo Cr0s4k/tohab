@@ -5,7 +5,6 @@
 	import type { Habit, HabitLog, HabitRevision, HabitView } from '$lib/db/schemas';
 	import {
 		currentStreak,
-		groupEditedLogs,
 		groupLogs,
 		habitsQuery,
 		isActiveOn,
@@ -46,7 +45,7 @@
 	let showArchived = $state(false);
 	let restoring = $state('');
 	let archiveError = $state('');
-	let logEntry = $state<{ habit: HabitView; day: string; value: number; lastEditedAt?: number; logs: LogMap } | null>(null);
+	let logEntry = $state<{ habit: HabitView; day: string; value: number; logs: LogMap } | null>(null);
 
 	async function restore(habit: Habit) {
 		if (restoring) return;
@@ -58,13 +57,7 @@
 	}
 
 	function logHabit(habit: Habit, value: number) {
-		if (habit.kind === 'quantity') logEntry = {
-			habit,
-			day,
-			value,
-			lastEditedAt: editedByHabit.get(habit.id)?.get(day),
-			logs: byHabit.get(habit.id) ?? new Map()
-		};
+		if (habit.kind === 'quantity') logEntry = { habit, day, value, logs: byHabit.get(habit.id) ?? new Map() };
 		else {
 			const action = () => tapLog(habit, day, value);
 			void action().catch((caught) => reportActionError(caught, action));
@@ -83,7 +76,6 @@
 		)
 	);
 	let byHabit = $derived(groupLogs(logs.value));
-	let editedByHabit = $derived(groupEditedLogs(logs.value));
 
 	let active = $derived(habits.filter((h) => !h.archived));
 	let available = $derived(active.map((h) => habitOn(h, day)).filter((h) => isActiveOn(h, day, byHabit.get(h.id))));
@@ -263,7 +255,6 @@
 							value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
 							streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
 							dayValue={valueOn(habitLogs, day)}
-							edited={editedByHabit.get(habit.id)?.has(day) ?? false}
 							onTap={() => logHabit(habit, valueOn(habitLogs, day))}
 						/>
 					</div>
@@ -285,7 +276,6 @@
 								streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
 								due={false}
 								dayValue={valueOn(habitLogs, day)}
-								edited={editedByHabit.get(habit.id)?.has(day) ?? false}
 								onTap={() => logHabit(habit, valueOn(habitLogs, day))}
 							/>
 						</div>

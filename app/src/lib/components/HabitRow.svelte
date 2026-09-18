@@ -11,7 +11,6 @@
 		dayValue = value,
 		streak,
 		due = true,
-		edited = false,
 		onTap
 	}: {
 		habit: Habit;
@@ -19,7 +18,6 @@
 		dayValue?: number;
 		streak: number;
 		due?: boolean;
-		edited?: boolean;
 		onTap: () => void;
 	} = $props();
 
@@ -44,7 +42,7 @@
 			</span>
 			<span class="min-w-0 flex-1">
 				<span class="habit-name block truncate text-body leading-snug" class:dim={complete}>{habit.name}</span>
-				{#key `${value}:${streak}:${due}:${edited}`}
+				{#key `${value}:${streak}:${due}`}
 					<span in:veil={{ duration: 160 }} class="dim mt-0.5 block text-xs">
 						{#if !due}
 							Rest day
@@ -58,14 +56,6 @@
 							{value} of {habit.target}{habit.unit ? ` ${habit.unit}` : ''}
 						{:else}
 							Not done yet
-						{/if}
-						{#if edited}
-							<span class="entry-edited ml-1 inline-flex size-3 shrink-0" role="img" aria-label="Entry edited" title="Entry edited">
-								<svg aria-hidden="true" viewBox="0 0 24 24" class="size-3" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M12 20h9" />
-									<path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-								</svg>
-							</span>
 						{/if}
 					</span>
 				{/key}
@@ -111,9 +101,5 @@
 <style>
 	.habit-name {
 		transition: color var(--motion-state) ease;
-	}
-
-	.entry-edited {
-		vertical-align: -0.125em;
 	}
 </style>

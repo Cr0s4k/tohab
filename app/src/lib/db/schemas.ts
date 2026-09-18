@@ -74,8 +74,6 @@ export type HabitLog = {
 	habitId: string;
 	date: string;
 	value: number;
-	/** Set only after an existing entry's value actually changes. */
-	editedAt?: number;
 	updatedAt: number;
 };
 
@@ -214,7 +212,7 @@ export const habitSchema: RxJsonSchema<Habit> = {
 
 export const habitLogSchema: RxJsonSchema<HabitLog> = {
 	title: 'habitLog',
-	version: 1,
+	version: 0,
 	primaryKey: 'id',
 	type: 'object',
 	properties: {
@@ -222,7 +220,6 @@ export const habitLogSchema: RxJsonSchema<HabitLog> = {
 		habitId: { type: 'string', maxLength: 40 },
 		date: { type: 'string', maxLength: 10 },
 		value: { type: 'number', minimum: 0, maximum: 10000, multipleOf: 1 },
-		editedAt: TS,
 		updatedAt: TS
 	},
 	required: ['id', 'habitId', 'date', 'value', 'updatedAt'],

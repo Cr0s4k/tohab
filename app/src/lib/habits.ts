@@ -62,20 +62,6 @@ export function groupLogs(logs: HabitLog[]): Map<string, LogMap> {
 	return out;
 }
 
-export type EditedLogMap = Map<DayKey, number>;
-
-/** Keep edit metadata separate from value maps so streak and progress calculations stay numeric. */
-export function groupEditedLogs(logs: HabitLog[]): Map<string, EditedLogMap> {
-	const out = new Map<string, EditedLogMap>();
-	for (const log of logs) {
-		if (typeof log.editedAt !== 'number' || log.editedAt <= 0) continue;
-		let dates = out.get(log.habitId);
-		if (!dates) out.set(log.habitId, (dates = new Map()));
-		dates.set(log.date, log.editedAt);
-	}
-	return out;
-}
-
 export type HabitInput = {
 	startDate?: string;
 	pauseFrom?: string;
@@ -343,15 +329,7 @@ export async function setLog(habit: Habit, date: DayKey, value: number) {
 		return;
 	}
 
-	const updatedAt = now();
-	const after: HabitLog = {
-		id,
-		habitId: habit.id,
-		date,
-		value: clamped,
-		updatedAt,
-		...(before ? { editedAt: updatedAt } : {})
-	};
+	const after = { id, habitId: habit.id, date, value: clamped, updatedAt: now() };
 	await db.habitLogs.upsert(after);
 	markLocalWrite();
 	await recordWithUndo(
