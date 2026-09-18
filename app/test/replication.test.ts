@@ -13,6 +13,7 @@ import { replicateRxCollection } from 'rxdb/plugins/replication';
 import { Subject } from 'rxjs';
 import {
 	activitySchema,
+	habitEntryActionSchema,
 	habitLogSchema,
 	habitRevisionSchema,
 	habitSchema,
@@ -49,6 +50,7 @@ async function makeDb(name: string) {
 		habits: { schema: habitSchema, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc, 3: migrateHabitV3, 4: migrateHabitV4 } },
 		habitRevisions: { schema: habitRevisionSchema },
 		habitLogs: { schema: habitLogSchema },
+		habitEntryActions: { schema: habitEntryActionSchema },
 		activity: { schema: activitySchema }
 	});
 	return db;
@@ -143,6 +145,13 @@ await deviceA.habitLogs.insert({
 	value: 8,
 	updatedAt: Date.now()
 });
+await deviceA.habitEntryActions.insert({
+	id: 'h1:2026-08-19',
+	habitId: 'h1',
+	date: '2026-08-19',
+	lastActionAt: Date.now(),
+	updatedAt: Date.now()
+});
 await deviceA.habitRevisions.insert({
 	id: 'h1', habitId: 'h1', effectiveFrom: '0001-01-01', goal: 'build', kind: 'quantity', target: 8, unit: 'glasses',
 	scheduleKind: 'weekdays', weekdays: [1, 2, 3, 4, 5], timesPerWeek: 3, createdAt: 0, updatedAt: Date.now()
@@ -189,6 +198,7 @@ check('B received baseline and revised rules', (await deviceB.habitRevisions.fin
 check('B received dated target', (await deviceB.habitRevisions.findOne('h1-new-target').exec())?.target, 12);
 check('B received the weekdays array', (await deviceB.habits.findOne('h1').exec())?.weekdays, [1, 2, 3, 4, 5]);
 check('B received the log', (await deviceB.habitLogs.findOne('h1:2026-08-19').exec())?.value, 8);
+check('B received the entry action', Boolean(await deviceB.habitEntryActions.findOne('h1:2026-08-19').exec()), true);
 
 // --- an edit on B converges back to A ---
 const onB = await deviceB.tasks.findOne('a1').exec();

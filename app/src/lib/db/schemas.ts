@@ -77,6 +77,15 @@ export type HabitLog = {
 	updatedAt: number;
 };
 
+/** One durable marker per habit/day for any submitted entry action, including a clear. */
+export type HabitEntryAction = {
+	id: string;
+	habitId: string;
+	date: string;
+	lastActionAt: number;
+	updatedAt: number;
+};
+
 export type ActivityEntity = 'task' | 'project' | 'habit' | 'habitLog';
 
 export type ActivityVerb =
@@ -226,6 +235,22 @@ export const habitLogSchema: RxJsonSchema<HabitLog> = {
 	indexes: [['habitId', 'date'], ['date'], ['updatedAt']]
 };
 
+export const habitEntryActionSchema: RxJsonSchema<HabitEntryAction> = {
+	title: 'habitEntryAction',
+	version: 0,
+	primaryKey: 'id',
+	type: 'object',
+	properties: {
+		id: { type: 'string', maxLength: 51 },
+		habitId: { type: 'string', maxLength: 40 },
+		date: { type: 'string', maxLength: 10 },
+		lastActionAt: TS,
+		updatedAt: TS
+	},
+	required: ['id', 'habitId', 'date', 'lastActionAt', 'updatedAt'],
+	indexes: [['habitId', 'date'], ['date'], ['updatedAt']]
+};
+
 export const habitRevisionSchema: RxJsonSchema<HabitRevision> = {
 	title: 'habit revision',
 	version: 0,
@@ -290,7 +315,7 @@ export const activitySchema: RxJsonSchema<Activity> = {
 	indexes: [['at'], ['updatedAt']]
 };
 
-export const COLLECTION_NAMES = ['tasks', 'projects', 'habits', 'habitRevisions', 'habitLogs', 'activity'] as const;
+export const COLLECTION_NAMES = ['tasks', 'projects', 'habits', 'habitRevisions', 'habitLogs', 'habitEntryActions', 'activity'] as const;
 export type CollectionName = (typeof COLLECTION_NAMES)[number];
 
 /** Every collection the activity log can restore a document into — that is, not itself. */

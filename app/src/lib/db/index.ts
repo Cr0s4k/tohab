@@ -13,6 +13,7 @@ import { dev } from '$app/environment';
 import { migrateHabitV3, migrateHabitV4, migrateTaskV2, migrateTaskV3, migrateTaskV4 } from './migrations.ts';
 import {
 	activitySchema,
+	habitEntryActionSchema,
 	habitLogSchema,
 	habitRevisionSchema,
 	habitSchema,
@@ -20,6 +21,7 @@ import {
 	taskSchema,
 	type Activity,
 	type Habit,
+	type HabitEntryAction,
 	type HabitLog,
 	type HabitRevision,
 	type Project,
@@ -31,6 +33,7 @@ export type Collections = {
 	projects: RxCollection<Project>;
 	habits: RxCollection<Habit>;
 	habitLogs: RxCollection<HabitLog>;
+	habitEntryActions: RxCollection<HabitEntryAction>;
 	habitRevisions: RxCollection<HabitRevision>;
 	activity: RxCollection<Activity>;
 };
@@ -76,6 +79,7 @@ async function create(): Promise<Db> {
 		habits: { schema: habitSchema, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc, 3: migrateHabitV3, 4: migrateHabitV4 } },
 		habitRevisions: { schema: habitRevisionSchema },
 		habitLogs: { schema: habitLogSchema },
+		habitEntryActions: { schema: habitEntryActionSchema },
 		activity: { schema: activitySchema }
 	});
 

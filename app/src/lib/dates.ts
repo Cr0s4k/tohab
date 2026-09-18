@@ -62,6 +62,11 @@ export function humanTime(hhmm: string): string {
 	return m === 0 ? `${h12}${suffix}` : `${h12}:${String(m).padStart(2, '0')}${suffix}`;
 }
 
+export function humanDateTime(timestamp: number): string {
+	const date = new Date(timestamp);
+	return `${humanDay(toKey(date))} · ${humanTime(`${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`)}`;
+}
+
 export const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 export const WEEKDAY_NAMES = [
 	'Sunday',

@@ -2,9 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { live } from '$lib/db/live.svelte';
 	import { rx } from '$lib/rx.svelte';
-	import type { Habit, HabitLog, HabitRevision, HabitView } from '$lib/db/schemas';
+	import type { Habit, HabitEntryAction, HabitLog, HabitRevision, HabitView } from '$lib/db/schemas';
 	import {
 		currentStreak,
+		entryActionsQuery,
+		groupEntryActions,
 		groupLogs,
 		habitsQuery,
 		isActiveOn,
@@ -13,6 +15,7 @@
 		isComplete,
 		logsQuery,
 		tapLog,
+		touchEntry,
 		periodValue,
 		revisionsQuery,
 		updateHabit,
@@ -57,7 +60,11 @@
 	}
 
 	function logHabit(habit: Habit, value: number) {
-		if (habit.kind === 'quantity') logEntry = { habit, day, value, logs: byHabit.get(habit.id) ?? new Map() };
+		if (habit.kind === 'quantity') {
+			logEntry = { habit, day, value, logs: byHabit.get(habit.id) ?? new Map() };
+			const action = () => touchEntry(habit, day);
+			void action().catch((caught) => reportActionError(caught, action));
+		}
 		else {
 			const action = () => tapLog(habit, day, value);
 			void action().catch((caught) => reportActionError(caught, action));
@@ -69,6 +76,7 @@
 	let habitDocs = rx<Habit[]>(() => (live.db ? habitsQuery(live.db, true).$ : null), []);
 	let revisionDocs = rx<HabitRevision[]>(() => (live.db ? revisionsQuery(live.db).$ : null), []);
 	let logs = rx<HabitLog[]>(() => (live.db ? logsQuery(live.db).$ : null), []);
+	let entryActions = rx<HabitEntryAction[]>(() => (live.db ? entryActionsQuery(live.db).$ : null), []);
 
 	let habits = $derived(
 		habitDocs.value.map((habit) =>
@@ -76,6 +84,10 @@
 		)
 	);
 	let byHabit = $derived(groupLogs(logs.value));
+	let entryActionsByHabit = $derived(groupEntryActions(entryActions.value));
+	function entryActionAt(habitId: string, date: string) {
+		return entryActionsByHabit.get(habitId)?.get(date);
+	}
 
 	let active = $derived(habits.filter((h) => !h.archived));
 	let available = $derived(active.map((h) => habitOn(h, day)).filter((h) => isActiveOn(h, day, byHabit.get(h.id))));
@@ -104,12 +116,13 @@
 			{ key: 'break', label: 'Break habits', due: breakDue, rest: breakRest, done: breakDoneCount }
 		].filter((section) => section.due.length || section.rest.length)
 	);
-	let queryError = $derived(habitDocs.error ?? revisionDocs.error ?? logs.error);
+	let queryError = $derived(habitDocs.error ?? revisionDocs.error ?? logs.error ?? entryActions.error);
 
 	function retryQueries() {
 		habitDocs.retry?.();
 		revisionDocs.retry?.();
 		logs.retry?.();
+		entryActions.retry?.();
 	}
 </script>
 
@@ -255,6 +268,7 @@
 							value={periodValue(habit, habitLogs, day, settings.startOfWeek)}
 							streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
 							dayValue={valueOn(habitLogs, day)}
+							actionRecorded={entryActionAt(habit.id, day) !== undefined}
 							onTap={() => logHabit(habit, valueOn(habitLogs, day))}
 						/>
 					</div>
@@ -276,6 +290,7 @@
 								streak={currentStreak(habit, habitLogs, settings.startOfWeek, day)}
 								due={false}
 								dayValue={valueOn(habitLogs, day)}
+								actionRecorded={entryActionAt(habit.id, day) !== undefined}
 								onTap={() => logHabit(habit, valueOn(habitLogs, day))}
 							/>
 						</div>
@@ -295,5 +310,5 @@
 />
 
 {#if logEntry}
-	<HabitLogEditor {...logEntry} onClose={() => (logEntry = null)} />
+	<HabitLogEditor {...logEntry} lastActionAt={entryActionAt(logEntry.habit.id, logEntry.day)} onClose={() => (logEntry = null)} />
 {/if}

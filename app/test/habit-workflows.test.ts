@@ -58,6 +58,9 @@ try {
 	assert.equal(await evaluate(`(async () => {const {revisionsQuery}=await import('/src/lib/habits.ts'); const {today,shiftKey,startOfWeekKey}=await import('/src/lib/dates.ts'); const rows=await revisionsQuery(window.db,window.weeklyHabit.id).exec(); const next=shiftKey(startOfWeekKey(today(),1),7); return rows.some(r=>r.effectiveFrom===next && r.scheduleKind==='weekly');})()`), true);
 	await evaluate(`document.querySelector('button[aria-label="Edit entry for Read"]').click()`);
 	await waitFor("document.querySelector('[role=dialog] input[type=number]')");
+	await waitFor("document.querySelector('[aria-label=\"Entry action recorded\"]')");
+	await waitFor("document.querySelector('[role=dialog]').innerText.includes('Last action')");
+	assert.equal(await evaluate(`document.querySelector('[aria-label="Entry action recorded"]')?.getAttribute('title')`), 'Entry action recorded');
 	await evaluate(`(() => {const input=document.querySelector('[role=dialog] input[type=number]');input.value='45';input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
 	await click('Save entry');
 	await waitFor("!document.querySelector('[role=dialog]')");
@@ -86,6 +89,7 @@ try {
 	await click('Save entry');
 	await waitFor("!document.querySelector('[role=dialog]')");
 	assert.equal(await evaluate(`(async () => !!(await window.db.habitLogs.findOne(window.habit.id+':'+window.yesterday).exec()))()`), false);
+	assert.equal(await evaluate(`Boolean(document.querySelector('[aria-label="Entry action recorded"]'))`), true);
 	await evaluate('window.archiveHabit()');
 	await waitFor("!document.querySelector('button[aria-label=\"Edit entry for Read\"]')");
 	await evaluate(`document.querySelector('button[aria-label="Archived habits"]').click()`);

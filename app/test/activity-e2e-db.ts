@@ -8,6 +8,7 @@ import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { migrateHabitV3, migrateHabitV4, migrateTaskV2, migrateTaskV3, migrateTaskV4 } from '../src/lib/db/migrations.ts';
 import {
 	activitySchema,
+	habitEntryActionSchema,
 	habitLogSchema,
 	habitRevisionSchema,
 	habitSchema,
@@ -35,6 +36,7 @@ async function create() {
 		habits: { schema: habitSchema, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc, 3: migrateHabitV3, 4: migrateHabitV4 } },
 		habitRevisions: { schema: habitRevisionSchema },
 		habitLogs: { schema: habitLogSchema },
+		habitEntryActions: { schema: habitEntryActionSchema },
 		activity: { schema: activitySchema }
 	});
 	return db;
