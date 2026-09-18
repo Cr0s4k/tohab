@@ -53,6 +53,7 @@
 			: null
 	);
 	let logs = $derived(toLogMap(logBox.value));
+	let selectedLastEditedAt = $derived(logDay ? logBox.value.find((log) => log.date === logDay)?.editedAt : undefined);
 	let todayKey = $derived(today());
 	let todayHabit = $derived(habit ? habitOn(habit, todayKey) : null);
 	let startDate = $derived(habit ? habitStartDate(habit, logs) : '');
@@ -293,5 +294,5 @@
 />
 
 {#if logDay && habit}
-	<HabitLogEditor habit={habitOn(habit, logDay)} day={logDay} value={valueOn(logs, logDay)} {logs} onClose={() => (logDay = null)} />
+	<HabitLogEditor habit={habitOn(habit, logDay)} day={logDay} value={valueOn(logs, logDay)} lastEditedAt={selectedLastEditedAt} {logs} onClose={() => (logDay = null)} />
 {/if}
