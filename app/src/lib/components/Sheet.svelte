@@ -3,6 +3,11 @@
 	import { tick } from 'svelte';
 	import { sheet, veil } from '$lib/motion';
 	import { lockScroll } from '$lib/scrollLock';
+	import { setThemeVeil, themeVeil } from '$lib/themeColor';
+
+	function sheetVeil(node: HTMLElement) {
+		return { ...veil(node), tick: (t: number) => setThemeVeil(node, 0.45 * t) };
+	}
 
 	let {
 		open = false,
@@ -81,7 +86,7 @@
 
 {#if open}
 	<div inert={covered} aria-hidden={covered ? 'true' : undefined} class="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center md:p-8">
-		<button type="button" tabindex="-1" aria-label="Close" onclick={onClose} transition:veil class="absolute inset-0 touch-none bg-black/45"></button>
+		<button use:themeVeil type="button" tabindex="-1" aria-label="Close" onclick={onClose} transition:sheetVeil class="absolute inset-0 touch-none bg-black/45"></button>
 		<div
 			bind:this={pane}
 			role="dialog"
