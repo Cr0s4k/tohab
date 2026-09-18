@@ -23,6 +23,7 @@
 		onTap: () => void;
 	} = $props();
 
+	let breakFailed = $derived(habit.goal === 'break' && value > habit.target);
 	let complete = $derived(
 		habit.goal === 'break' ? value <= habit.target : value >= periodTarget(habit)
 	);
@@ -50,7 +51,7 @@
 							Rest day
 						{:else if habit.scheduleKind === 'weekly'}
 							{value} / {periodTarget(habit)} {habit.kind === 'binary' ? 'days' : habit.unit || 'times'} this week{habit.goal === 'break' ? ' · max' : ''}
-						{:else if streak > 0}
+						{:else if streak > 0 && !breakFailed}
 							🔥 {streak} {streak === 1 ? 'day' : 'days'}
 						{:else if habit.goal === 'break'}
 							{value === 0 ? 'Clean today' : `${value} ${value === 1 ? 'slip' : 'slips'} today`}
