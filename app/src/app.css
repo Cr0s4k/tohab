@@ -244,6 +244,17 @@
 	margin-inline: auto;
 }
 
+@utility app-content {
+	container-type: inline-size;
+}
+
+/* Keep capped list measures centered with their headers when a thin scrollbar is visible. */
+@container (min-width: 60rem) {
+	.app-content main {
+		scrollbar-gutter: stable both-edges;
+	}
+}
+
 @utility tap {
 	transition:
 		transform var(--motion-tap) ease,
