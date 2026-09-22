@@ -117,7 +117,7 @@
 >
 	<!-- Equal side tracks center the compact title; actions keep their space on narrow screens. -->
 	<div
-		class="measure grid grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(max-content,1fr)] items-center gap-x-2 px-4 pt-2 pb-2"
+		class="measure-gutter grid grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(max-content,1fr)] items-center gap-x-2 px-4 pt-2 pb-2"
 	>
 		<div
 			class="col-start-1 col-span-2 row-start-1 flex min-w-0 items-center gap-2 overflow-hidden transition-opacity duration-200"

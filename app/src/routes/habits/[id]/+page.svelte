@@ -129,7 +129,7 @@
 </script>
 
 <header class="hairline z-20 shrink-0 border-b pt-safe">
-	<div class="measure flex items-center gap-3 px-4 pt-2 pb-3">
+	<div class="measure-gutter flex items-center gap-3 px-4 pt-2 pb-3">
 		<a
 			href="/habits"
 			use:hapticTap
