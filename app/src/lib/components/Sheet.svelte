@@ -104,7 +104,7 @@
 				<button type="button" aria-label="Close dialog" onclick={onClose} class="tap raised absolute top-2 right-2 z-20 flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl" title="Close">×</button>
 				{/if}
 			{/if}
-			<div class={showHeader ? 'px-4 py-4' : showCloseButton ? 'px-4 pt-14 pb-0' : 'px-4 pt-4 pb-0'}>{@render children()}</div>
+			<div class={showHeader ? 'px-4 py-4' : showCloseButton ? 'px-4 pt-14 pb-0' : 'px-4 pt-4 pb-0 md:pb-4'}>{@render children()}</div>
 		</div>
 	</div>
 {/if}

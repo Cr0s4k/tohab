@@ -133,6 +133,7 @@
 	covered={panel !== 'none'}
 	title="Add task"
 	showHeader={false}
+	showCloseButton={false}
 	safeAreaBottom={false}
 	{onClose}
 >

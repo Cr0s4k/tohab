@@ -6,7 +6,7 @@ import { launchChrome } from './cdp.ts';
 
 const browser = await launchChrome({ port: 9362, profilePrefix: 'tohab-compose-' });
 const { evaluate, send, waitFor } = browser;
-const input = 'document.querySelector("input[aria-label=\"Quick add task\"]")';
+const input = `document.querySelector('input[aria-label="Quick add task"]')`;
 const dialog = 'document.querySelector("[role=dialog]")';
 
 async function key(key: string, code: number, modifiers = 0) {
@@ -55,7 +55,8 @@ try {
 		assert.equal(await evaluate(`document.getElementById(${dialog}.getAttribute('aria-labelledby')).textContent`), 'Add task');
 		assert.equal(await evaluate(`${dialog}.innerText.includes('Quick capture') || ${dialog}.innerText.includes('Done')`), false);
 		assert.equal(await evaluate(`getComputedStyle(${dialog}).paddingBottom`), '0px');
-		assert.equal(await evaluate(`getComputedStyle(${dialog}.lastElementChild).paddingBottom`), '0px');
+		assert.equal(await evaluate(`getComputedStyle(${dialog}.lastElementChild).paddingBottom`), width >= 768 ? '16px' : '0px');
+		assert.equal(await evaluate(`${dialog}.querySelector('[aria-label="Close dialog"]') === null`), true);
 		assert.equal(await evaluate(`getComputedStyle(${dialog}).borderTopLeftRadius`), '24px');
 		if (width >= 768) {
 			assert.equal(await evaluate(`getComputedStyle(${dialog}).borderBottomLeftRadius`), '24px');
@@ -84,9 +85,9 @@ try {
 		assert.equal(await evaluate("document.documentElement.hasAttribute('data-scroll-locked')"), false);
 		await evaluate('window.openCompose()');
 		await waitFor(`${input} === document.activeElement`);
-		await evaluate("document.querySelector('button[aria-label=\"Close dialog\"]').click()");
+		await evaluate("document.querySelector('button[aria-label=\"Close\"]').click()");
 		await waitFor(`!${dialog}`);
-		assert.equal(await evaluate('document.activeElement.id'), 'opener', 'Close button restores focus');
+		assert.equal(await evaluate('document.activeElement.id'), 'opener', 'Backdrop dismissal restores focus');
 	}
 
 	await evaluate('window.openDefaultSheet()');
