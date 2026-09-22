@@ -39,19 +39,21 @@
 {#if queryError}
 	<DataError label="today’s habits" onRetry={retryQueries} />
 {:else if !habitDocs.loading && overview.dueToday > 0}
-	<a transition:collapse href="/habits" class="pressable hairline flex items-center gap-3 border-b px-4 py-3" aria-label="Open today’s habit journal">
-		<ProgressRing
-			value={overview.doneToday}
-			target={Math.max(1, overview.dueToday)}
-			size={38}
-			color="var(--accent)"
-			label={`${overview.doneToday}/${overview.dueToday}`}
-		/>
-		<span class="min-w-0 flex-1">
-			<span class="block text-sm font-semibold">Today’s habits</span>
-			{#key `${overview.doneToday}:${overview.dueToday}`}
-				<span in:veil={{ duration: 160 }} class="dim block text-xs">{overview.doneToday} of {overview.dueToday} complete · Open journal →</span>
-			{/key}
+	<a transition:collapse href="/habits" class="pressable hairline block border-b" aria-label="Open today’s habit journal">
+		<span class="measure-gutter flex items-center gap-3 px-4 py-3">
+			<ProgressRing
+				value={overview.doneToday}
+				target={Math.max(1, overview.dueToday)}
+				size={38}
+				color="var(--accent)"
+				label={`${overview.doneToday}/${overview.dueToday}`}
+			/>
+			<span class="min-w-0 flex-1">
+				<span class="block text-sm font-semibold">Today’s habits</span>
+				{#key `${overview.doneToday}:${overview.dueToday}`}
+					<span in:veil={{ duration: 160 }} class="dim block text-xs">{overview.doneToday} of {overview.dueToday} complete · Open journal →</span>
+				{/key}
+			</span>
 		</span>
 	</a>
 {/if}
