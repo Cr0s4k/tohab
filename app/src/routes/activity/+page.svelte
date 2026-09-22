@@ -131,7 +131,7 @@
 				</div>
 
 				{#each group.entries as entry (entry.id)}
-					<div transition:collapse class="raised px-4 pt-3.5 pb-0">
+					<div transition:collapse class="surface px-4 pt-3.5 pb-0">
 						<div class="hairline measure flex items-start gap-3 border-b pb-3.5">
 							<span
 								class="mt-1.5 size-2 shrink-0 rounded-full"
