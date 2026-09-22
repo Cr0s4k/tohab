@@ -108,7 +108,7 @@
 	style:border-color="var(--product-library-divider-secondary)"
 	class:border-b={scrolled}
 >
-	<div class="measure relative flex items-center justify-between px-4 pt-2 pb-2">
+	<div class="measure-gutter relative flex items-center justify-between px-4 pt-2 pb-2">
 		<h1
 			class="text-header md:text-header-large font-bold tracking-tight transition-opacity duration-200"
 			class:opacity-0={scrolled}

@@ -47,7 +47,7 @@
 </script>
 
 <header class="z-20 shrink-0 border-b pt-safe" style:border-color="var(--product-library-divider-secondary)">
-	<div class="measure flex items-center justify-between px-4 pt-2 pb-3">
+	<div class="measure-gutter flex items-center justify-between px-4 pt-2 pb-3">
 		<h1 class="text-header md:text-header-large font-bold tracking-tight">Progress</h1>
 		<div class="flex items-center gap-2">
 			<button

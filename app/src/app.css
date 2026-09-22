@@ -237,6 +237,13 @@
 	margin-inline: auto;
 }
 
+/** Caps an inset content band so its padded contents share the same measure as list rows. */
+@utility measure-gutter {
+	width: 100%;
+	max-width: calc(var(--measure) + 2rem);
+	margin-inline: auto;
+}
+
 @utility tap {
 	transition:
 		transform var(--motion-tap) ease,
