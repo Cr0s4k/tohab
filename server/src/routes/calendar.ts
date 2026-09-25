@@ -75,6 +75,7 @@ function feedTasks(
 			continue;
 		}
 
+		// Only publication history can establish a schedule that needs cancelling.
 		const publication = byTask.get(row.id);
 		if (publication?.active) {
 			// This also repairs a publication row if an older writer changed the task before the
@@ -99,21 +100,6 @@ function feedTasks(
 				cancelledAt: Number(publication.cancelledAt)
 			}));
 			continue;
-		}
-
-		// Rows written before calendar_publications was introduced may still contain the complete
-		// dated task in their tombstone. Use that information for a bounded compatibility window.
-		if (
-			(row.deleted || Boolean(data._deleted) || Boolean(data.done)) &&
-			Boolean(data.due) &&
-			Number(row.receivedAt) >= cutoff
-		) {
-			tasks.push(feedTask(data, row.id, {
-				status: 'CANCELLED',
-				sequence: Number(row.rev),
-				dtstamp: Number(row.receivedAt),
-				cancelledAt: Number(row.receivedAt)
-			}));
 		}
 	}
 

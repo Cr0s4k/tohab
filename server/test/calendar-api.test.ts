@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { transaction } from '../src/db.ts';
-import { writeDoc } from '../src/repositories/documents.ts';
+import { calendarPublicationDocs, writeDoc } from '../src/repositories/documents.ts';
 import { cleanup, signIn } from './helpers.ts';
 
 const ROOT = (process.env.BASE ?? 'http://localhost:5178/sync').replace(/\/sync\/?$/, '');
@@ -34,7 +35,7 @@ function event(body: string, uid: string) {
 		.split('BEGIN:VEVENT\r\n')
 		.find((candidate) => candidate.includes(`UID:${uid}\r\n`));
 	assert.ok(block, `missing event ${uid}`);
-	return `BEGIN:VEVENT\r\n${block}`;
+	return `BEGIN:VEVENT\r\n${block.split('END:VEVENT\r\n')[0]}END:VEVENT\r\n`;
 }
 
 function sequence(block: string) {
@@ -43,15 +44,43 @@ function sequence(block: string) {
 	return Number(value);
 }
 
+function assertCancellation(body: string, uid: string, previous: string) {
+	const cancelled = event(body, uid);
+	assert.match(cancelled, /STATUS:CANCELLED/);
+	assert.equal(body.split(`UID:${uid}\r\n`).length - 1, 1);
+	assert.ok(sequence(cancelled) > sequence(previous));
+	const schedule = (block: string) => block.split('\r\n')
+		.filter((line) => /^(UID|DTSTART|DTEND|RRULE|RECURRENCE-ID)[:;]/.test(line));
+	assert.deepEqual(schedule(cancelled), schedule(previous));
+	return cancelled;
+}
+
 try {
 	const tokenResponse = await fetch(`${ROOT}/calendar/token`, { headers });
 	assert.equal(tokenResponse.status, 200);
 	const { token, feedUrl } = await tokenResponse.json() as { token: string; feedUrl?: string };
 	assert.ok(token);
 	assert.ok(feedUrl === undefined || feedUrl.endsWith(`/${token}/tohab.ics`));
-	await writeTask({});
-
 	const stableUrl = `${ROOT}/calendar/${token}/tohab.ics`;
+	const tombstoneId = randomUUID();
+	const tombstoneTitle = 'Never published monthly tombstone';
+	await writeTask({
+		id: tombstoneId,
+		title: tombstoneTitle,
+		due: '2026-08-30',
+		repeat: 'month:1',
+		_deleted: true
+	});
+	assert.equal(
+		(await calendarPublicationDocs(session.userId)).some((row) => row.taskId === tombstoneId),
+		false,
+		'a first-seen tombstone must have no publication history'
+	);
+	const unpublished = await feedBody(stableUrl);
+	assert.equal(unpublished.body.includes(`task-${tombstoneId}@tohab`), false, 'unpublished tombstone UID leaked');
+	assert.equal(unpublished.body.includes(tombstoneTitle), false, 'unpublished tombstone title leaked');
+
+	await writeTask({});
 	const first = await feedBody(stableUrl);
 	assert.doesNotMatch(first.body, /BEGIN:VALARM/);
 	const firstEvent = event(first.body, 'task-calendar-task@tohab');
@@ -85,6 +114,7 @@ try {
 	});
 	const completed = await feedBody(stableUrl);
 	const completedEvent = event(completed.body, 'task-calendar-task@tohab');
+	assertCancellation(completed.body, 'task-calendar-task@tohab', updatedEvent);
 	assert.match(completedEvent, /STATUS:CANCELLED/);
 	assert.match(completedEvent, /DTSTART:20260826T103000/);
 	assert.equal(completed.body.match(/UID:task-calendar-task@tohab\r\n/g)?.length, 1);
@@ -111,6 +141,7 @@ try {
 	});
 	const afterClear = await feedBody(stableUrl);
 	const clearedEvent = event(afterClear.body, 'task-cleared-calendar@tohab');
+	assertCancellation(afterClear.body, 'task-cleared-calendar@tohab', event(beforeClear.body, 'task-cleared-calendar@tohab'));
 	assert.match(clearedEvent, /STATUS:CANCELLED/);
 	assert.match(clearedEvent, /DTSTART:20260827T111500/);
 	assert.match(clearedEvent, /DTEND:20260827T114500/);
@@ -118,9 +149,14 @@ try {
 	assert.match(clearedEvent, /RECURRENCE-ID:20260827T111500/);
 
 	for (const [id, title] of [['test-30', 'Test 30'], ['do-that', 'Do that']] as const) {
-		await writeTask({ id, title, due: '2026-08-28', updatedAt: Date.now() + 5 });
-		await feedBody(stableUrl);
+		await writeTask({
+			id, title, due: '2026-08-28', repeat: 'month:1',
+			recurrenceId: '20260828T090000', updatedAt: Date.now() + 5
+		});
+		const beforeDelete = await feedBody(stableUrl);
 		await writeTask({ id, _deleted: true, updatedAt: Date.now() + 6 });
+		const afterDelete = await feedBody(stableUrl);
+		assertCancellation(afterDelete.body, `task-${id}@tohab`, event(beforeDelete.body, `task-${id}@tohab`));
 	}
 	const deleted = await feedBody(stableUrl);
 	for (const [id, title] of [['test-30', 'Test 30'], ['do-that', 'Do that']] as const) {
@@ -136,6 +172,11 @@ try {
 	assert.doesNotMatch(final.body, /UID:task-never-undated@tohab/);
 	assert.match(final.body, /UID:task-calendar-task@tohab/);
 	assert.match(final.body, /UID:task-cleared-calendar@tohab/);
+	for (const uid of ['task-calendar-task@tohab', 'task-cleared-calendar@tohab', 'task-test-30@tohab', 'task-do-that@tohab']) {
+		assert.equal(event(final.body, uid), event(deleted.body, uid), 'retained cancellation must stay unchanged');
+	}
+	assert.equal(final.body.includes(`task-${tombstoneId}@tohab`), false);
+	assert.equal(final.body.includes(tombstoneTitle), false);
 	const activeEvent = event(final.body, 'task-still-active@tohab');
 	assert.doesNotMatch(activeEvent, /STATUS:CANCELLED/);
 	const uids = final.body.match(/UID:[^\r\n]+/g) ?? [];
