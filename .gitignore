@@ -1,6 +1,11 @@
 node_modules/
 .DS_Store
 
+# Local agent worktrees, screenshots, and machine-specific design reports.
+/.claude/
+/artifacts/
+/.impeccable/critique/
+
 # app
 app/.svelte-kit/
 app/build/

@@ -6,6 +6,15 @@ app/build
 app/.svelte-kit
 app/.vite
 server/drizzle
+# Private runtime data and local development artifacts are not build inputs.
+secrets
+design
+tohab-seed-backup.json
+.claude
+.agents
+.codex
+artifacts
+**/.impeccable
 .env
 .env.*
 !.env.example
