@@ -8,6 +8,26 @@ app/      SvelteKit 3 + Svelte 5 PWA, RxDB over IndexedDB
 server/   Hono + Drizzle over Postgres sync backend
 ```
 
+## Screenshots
+
+<p>
+  <img src="docs/screenshots/mobile-today.png" alt="Today view with tasks and habit summary" width="24%">
+  <img src="docs/screenshots/mobile-capture.png" alt="Quick capture parsing natural language" width="24%">
+  <img src="docs/screenshots/mobile-journal.png" alt="Habit journal for today" width="24%">
+  <img src="docs/screenshots/mobile-habit.png" alt="Habit detail with streaks and 12-week heatmap" width="24%">
+</p>
+
+<p>
+  <img src="docs/screenshots/mobile-progress.png" alt="Habit progress overview" width="24%">
+  <img src="docs/screenshots/mobile-upcoming.png" alt="Upcoming tasks grouped by day" width="24%">
+  <img src="docs/screenshots/mobile-dark-today.png" alt="Today view in dark mode" width="24%">
+  <img src="docs/screenshots/mobile-dark-journal.png" alt="Habit journal in dark mode" width="24%">
+</p>
+
+![Today view on desktop](docs/screenshots/desktop-today.png)
+
+![Today view on desktop in dark mode](docs/screenshots/desktop-dark-today.png)
+
 ## Running it
 
 ```bash
