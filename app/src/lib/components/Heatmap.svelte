@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { HabitView } from '$lib/db/schemas';
-	import { humanDay, shiftKey, startOfWeekKey, today, WEEKDAY_LABELS } from '$lib/dates';
-	import { habitOn } from '$lib/habitHistory';
-	import { habitStartDate, isActiveOn, isDue, isWeeklyQuantity, valueOn, type LogMap } from '$lib/streaks';
-	import { haptic, hapticTap } from '$lib/haptics';
+	import type { HabitView } from '#lib/db/schemas.js';
+	import { humanDay, shiftKey, startOfWeekKey, today, WEEKDAY_LABELS } from '#lib/dates.js';
+	import { habitOn } from '#lib/habitHistory.js';
+	import { habitStartDate, isActiveOn, isDue, isWeeklyQuantity, valueOn, type LogMap } from '#lib/streaks.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
 
 	let {
 		habit,

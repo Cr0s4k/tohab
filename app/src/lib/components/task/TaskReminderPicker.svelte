@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { settings } from '$lib/settings.svelte';
-	import { hapticTap } from '$lib/haptics';
-	import { reminderLabel, suggestedReminder, validReminder } from '$lib/reminders';
+	import { settings } from '#lib/settings.svelte.js';
+	import { hapticTap } from '#lib/haptics.js';
+	import { reminderLabel, suggestedReminder, validReminder } from '#lib/reminders.js';
 
 	let {
 		value,

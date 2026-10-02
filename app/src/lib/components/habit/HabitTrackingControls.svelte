@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { HabitInput } from '$lib/habits';
+	import type { HabitInput } from '#lib/habits.js';
 	let { goal, kind = $bindable(), target = $bindable(), unit = $bindable(), scheduleKind = $bindable() }: {
 		goal: HabitInput['goal']; kind: HabitInput['kind']; target: number; unit: string; scheduleKind: HabitInput['scheduleKind'];
 	} = $props();

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
-	import { haptic, hapticTap } from '$lib/haptics';
+	import { haptic, hapticTap } from '#lib/haptics.js';
 	import {
 		GROUP_CHOICES,
 		ORDER_CHOICES,
@@ -10,7 +10,7 @@
 		setViewOptions,
 		viewOptions,
 		type ViewOptions
-	} from '$lib/viewOptions.svelte';
+	} from '#lib/viewOptions.svelte.js';
 
 	let {
 		open = false,

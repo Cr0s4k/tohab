@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { haptic, hapticTap } from '$lib/haptics';
+	import { haptic, hapticTap } from '#lib/haptics.js';
 	import {
 		currentPushSubscription,
 		disableNotifications,
@@ -7,8 +7,8 @@
 		notificationCapability,
 		reconcileNotifications,
 		sendTestNotification
-	} from '$lib/notifications';
-	import { setReminderMinutes, settings } from '$lib/settings.svelte';
+	} from '#lib/notifications.js';
+	import { setReminderMinutes, settings } from '#lib/settings.svelte.js';
 	import { onMount } from 'svelte';
 
 	let reminderBusy = $state(false);

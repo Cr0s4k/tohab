@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { veil } from '$lib/motion';
+	import { veil } from '#lib/motion.js';
 
 	type ConnectivityAlert = {
 		kind: 'online' | 'offline';

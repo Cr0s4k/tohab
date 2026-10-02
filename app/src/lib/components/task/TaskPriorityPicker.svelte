@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { TASK_PRIORITIES } from '$lib/taskOptions';
-	import { PRIORITY_LABELS, priorityClass } from '$lib/tasks';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { TASK_PRIORITIES } from '#lib/taskOptions.js';
+	import { PRIORITY_LABELS, priorityClass } from '#lib/tasks.js';
 
 	let { value, onSelect }: { value: number; onSelect: (value: number) => void } = $props();
 </script>

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { describeRepeat, REPEAT_PRESETS } from '$lib/repeat';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { describeRepeat, REPEAT_PRESETS } from '#lib/repeat.js';
 
 	let {
 		value,

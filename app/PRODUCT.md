@@ -42,7 +42,7 @@ useful while offline.
 
 ## Capabilities and Constraints
 
-- SvelteKit 2 and Svelte 5 frontend delivered as a static PWA.
+- SvelteKit 3 and Svelte 5 frontend delivered as a static PWA.
 - RxDB over IndexedDB provides local-first storage; a self-hosted Hono,
   Drizzle, and Postgres service synchronizes data.
 - Tasks support natural-language quick add, dates, times, recurrence, four

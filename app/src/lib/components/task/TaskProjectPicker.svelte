@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { Project } from '$lib/db/schemas';
-	import { haptic, hapticTap } from '$lib/haptics';
+	import type { Project } from '#lib/db/schemas.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
 
 	let {
 		projects,

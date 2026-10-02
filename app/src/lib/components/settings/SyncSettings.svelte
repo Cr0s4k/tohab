@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { auth, logout } from '$lib/auth.svelte';
-	import { resync, restartSync, stopSync, sync } from '$lib/db/replication.svelte';
-	import { disableNotifications } from '$lib/notifications';
-	import { setServerUrl, setSyncEnabled, settings } from '$lib/settings.svelte';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { auth, logout } from '#lib/auth.svelte.js';
+	import { resync, restartSync, stopSync, sync } from '#lib/db/replication.svelte.js';
+	import { disableNotifications } from '#lib/notifications.js';
+	import { setServerUrl, setSyncEnabled, settings } from '#lib/settings.svelte.js';
 	let { onNotice }: { onNotice: (message: string) => void } = $props();
 	let serverDraft = $state(settings.serverUrl);
 	async function applyServer() {

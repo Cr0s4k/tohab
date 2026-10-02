@@ -1,5 +1,5 @@
-import { settings } from '$lib/settings.svelte';
-import { hideSplash } from '$lib/splash';
+import { settings } from '#lib/settings.svelte.js';
+import { hideSplash } from '#lib/splash.js';
 import { closeDb, getDb, removeDb, retryDb } from './lazy.ts';
 import { live } from './live.svelte.ts';
 import {

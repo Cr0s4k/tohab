@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { haptic, hapticTap } from '$lib/haptics';
+	import { haptic, hapticTap } from '#lib/haptics.js';
 	async function forceReload() {
 		haptic('tap');
 		try {

@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { downloadBackup, importBackup } from '$lib/backup';
-	import { live } from '$lib/db/live.svelte';
-	import { habitsQuery } from '$lib/habits';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { rx } from '$lib/rx.svelte';
-	import { openTasksQuery } from '$lib/tasks';
-	import { importTodoistCsv } from '$lib/todoist';
-	import DataError from '$lib/components/DataError.svelte';
+	import { downloadBackup, importBackup } from '#lib/backup.js';
+	import { live } from '#lib/db/live.svelte.js';
+	import { habitsQuery } from '#lib/habits.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { rx } from '#lib/rx.svelte.js';
+	import { openTasksQuery } from '#lib/tasks.js';
+	import { importTodoistCsv } from '#lib/todoist.js';
+	import DataError from '#lib/components/DataError.svelte';
 
 	let { onNotice }: { onNotice: (message: string) => void } = $props();
 	let fileInput: HTMLInputElement | null = $state(null);

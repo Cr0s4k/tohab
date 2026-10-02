@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { feedUrl } from '$lib/calendar';
-	import { haptic, hapticTap } from '$lib/haptics';
+	import { feedUrl } from '#lib/calendar.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
 
 	let { onNotice }: { onNotice: (message: string) => void } = $props();
 	let feed = $state('');

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { sync } from '$lib/db/syncState.svelte';
-	import { settingsSheet } from '$lib/settingsSheet.svelte';
-	import { isIosLike } from '$lib/pwa';
+	import { sync } from '#lib/db/syncState.svelte.js';
+	import { settingsSheet } from '#lib/settingsSheet.svelte.js';
+	import { isIosLike } from '#lib/pwa.js';
 
 	let waiting = $state<ServiceWorker | null>(null);
 	let iosInstall = $state(false);

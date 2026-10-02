@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { live } from '$lib/db/live.svelte';
-	import { rx } from '$lib/rx.svelte';
-	import type { Habit, HabitEntryAction, HabitLog, HabitRevision, HabitView } from '$lib/db/schemas';
+	import { live } from '#lib/db/live.svelte.js';
+	import { rx } from '#lib/rx.svelte.js';
+	import type { Habit, HabitEntryAction, HabitLog, HabitRevision, HabitView } from '#lib/db/schemas.js';
 	import {
 		bestStreak,
 		completionRate,
@@ -23,17 +23,17 @@
 		periodValue,
 		periodTarget,
 		valueOn
-	} from '$lib/habits';
-	import { humanDay, today, WEEKDAY_NAMES } from '$lib/dates';
-	import { compareRevisions, habitOn, withHabitHistory } from '$lib/habitHistory';
-	import { settings } from '$lib/settings.svelte';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { reportActionError } from '$lib/actionError.svelte';
-	import DataError from '$lib/components/DataError.svelte';
-	import Heatmap from '$lib/components/Heatmap.svelte';
-	import HabitLogEditor from '$lib/components/HabitLogEditor.svelte';
-	import HabitEditor from '$lib/components/HabitEditor.svelte';
-	import ProgressRing from '$lib/components/ProgressRing.svelte';
+	} from '#lib/habits.js';
+	import { humanDay, today, WEEKDAY_NAMES } from '#lib/dates.js';
+	import { compareRevisions, habitOn, withHabitHistory } from '#lib/habitHistory.js';
+	import { settings } from '#lib/settings.svelte.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { reportActionError } from '#lib/actionError.svelte.js';
+	import DataError from '#lib/components/DataError.svelte';
+	import Heatmap from '#lib/components/Heatmap.svelte';
+	import HabitLogEditor from '#lib/components/HabitLogEditor.svelte';
+	import HabitEditor from '#lib/components/HabitEditor.svelte';
+	import ProgressRing from '#lib/components/ProgressRing.svelte';
 
 	function plainDoc<T>(doc: T): T {
 		const candidate = doc as T & { toMutableJSON?: () => T };

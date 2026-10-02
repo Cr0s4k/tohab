@@ -1,16 +1,16 @@
 <script lang="ts">
-	import type { Project, Task } from '$lib/db/schemas';
+	import type { Project, Task } from '#lib/db/schemas.js';
 	import {
 		createTask,
 		deleteTask,
 		directSubtasksQuery,
 		toggleTask,
 		updateTask
-	} from '$lib/tasks';
-	import { live } from '$lib/db/live.svelte';
-	import { rx } from '$lib/rx.svelte';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { reportActionError } from '$lib/actionError.svelte';
+	} from '#lib/tasks.js';
+	import { live } from '#lib/db/live.svelte.js';
+	import { rx } from '#lib/rx.svelte.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { reportActionError } from '#lib/actionError.svelte.js';
 	import Sheet from './Sheet.svelte';
 	import TaskDueControls from './task/TaskDueControls.svelte';
 	import TaskPriorityPicker from './task/TaskPriorityPicker.svelte';

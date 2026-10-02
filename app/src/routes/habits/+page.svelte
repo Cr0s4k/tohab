@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { live } from '$lib/db/live.svelte';
-	import { rx } from '$lib/rx.svelte';
-	import type { Habit, HabitEntryAction, HabitLog, HabitRevision, HabitView } from '$lib/db/schemas';
+	import { live } from '#lib/db/live.svelte.js';
+	import { rx } from '#lib/rx.svelte.js';
+	import type { Habit, HabitEntryAction, HabitLog, HabitRevision, HabitView } from '#lib/db/schemas.js';
 	import {
 		currentStreak,
 		entryActionsQuery,
@@ -20,24 +20,24 @@
 		revisionsQuery,
 		updateHabit,
 		valueOn
-	} from '$lib/habits';
-	import { humanDay, shiftKey, today } from '$lib/dates';
-	import { habitOn, withHabitHistory } from '$lib/habitHistory';
-	import type { LogMap } from '$lib/streaks';
-	import { settings } from '$lib/settings.svelte';
-	import { habitCompose } from '$lib/compose.svelte';
-	import HabitRow from '$lib/components/HabitRow.svelte';
-	import HabitLogEditor from '$lib/components/HabitLogEditor.svelte';
-	import HabitEditor from '$lib/components/HabitEditor.svelte';
-	import Fab from '$lib/components/Fab.svelte';
-	import ProgressRing from '$lib/components/ProgressRing.svelte';
-	import SettingsButton from '$lib/components/SettingsButton.svelte';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { reportActionError } from '$lib/actionError.svelte';
-	import DataError from '$lib/components/DataError.svelte';
+	} from '#lib/habits.js';
+	import { humanDay, shiftKey, today } from '#lib/dates.js';
+	import { habitOn, withHabitHistory } from '#lib/habitHistory.js';
+	import type { LogMap } from '#lib/streaks.js';
+	import { settings } from '#lib/settings.svelte.js';
+	import { habitCompose } from '#lib/compose.svelte.js';
+	import HabitRow from '#lib/components/HabitRow.svelte';
+	import HabitLogEditor from '#lib/components/HabitLogEditor.svelte';
+	import HabitEditor from '#lib/components/HabitEditor.svelte';
+	import Fab from '#lib/components/Fab.svelte';
+	import ProgressRing from '#lib/components/ProgressRing.svelte';
+	import SettingsButton from '#lib/components/SettingsButton.svelte';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { reportActionError } from '#lib/actionError.svelte.js';
+	import DataError from '#lib/components/DataError.svelte';
 	import { flip } from 'svelte/animate';
-	import { collapse, flipCfg } from '$lib/motion';
-	import { shouldAnimateList } from '$lib/pwa';
+	import { collapse, flipCfg } from '#lib/motion.js';
+	import { shouldAnimateList } from '#lib/pwa.js';
 
 	function plainDoc<T>(doc: T): T {
 		const candidate = doc as T & { toMutableJSON?: () => T };

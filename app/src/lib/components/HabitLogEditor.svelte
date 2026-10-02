@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import type { HabitView } from '$lib/db/schemas';
-	import { setLog } from '$lib/habits';
-	import { humanDateTime, humanDay } from '$lib/dates';
-	import { habitStartDate, isActiveOn, isPausedOn, type LogMap } from '$lib/streaks';
+	import type { HabitView } from '#lib/db/schemas.js';
+	import { setLog } from '#lib/habits.js';
+	import { humanDateTime, humanDay } from '#lib/dates.js';
+	import { habitStartDate, isActiveOn, isPausedOn, type LogMap } from '#lib/streaks.js';
 	import Sheet from './Sheet.svelte';
 
 	let { habit, day, value, lastActionAt, logs = new Map(), onClose }: { habit: HabitView; day: string; value: number; lastActionAt?: number; logs?: LogMap; onClose: () => void } = $props();

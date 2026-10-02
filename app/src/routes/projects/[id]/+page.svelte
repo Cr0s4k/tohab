@@ -1,21 +1,21 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { live } from '$lib/db/live.svelte';
-	import { rx } from '$lib/rx.svelte';
-	import type { Task } from '$lib/db/schemas';
-	import { deleteTask, projectsQuery, tasksQuery, toggleTask } from '$lib/tasks';
-	import { subtaskProgressByParent } from '$lib/taskViews';
-	import { arrangeTasks } from '$lib/arrange';
-	import { isCustomised, projectScope, viewOptions } from '$lib/viewOptions.svelte';
-	import Fab from '$lib/components/Fab.svelte';
-	import { taskCompose } from '$lib/compose.svelte';
-	import TaskCompose from '$lib/components/TaskCompose.svelte';
-	import TaskRow from '$lib/components/TaskRow.svelte';
-	import TaskEditor from '$lib/components/TaskEditor.svelte';
-	import ViewOptionsSheet from '$lib/components/ViewOptionsSheet.svelte';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { reportActionError } from '$lib/actionError.svelte';
-	import DataError from '$lib/components/DataError.svelte';
+	import { live } from '#lib/db/live.svelte.js';
+	import { rx } from '#lib/rx.svelte.js';
+	import type { Task } from '#lib/db/schemas.js';
+	import { deleteTask, projectsQuery, tasksQuery, toggleTask } from '#lib/tasks.js';
+	import { subtaskProgressByParent } from '#lib/taskViews.js';
+	import { arrangeTasks } from '#lib/arrange.js';
+	import { isCustomised, projectScope, viewOptions } from '#lib/viewOptions.svelte.js';
+	import Fab from '#lib/components/Fab.svelte';
+	import { taskCompose } from '#lib/compose.svelte.js';
+	import TaskCompose from '#lib/components/TaskCompose.svelte';
+	import TaskRow from '#lib/components/TaskRow.svelte';
+	import TaskEditor from '#lib/components/TaskEditor.svelte';
+	import ViewOptionsSheet from '#lib/components/ViewOptionsSheet.svelte';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { reportActionError } from '#lib/actionError.svelte.js';
+	import DataError from '#lib/components/DataError.svelte';
 
 	let editing = $state<Task | null>(null);
 	let tuning = $state(false);

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { isNavItemActive, NAV_PATHS, TASK_NAV_ITEMS } from '$lib/navigation';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { isNavItemActive, NAV_PATHS, TASK_NAV_ITEMS } from '#lib/navigation.js';
 	let activeIndex = $derived(TASK_NAV_ITEMS.findIndex((tab) => isNavItemActive(page.url, tab.href)));
 </script>
 

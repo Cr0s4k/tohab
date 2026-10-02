@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { STORAGE_PREFIX, defaultOptions, type ViewOptions } from './viewOptions.ts';
 
 export * from './viewOptions.ts';

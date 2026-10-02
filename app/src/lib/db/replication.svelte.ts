@@ -1,9 +1,9 @@
 import { Subject, type Observable, type Subscription } from 'rxjs';
 import { replicateRxCollection, type RxReplicationState } from 'rxdb/plugins/replication';
 import type { RxReplicationPullStreamItem } from 'rxdb';
-import { browser } from '$app/environment';
-import { settings } from '$lib/settings.svelte';
-import { auth } from '$lib/auth.svelte';
+import { browser } from '$app/env';
+import { settings } from '#lib/settings.svelte.js';
+import { auth } from '#lib/auth.svelte.js';
 import { getDb } from './index.ts';
 import { COLLECTION_NAMES, type CollectionName } from './schemas.ts';
 import { sync } from './syncState.svelte.ts';

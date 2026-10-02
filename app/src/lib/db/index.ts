@@ -9,7 +9,7 @@ import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration-schema';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
 import { migrateHabitV3, migrateHabitV4, migrateTaskV2, migrateTaskV3, migrateTaskV4 } from './migrations.ts';
 import {
 	activitySchema,

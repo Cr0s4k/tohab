@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { settings } from './settings.svelte.ts';
 import { apiBase } from './api.ts';
 

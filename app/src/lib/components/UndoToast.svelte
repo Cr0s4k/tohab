@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { runUndo, undoState } from '$lib/undo.svelte';
-	import { veil } from '$lib/motion';
+	import { runUndo, undoState } from '#lib/undo.svelte.js';
+	import { veil } from '#lib/motion.js';
 
 	let {
 		placement = 'float',

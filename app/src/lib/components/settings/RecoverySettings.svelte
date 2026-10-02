@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { removeDb } from '$lib/db/lazy';
-	import { stopSync } from '$lib/db/replication.svelte';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { removeDb } from '#lib/db/lazy.js';
+	import { stopSync } from '#lib/db/replication.svelte.js';
 	let { onNotice }: { onNotice: (message: string) => void } = $props();
 	let confirmReset = $state(false);
 	async function resetLocalData() {

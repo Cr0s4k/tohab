@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { tick } from 'svelte';
-	import { sheet, veil } from '$lib/motion';
-	import { lockScroll } from '$lib/scrollLock';
+	import { sheet, veil } from '#lib/motion.js';
+	import { lockScroll } from '#lib/scrollLock.js';
 
 	let {
 		open = false,

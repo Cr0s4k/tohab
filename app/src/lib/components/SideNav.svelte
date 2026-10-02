@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { settings, setSidebarCollapsed } from '$lib/settings.svelte';
-	import { settingsSheet } from '$lib/settingsSheet.svelte';
-	import { habitCompose, taskCompose } from '$lib/compose.svelte';
-	import { isNavItemActive, NAV_GROUPS, NAV_PATHS } from '$lib/navigation';
-	import UndoToast from '$lib/components/UndoToast.svelte';
+	import { settings, setSidebarCollapsed } from '#lib/settings.svelte.js';
+	import { settingsSheet } from '#lib/settingsSheet.svelte.js';
+	import { habitCompose, taskCompose } from '#lib/compose.svelte.js';
+	import { isNavItemActive, NAV_GROUPS, NAV_PATHS } from '#lib/navigation.js';
+	import UndoToast from '#lib/components/UndoToast.svelte';
 
 	let collapsed = $derived(settings.sidebarCollapsed);
 

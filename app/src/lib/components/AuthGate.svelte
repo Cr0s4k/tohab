@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { auth, login, refreshRegistrationState, register } from '$lib/auth.svelte';
-	import { haptic } from '$lib/haptics';
+	import { auth, login, refreshRegistrationState, register } from '#lib/auth.svelte.js';
+	import { haptic } from '#lib/haptics.js';
 
 	let email = $state('');
 	let password = $state('');

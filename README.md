@@ -4,7 +4,7 @@ Offline-first daily action journal for tasks and habits. Mobile-only PWA, single
 to a small self-hosted server.
 
 ```
-app/      SvelteKit 2 + Svelte 5 PWA, RxDB over IndexedDB
+app/      SvelteKit 3 + Svelte 5 PWA, RxDB over IndexedDB
 server/   Hono + Drizzle over Postgres sync backend
 ```
 

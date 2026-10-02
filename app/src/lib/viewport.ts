@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 /** Matches the `md` breakpoint the desktop layout switches at. */
 export function isDesktop(): boolean {

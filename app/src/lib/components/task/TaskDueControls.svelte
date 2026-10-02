@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { humanDay } from '$lib/dates';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { taskDateShortcuts } from '$lib/taskOptions';
+	import { humanDay } from '#lib/dates.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { taskDateShortcuts } from '#lib/taskOptions.js';
 
 	let {
 		due,

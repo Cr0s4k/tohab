@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { scrollTap } from '$lib/scrollTap';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { scrollTap } from '#lib/scrollTap.js';
 
 	let {
 		label,

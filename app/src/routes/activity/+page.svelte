@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { live } from '$lib/db/live.svelte';
-	import { rx } from '$lib/rx.svelte';
-	import type { Activity } from '$lib/db/schemas';
+	import { live } from '#lib/db/live.svelte.js';
+	import { rx } from '#lib/rx.svelte.js';
+	import type { Activity } from '#lib/db/schemas.js';
 	import {
 		activityQuery,
 		activityTime,
@@ -9,11 +9,11 @@
 		activityTone,
 		clearActivity,
 		groupActivity
-	} from '$lib/activity';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { collapse } from '$lib/motion';
-	import DataError from '$lib/components/DataError.svelte';
-	import { reportActionError } from '$lib/actionError.svelte';
+	} from '#lib/activity.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { collapse } from '#lib/motion.js';
+	import DataError from '#lib/components/DataError.svelte';
+	import { reportActionError } from '#lib/actionError.svelte.js';
 
 	let confirmingClear = $state(false);
 

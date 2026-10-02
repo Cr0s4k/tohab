@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { Habit } from '$lib/db/schemas';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { periodTarget } from '$lib/streaks';
-	import { veil } from '$lib/motion';
+	import type { Habit } from '#lib/db/schemas.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { periodTarget } from '#lib/streaks.js';
+	import { veil } from '#lib/motion.js';
 	import ProgressRing from './ProgressRing.svelte';
 
 	let {

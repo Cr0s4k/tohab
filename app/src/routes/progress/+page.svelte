@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { live } from '$lib/db/live.svelte';
-	import { rx } from '$lib/rx.svelte';
-	import type { Habit, HabitLog, HabitRevision } from '$lib/db/schemas';
-	import { groupLogs, habitStartDate, habitsQuery, isActiveOn, isPausedOn, logsQuery, periodTarget, revisionsQuery } from '$lib/habits';
-	import { humanDay, today } from '$lib/dates';
-	import { habitOn, withHabitHistory } from '$lib/habitHistory';
-	import { buildHabitProgress, percentage } from '$lib/habitProgress';
-	import { settings } from '$lib/settings.svelte';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import ProgressRing from '$lib/components/ProgressRing.svelte';
-	import SettingsButton from '$lib/components/SettingsButton.svelte';
-	import DataError from '$lib/components/DataError.svelte';
+	import { live } from '#lib/db/live.svelte.js';
+	import { rx } from '#lib/rx.svelte.js';
+	import type { Habit, HabitLog, HabitRevision } from '#lib/db/schemas.js';
+	import { groupLogs, habitStartDate, habitsQuery, isActiveOn, isPausedOn, logsQuery, periodTarget, revisionsQuery } from '#lib/habits.js';
+	import { humanDay, today } from '#lib/dates.js';
+	import { habitOn, withHabitHistory } from '#lib/habitHistory.js';
+	import { buildHabitProgress, percentage } from '#lib/habitProgress.js';
+	import { settings } from '#lib/settings.svelte.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import ProgressRing from '#lib/components/ProgressRing.svelte';
+	import SettingsButton from '#lib/components/SettingsButton.svelte';
+	import DataError from '#lib/components/DataError.svelte';
 
 	function plainDoc<T>(doc: T): T {
 		const candidate = doc as T & { toMutableJSON?: () => T };

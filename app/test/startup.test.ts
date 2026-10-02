@@ -38,7 +38,7 @@ assert.equal(boot(false)['splash-recovery'].hidden, true, 'successful startup is
 assert.equal(boot(true, true)['splash-recovery'].hidden, true, 'a departing splash stays dismissed');
 
 function loadSettings(storage: object) {
-	const source = read('../src/lib/settings.svelte.ts').replace("import { browser } from '$app/environment';", 'const browser = true;');
+	const source = read('../src/lib/settings.svelte.ts').replace("import { browser } from '$app/env';", 'const browser = true;');
 	const exports: Record<string, any> = {};
 	runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, {
 		exports, $state: (value: unknown) => value, localStorage: storage

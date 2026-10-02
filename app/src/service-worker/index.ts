@@ -1,10 +1,12 @@
-/// <reference types="@sveltejs/kit" />
-/// <reference lib="webworker" />
+import { version } from '$app/env';
+import { assets, immutable } from '$app/manifest';
+import { asset, resolve } from '$app/paths';
+import { self as sw } from '$app/service-worker';
+import type { Path } from '$app/types';
+import { shouldBypassServiceWorker, shouldRuntimeCacheRequest } from '../lib/pwa.ts';
 
-import { build, files, version } from '$service-worker';
-import { shouldBypassServiceWorker, shouldRuntimeCacheRequest } from './lib/pwa.ts';
-
-const sw = self as unknown as ServiceWorkerGlobalScope;
+const build = immutable.map(({ path }) => resolve(path as Path));
+const files = assets.map(({ path }) => asset(path));
 const PRECACHE_NAME = `tohab-shell-${version}`;
 const RUNTIME_NAME = `tohab-runtime-${version}`;
 const PRECACHE = [...new Set([...build, ...files, '/'])];

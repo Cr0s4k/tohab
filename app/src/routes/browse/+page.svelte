@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { live } from '$lib/db/live.svelte';
-	import { rx } from '$lib/rx.svelte';
-	import { createProject, deleteProject, openTasksQuery, projectsQuery, renameProject } from '$lib/tasks';
-	import { activityCountQuery } from '$lib/activity';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { reportActionError } from '$lib/actionError.svelte';
+	import { live } from '#lib/db/live.svelte.js';
+	import { rx } from '#lib/rx.svelte.js';
+	import { createProject, deleteProject, openTasksQuery, projectsQuery, renameProject } from '#lib/tasks.js';
+	import { activityCountQuery } from '#lib/activity.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { reportActionError } from '#lib/actionError.svelte.js';
 	import { flip } from 'svelte/animate';
-	import { collapse, flipCfg } from '$lib/motion';
-	import SettingsButton from '$lib/components/SettingsButton.svelte';
-	import DataError from '$lib/components/DataError.svelte';
+	import { collapse, flipCfg } from '#lib/motion.js';
+	import SettingsButton from '#lib/components/SettingsButton.svelte';
+	import DataError from '#lib/components/DataError.svelte';
 
 	let name = $state('');
 	let adding = $state(false);

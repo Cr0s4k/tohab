@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { settingsSheet } from '$lib/settingsSheet.svelte';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { settingsSheet } from '#lib/settingsSheet.svelte.js';
 </script>
 
 <button

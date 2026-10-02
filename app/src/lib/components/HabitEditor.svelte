@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Habit, HabitRules, HabitView } from '$lib/db/schemas';
+	import type { Habit, HabitRules, HabitView } from '#lib/db/schemas.js';
 	import {
 		createHabit,
 		deleteHabit,
@@ -8,13 +8,13 @@
 		habitStartDate,
 		updateHabit,
 		type HabitInput
-	} from '$lib/habits';
-	import { humanDay, startOfWeekKey, today } from '$lib/dates';
-	import { habitForEdit, habitRules, ruleChangeDate, rulesEqual } from '$lib/habitHistory';
-	import type { LogMap } from '$lib/streaks';
-	import { settings } from '$lib/settings.svelte';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { reportActionError } from '$lib/actionError.svelte';
+	} from '#lib/habits.js';
+	import { humanDay, startOfWeekKey, today } from '#lib/dates.js';
+	import { habitForEdit, habitRules, ruleChangeDate, rulesEqual } from '#lib/habitHistory.js';
+	import type { LogMap } from '#lib/streaks.js';
+	import { settings } from '#lib/settings.svelte.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { reportActionError } from '#lib/actionError.svelte.js';
 	import Sheet from './Sheet.svelte';
 	import HabitIdentityControls from './habit/HabitIdentityControls.svelte';
 	import HabitScheduleControls from './habit/HabitScheduleControls.svelte';

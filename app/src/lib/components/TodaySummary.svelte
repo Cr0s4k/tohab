@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { live } from '$lib/db/live.svelte';
-	import { rx } from '$lib/rx.svelte';
-	import type { Habit, HabitLog, HabitRevision } from '$lib/db/schemas';
-	import { habitsQuery, logsQuery, revisionsQuery } from '$lib/habits';
-	import { withHabitHistory } from '$lib/habitHistory';
-	import { buildHabitProgress } from '$lib/habitProgress';
-	import { settings } from '$lib/settings.svelte';
-	import { today } from '$lib/dates';
-	import { collapse, veil } from '$lib/motion';
+	import { live } from '#lib/db/live.svelte.js';
+	import { rx } from '#lib/rx.svelte.js';
+	import type { Habit, HabitLog, HabitRevision } from '#lib/db/schemas.js';
+	import { habitsQuery, logsQuery, revisionsQuery } from '#lib/habits.js';
+	import { withHabitHistory } from '#lib/habitHistory.js';
+	import { buildHabitProgress } from '#lib/habitProgress.js';
+	import { settings } from '#lib/settings.svelte.js';
+	import { today } from '#lib/dates.js';
+	import { collapse, veil } from '#lib/motion.js';
 	import DataError from './DataError.svelte';
 	import ProgressRing from './ProgressRing.svelte';
 

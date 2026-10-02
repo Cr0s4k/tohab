@@ -60,7 +60,7 @@ assert.doesNotMatch(dbIndex, /onblocked\s*=\s*\(\)\s*=>\s*\{[\s\S]{0,200}reject/
 assert.doesNotMatch(replication, /function unauthorized\(\)[\s\S]*?forget\(\)/);
 assert.match(replication, /stopSync\(true\)/);
 
-const sw = read('src/service-worker.ts');
+const sw = read('src/service-worker/index.ts');
 const pwaStatus = read('src/lib/components/PwaStatus.svelte');
 assert.match(sw, /SKIP_WAITING/);
 assert.match(pwaStatus, /reloadForUpdate/);

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { setSound, setStartOfWeek, setTheme, settings, type Theme } from '$lib/settings.svelte';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { setSound, setStartOfWeek, setTheme, settings, type Theme } from '#lib/settings.svelte.js';
 	const themes: { id: Theme; label: string }[] = [
 		{ id: 'system', label: 'System' },
 		{ id: 'light', label: 'Light' },

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { actionError, clearActionError, retryAction } from '$lib/actionError.svelte';
-import { veil } from '$lib/motion';
+	import { actionError, clearActionError, retryAction } from '#lib/actionError.svelte.js';
+import { veil } from '#lib/motion.js';
 </script>
 
 {#if actionError.current}

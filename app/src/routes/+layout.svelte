@@ -3,30 +3,30 @@
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
-	import TabBar from '$lib/components/TabBar.svelte';
-	import SideNav from '$lib/components/SideNav.svelte';
-	import HabitNav from '$lib/components/HabitNav.svelte';
-	import UndoToast from '$lib/components/UndoToast.svelte';
-	import ActionError from '$lib/components/ActionError.svelte';
-	import SettingsSheet from '$lib/components/SettingsSheet.svelte';
-	import ConnectivityAlert from '$lib/components/ConnectivityAlert.svelte';
-	import PwaStatus from '$lib/components/PwaStatus.svelte';
-	import AppBadge from '$lib/components/AppBadge.svelte';
-	import AuthGate from '$lib/components/AuthGate.svelte';
-	import { auth } from '$lib/auth.svelte';
-	import { applyTheme, settings } from '$lib/settings.svelte';
-	import { settingsSheet } from '$lib/settingsSheet.svelte';
-	import { taskCompose } from '$lib/compose.svelte';
+	import TabBar from '#lib/components/TabBar.svelte';
+	import SideNav from '#lib/components/SideNav.svelte';
+	import HabitNav from '#lib/components/HabitNav.svelte';
+	import UndoToast from '#lib/components/UndoToast.svelte';
+	import ActionError from '#lib/components/ActionError.svelte';
+	import SettingsSheet from '#lib/components/SettingsSheet.svelte';
+	import ConnectivityAlert from '#lib/components/ConnectivityAlert.svelte';
+	import PwaStatus from '#lib/components/PwaStatus.svelte';
+	import AppBadge from '#lib/components/AppBadge.svelte';
+	import AuthGate from '#lib/components/AuthGate.svelte';
+	import { auth } from '#lib/auth.svelte.js';
+	import { applyTheme, settings } from '#lib/settings.svelte.js';
+	import { settingsSheet } from '#lib/settingsSheet.svelte.js';
+	import { taskCompose } from '#lib/compose.svelte.js';
 	import {
 		bootLocalDb,
 		localDbSession,
 		resetLocalDbAfterFailure,
 		unmountLocalDb
-	} from '$lib/db/session.svelte';
-	import { motionOk } from '$lib/motion';
-	import { hideSplash } from '$lib/splash';
-	import { scrollTap } from '$lib/scrollTap';
-	import { preventEdgeNavigation } from '$lib/navigationGestures';
+	} from '#lib/db/session.svelte.js';
+	import { motionOk } from '#lib/motion.js';
+	import { hideSplash } from '#lib/splash.js';
+	import { scrollTap } from '#lib/scrollTap.js';
+	import { preventEdgeNavigation } from '#lib/navigationGestures.js';
 
 	let { children } = $props();
 	let showHabitNav = $derived(page.url.pathname === '/habits' || page.url.pathname === '/progress');

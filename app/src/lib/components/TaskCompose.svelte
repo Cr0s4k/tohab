@@ -1,11 +1,11 @@
 <script lang="ts">
-	import type { Project } from '$lib/db/schemas';
-	import { parseQuickAdd } from '$lib/parse';
-	import { createTask, priorityClass, resolveProject } from '$lib/tasks';
-	import { humanDay, humanTime } from '$lib/dates';
-	import { describeRepeat, firstDue } from '$lib/repeat';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { reportActionError } from '$lib/actionError.svelte';
+	import type { Project } from '#lib/db/schemas.js';
+	import { parseQuickAdd } from '#lib/parse.js';
+	import { createTask, priorityClass, resolveProject } from '#lib/tasks.js';
+	import { humanDay, humanTime } from '#lib/dates.js';
+	import { describeRepeat, firstDue } from '#lib/repeat.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { reportActionError } from '#lib/actionError.svelte.js';
 	import Sheet from './Sheet.svelte';
 	import TaskDueControls from './task/TaskDueControls.svelte';
 	import TaskPriorityPicker from './task/TaskPriorityPicker.svelte';

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { WEEKDAY_LABELS, WEEKDAY_NAMES } from '$lib/dates';
-	import type { HabitInput } from '$lib/habits';
-	import { hapticTap } from '$lib/haptics';
+	import { WEEKDAY_LABELS, WEEKDAY_NAMES } from '#lib/dates.js';
+	import type { HabitInput } from '#lib/habits.js';
+	import { hapticTap } from '#lib/haptics.js';
 
 	let {
 		quantity = false,

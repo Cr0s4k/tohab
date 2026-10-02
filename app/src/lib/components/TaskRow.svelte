@@ -1,12 +1,12 @@
 <script lang="ts">
-	import type { Task, Project } from '$lib/db/schemas';
-	import { humanDay, humanTime, daysFromToday } from '$lib/dates';
-	import { haptic, hapticTap } from '$lib/haptics';
-	import { playComplete } from '$lib/sound';
-	import { priorityClass } from '$lib/tasks';
-	import { describeRepeat, isRepeating } from '$lib/repeat';
-	import { swipeRow } from '$lib/swipeRow';
-	import type { SubtaskProgress } from '$lib/taskViews';
+	import type { Task, Project } from '#lib/db/schemas.js';
+	import { humanDay, humanTime, daysFromToday } from '#lib/dates.js';
+	import { haptic, hapticTap } from '#lib/haptics.js';
+	import { playComplete } from '#lib/sound.js';
+	import { priorityClass } from '#lib/tasks.js';
+	import { describeRepeat, isRepeating } from '#lib/repeat.js';
+	import { swipeRow } from '#lib/swipeRow.js';
+	import type { SubtaskProgress } from '#lib/taskViews.js';
 
 	let {
 		task,

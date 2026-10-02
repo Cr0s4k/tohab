@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { HABIT_COLORS } from '$lib/habits';
-	import { haptic } from '$lib/haptics';
-	import { habitEmoji } from '$lib/habitEmoji';
+	import { HABIT_COLORS } from '#lib/habits.js';
+	import { haptic } from '#lib/haptics.js';
+	import { habitEmoji } from '#lib/habitEmoji.js';
 	import Sheet from '../Sheet.svelte';
 
 	let { name = $bindable(), emoji = $bindable(), color = $bindable() }: {

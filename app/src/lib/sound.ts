@@ -1,5 +1,5 @@
-import { browser } from '$app/environment';
-import { settings } from '$lib/settings.svelte';
+import { browser } from '$app/env';
+import { settings } from '#lib/settings.svelte.js';
 
 let ctx: AudioContext | null = null;
 

@@ -1,3 +1,5 @@
+import type { ReadonlyURL } from '$app/state';
+
 export const NAV_PATHS = {
 	inbox: 'M4 4h16v13a3 3 0 01-3 3H7a3 3 0 01-3-3V4zM4 13h5l2 2 4-4h5',
 	today: 'M7 2v4M17 2v4M4 10h16M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z',
@@ -30,7 +32,7 @@ export const NAV_GROUPS = [
 	{ label: 'Habits', items: HABIT_NAV_ITEMS }
 ];
 
-export function isNavItemActive(url: URL, href: string) {
+export function isNavItemActive(url: ReadonlyURL, href: string) {
 	const [path, query = ''] = href.split('?');
 	if (path === '/browse') return url.pathname === '/browse' || url.pathname.startsWith('/projects');
 	if (path === '/habits') return url.pathname.startsWith('/habits');
