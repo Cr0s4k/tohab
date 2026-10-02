@@ -4,7 +4,7 @@ node_modules/
 # Local agent worktrees, screenshots, and machine-specific design reports.
 /.claude/
 /artifacts/
-/.impeccable/critique/
+**/.impeccable/critique/
 
 # app
 app/.svelte-kit/
