@@ -35,14 +35,16 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Open `http://<host>:8080`. The first account you create owns the server, and registration
-closes after it. See [Self-hosting](docs/self-hosting.md) for configuration, reminders and the
-calendar feed.
+Open `http://localhost:8080` on the host; for other devices, put it behind HTTPS (offline
+use, installing and Web Push need it). The first account you create owns the server, and
+registration closes after it. See [Self-hosting](docs/self-hosting.md) for configuration,
+reminders and the calendar feed.
 
 ## Development
 
 ```bash
 pnpm install
+mkdir -p secrets && printf '%s\n' 'tohab' > secrets/postgres_password
 pnpm dev     # Postgres in Docker, app on :5173, sync server on :5178
 pnpm test
 ```

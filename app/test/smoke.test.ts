@@ -6,7 +6,7 @@ import { createReporter } from '../../test/assertions.ts';
 import { cleanup, signIn, type TestSession } from './auth.ts';
 import { launchChrome } from './cdp.ts';
 
-const APP = process.env.APP ?? 'http://localhost:5177';
+const APP = process.env.APP ?? 'http://localhost:5173';
 const PORT = 9333;
 const reporter = createReporter();
 const check = reporter.check;

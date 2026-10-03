@@ -41,9 +41,8 @@ export const DEFAULT_TOMBSTONE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 /**
  * Feed URLs are handed to third parties (Google fetches them anonymously, and they end up in
- * that history for good), so they must not carry the sync user id: that id is the only
- * credential the sync API has, and leaking it would grant read *and* write access. An HMAC of
- * the id is one-way, so a leaked feed URL exposes nothing but the feed.
+ * that history for good), so they must not carry the user id. An HMAC of the id is one-way,
+ * so a leaked feed URL exposes nothing but the feed.
  */
 export function feedToken(secret: string, userId: string): string {
 	return createHmac('sha256', secret).update(userId).digest('hex').slice(0, 32);

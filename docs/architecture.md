@@ -62,11 +62,12 @@ The session is an `httpOnly`, `SameSite=Lax`, `Secure`-when-HTTPS cookie holding
 `userId.expiry.hmac`, signed with a key in the `secrets` table and good for a year. Nothing
 is stored per session, so there is no session table to expire — the trade is that a leaked
 cookie stays valid until it expires; deleting the `session` row from `secrets` invalidates
-every session at once. `/sync/*` and `/calendar/token` require it; the `.ics` feed does not,
-because a calendar client cannot sign in and its unguessable token is the credential.
+every session at once. `/sync/*`, `/push/*` and `/calendar/token` require it; the `.ics`
+feed does not, because a calendar client cannot sign in and its unguessable token is the
+credential.
 
-A cookie rather than a token in `localStorage`: the API is same-origin with the app in every
-deployment here (nginx in production, the Vite proxy in dev), so the cookie needs no CORS
+A cookie rather than a token in `localStorage`: the API is same-origin with the app in the
+default deployment (nginx in production, the Vite proxy in dev), so the cookie needs no CORS
 work, cannot be read by script if the page is ever XSS'd, and — the practical part — rides
 along on `EventSource`, which cannot send headers.
 
@@ -110,10 +111,10 @@ GET /calendar/token                    → { token, feedUrl? }   (requires a ses
 GET /calendar/<token>/tohab.ics
 ```
 
-- The URL carries an HMAC of your sync id, never the id itself. Feed URLs get handed to
-  Google and live in its history indefinitely, and the sync id is the only credential the
-  sync API has — so a leaked feed URL must not become write access to your data. The HMAC
-  key comes from `CALENDAR_SECRET`, or is generated once and stored in the `secrets` table.
+- The URL carries an HMAC of your account id, never the id itself. Feed URLs get handed to
+  Google and live in its history indefinitely, so a leaked feed URL must expose nothing but
+  the feed. The HMAC key comes from `CALENDAR_SECRET`, or is generated once and stored in the
+  `secrets` table.
 - A repeating task becomes one event with an `RRULE`. `every!` rules deliberately get none:
   they count from whenever the task is actually completed, so no fixed schedule describes
   them and only the current due date is known.

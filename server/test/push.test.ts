@@ -72,9 +72,9 @@ assert.equal(syncResponse.status, 401, 'sync routes are mounted and protected');
 
 const compose = readFileSync(new URL('../../docker-compose.yml', import.meta.url), 'utf8');
 const envExample = readFileSync(new URL('../../.env.example', import.meta.url), 'utf8');
-const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
+const selfHosting = readFileSync(new URL('../../docs/self-hosting.md', import.meta.url), 'utf8');
 assert.match(compose, /VAPID_SUBJECT:\s*\$\{VAPID_SUBJECT:-\}/, 'Compose forwards the configured VAPID contact identity');
 assert.match(envExample, /^VAPID_SUBJECT=/m, 'the example environment documents the VAPID subject');
-assert.match(readme, /Apple.*\.local|\.local.*Apple/is, 'deployment docs warn that Apple rejects local VAPID identities');
+assert.match(selfHosting, /Apple.*\.local|\.local.*Apple/is, 'deployment docs warn that Apple rejects local VAPID identities');
 
 console.log('ok push reminder scheduling');

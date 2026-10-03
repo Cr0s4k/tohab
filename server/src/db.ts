@@ -32,7 +32,7 @@ export async function ensureSchema() {
 	);
 	if (!rows[0]?.ok) {
 		console.error(
-			`No schema in ${CONNECTION.replace(/:[^:@]*@/, ':***@')}. Run \`pnpm db:push\` first.`
+			`No schema in ${CONNECTION.replace(/:[^:@]*@/, ':***@')}. Run \`pnpm --filter server db:push\` first.`
 		);
 		process.exit(1);
 	}

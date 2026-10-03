@@ -20,10 +20,15 @@ them in live, and tapping a chip overrides whatever the parser found for that on
 | `5pm`, `at 9`, `14:30`, `9:30am` | times; a bare time implies today |
 | `every day`, `every other friday`, `every 3 weeks`, `every 15th` | recurrence |
 | `p1`–`p4`, `!1`–`!4` or `!!1`–`!!4` | priority |
+| `!tomorrow 9am`, `!mon`, `!5pm`, `!30m`, `!2h`, `!later` | reminder, without changing the due date |
 | `#work` | project, created on demand if new |
 
 `buy oat milk tomorrow 5pm p1 #groceries` → title "buy oat milk", due tomorrow 17:00,
-priority 1, in the Groceries project.
+priority 1, in the groceries project.
+
+A reminder on its own date (`!tomorrow`, `!mon`) fires at 9 AM, a bare `!5pm` means the next
+5 PM, `!30m` and `!2h` count from now, and `!later` is four hours ahead, rounded down to the
+hour.
 
 <img src="screenshots/mobile-capture.png" alt="Quick capture parsing natural language" width="300">
 

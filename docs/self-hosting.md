@@ -15,10 +15,15 @@ cp .env.example .env   # optionally set WEB_PORT to a private address
 docker compose up -d --build
 ```
 
-The app is then on `http://<host>:8080` and needs no sync configuration: nginx serves the
-static bundle and proxies `/sync` to the server container, so the default relative
-`/sync` server URL works as-is. Buffering is off on that location so the SSE change stream
-passes through untouched.
+The app is then on `http://localhost:8080` on the host itself and needs no sync
+configuration: nginx serves the static bundle and proxies `/sync`, `/auth`, `/calendar` and
+`/push` to the server container, so the default relative `/sync` server URL works as-is.
+Buffering is off on the `/sync` location so the SSE change stream passes through untouched.
+
+To use it from other devices, put it behind HTTPS — a reverse proxy with a certificate, or
+`tailscale serve`. Browsers only run the service worker (offline use, installing the PWA) and
+Web Push on HTTPS or `localhost`, so over plain HTTP on a LAN address the app loses its
+offline and reminder features.
 
 `Dockerfile` is multi-stage with two targets: `web` (nginx + `app/build/`) and `server`
 (Node, which runs `drizzle-kit push` against Postgres before starting so a fresh volume
@@ -49,7 +54,8 @@ Compose reads these from `.env`; `.env.example` documents each one.
 | `ALLOWED_ORIGINS` | — | Only for an app served from another origin |
 
 Running the server outside Compose, `DATABASE_URL` defaults to
-`postgresql://tohab:tohab@localhost:5432/tohab` and `PORT` overrides the server port. The `pg`
+`postgresql://tohab:tohab@localhost:5432/tohab`, `PORT` overrides the server port, and
+`VAPID_PUBLIC_KEY` plus `VAPID_PRIVATE_KEY` pin the Web Push key pair (see below). The `pg`
 driver is pure JavaScript, so there is nothing to compile and any managed Postgres works.
 
 ## Web Push
@@ -59,6 +65,11 @@ Set `VAPID_SUBJECT` to a real contact identity such as `https://tohab.example.co
 `403 BadJwtToken`, even though the same subscription flow can work on desktop push services.
 Compose forwards this value to the server; changing it does not rotate the persisted VAPID key
 pair or require clients to re-subscribe.
+
+The server generates a VAPID key pair on first use and stores it in Postgres. Outside
+Compose you can supply your own with `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` (both must be
+set); Compose does not forward them. Changing the pair invalidates existing subscriptions, so
+every device has to enable notifications again.
 
 ## Calendar feed
 
@@ -81,8 +92,9 @@ both sides. Serving both from one origin (what Docker Compose does) avoids all o
 
 ## Automatic deploys
 
-`.github/workflows/deploy.yml` triggers a Komodo redeploy on every push to
-`main`. It reads `KOMODO_WEBHOOK_URL` and `KOMODO_WEBHOOK_SECRET` from repository Actions
-secrets and skips the deploy when either is missing, so forks are unaffected. The webhook URL
+`.github/workflows/deploy.yml` is the author's own deploy hook and is optional: it triggers
+a [Komodo](https://komo.do) redeploy on every push to `main`. It reads `KOMODO_WEBHOOK_URL`
+and `KOMODO_WEBHOOK_SECRET` from repository Actions secrets and skips the deploy when either
+is missing, so forks are unaffected. The webhook URL
 must be reachable from GitHub's runners. Keep deployment URLs and signing keys out of tracked
 files.
