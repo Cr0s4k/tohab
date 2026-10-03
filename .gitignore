@@ -3,6 +3,8 @@ node_modules/
 
 # Local agent worktrees, screenshots, and machine-specific design reports.
 /.claude/
+/.agents/
+/.codex/
 /artifacts/
 **/.impeccable/critique/
 

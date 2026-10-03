@@ -373,3 +373,8 @@ unsynchronised data or risks uploading it under another owner.
   rather than adapting to desktop.
 - **The server needs Postgres**, so it is no longer a zero-dependency binary you can drop
   anywhere; local work goes through Docker.
+
+## License
+
+Source-available under the [PolyForm Strict License 1.0.0](LICENSE): you may read, download and
+run it for noncommercial purposes, but not modify it or redistribute it.
